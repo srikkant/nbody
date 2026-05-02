@@ -5,14 +5,16 @@ import "core:math/rand"
 import rl "vendor:raylib"
 
 Game_Object :: struct {
-	mass:  f32,
-	r:     f32,
-	pos:   rl.Vector2,
-	vel:   rl.Vector2,
-	color: rl.Color,
+	mass:       f32,
+	r:          f32,
+	pos:        rl.Vector2,
+	vel:        rl.Vector2,
+	color:      rl.Color,
+	stationary: bool,
 }
 
 Game :: struct {
+	elapsed:               f32,
 	view:                  rl.Rectangle,
 	slingshot_mass:        f32,
 	slingshot_radius:      f32,
@@ -22,12 +24,12 @@ Game :: struct {
 	objs:                  [dynamic]Game_Object,
 }
 
-STAR_MASS :: 100000000
-STAR_RADIUS :: 64
-COMET_MASS :: 5
+STAR_MASS :: 100000
+STAR_RADIUS :: 16
+COMET_MASS :: 10000
 COMET_RADIUS :: 4
 
-VIRTUAL_SCREEN_SIZE :: 1000
+VIRTUAL_SCREEN_SIZE :: 500
 SLINGSHOT_STIFFNESS :: 2
 G :: 1
 
@@ -88,8 +90,8 @@ game_update :: proc(g: ^Game) {
 game_update_objects :: proc(g: ^Game) {
 	if (len(g.objs) == 0) do return
 
-	dt := rl.GetFrameTime()
-	softening := f32(5.0) // for preventing division by zero
+	dt := rl.GetFrameTime() * 10
+	softening := f32(1.0) // for preventing division by zero
 
 	accels := make([]rl.Vector2, len(g.objs))
 	defer delete(accels)
@@ -115,6 +117,8 @@ game_update_objects :: proc(g: ^Game) {
 	}
 
 	for i in 0 ..< len(g.objs) {
+		if g.objs[i].stationary do continue
+
 		g.objs[i].vel += accels[i] * dt
 		g.objs[i].pos += g.objs[i].vel * dt
 
@@ -133,6 +137,8 @@ game_update_objects :: proc(g: ^Game) {
 				   g.objs[i].pos.y < g.objs[0].pos.y + g.objs[0].r &&
 				   g.objs[i].pos.x > g.objs[0].pos.x - g.objs[0].r &&
 				   g.objs[i].pos.y > g.objs[0].pos.y - g.objs[0].r) {
+				g.objs[0].mass += g.objs[i].mass
+				g.objs[0].r += g.objs[0].r * g.objs[i].mass / g.objs[0].mass
 				unordered_remove(&g.objs, i)
 				continue
 			}
@@ -179,19 +185,23 @@ init :: proc() {
 	defer rl.CloseWindow()
 
 	g := Game{}
+	g.elapsed = 0.0
 
 	rtex := rl.LoadRenderTexture(VIRTUAL_SCREEN_SIZE, VIRTUAL_SCREEN_SIZE)
 
 	// Add a star
 	star := Game_Object {
-		mass  = STAR_MASS,
-		r     = STAR_RADIUS,
-		pos   = rl.Vector2{VIRTUAL_SCREEN_SIZE / 2, VIRTUAL_SCREEN_SIZE / 2},
-		color = rl.WHITE,
+		mass       = STAR_MASS,
+		r          = STAR_RADIUS,
+		pos        = rl.Vector2{VIRTUAL_SCREEN_SIZE / 2, VIRTUAL_SCREEN_SIZE / 2},
+		color      = rl.WHITE,
+		stationary = true,
 	}
 	append(&g.objs, star)
 
 	for !rl.WindowShouldClose() {
+		g.elapsed += rl.GetFrameTime()
+
 		ww := f32(rl.GetScreenWidth())
 		wh := f32(rl.GetScreenHeight())
 		size := math.min(wh, ww)
