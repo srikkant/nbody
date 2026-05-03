@@ -1,11 +1,9 @@
 package main
 
-import "core:math"
 import rl "vendor:raylib"
 
 sys_physics :: proc(g: ^Game) {
-	softening := f32(2.0) // for preventing division by zero
-	dt := rl.GetFrameTime() * 10
+	dt := rl.GetFrameTime() * SIM_DT_MULTIPLIER
 
 	accels := make([]rl.Vector2, g.entities_count)
 	defer delete(accels)
@@ -22,19 +20,17 @@ sys_physics :: proc(g: ^Game) {
 			e2 := &g.entities[j]
 			if !(PHYSICS_SIG <= e2.sig) do continue
 
-			// Vector from i to j
-			diff := e2.pos - e1.pos
-			r2 := diff.x * diff.x + diff.y * diff.y
-			r3 := (r2 + softening) * math.sqrt(r2 + softening)
+			accel, collision := physics_get_graviational_acceleration(
+				e1.pos,
+				e1.size.radius,
+				e2.pos,
+				e2.size.mass,
+				e2.size.radius,
+			)
 
-			strength := G * e2.size.mass
-			total_accel.x += (strength * diff.x) / r3
-			total_accel.y += (strength * diff.y) / r3
+			total_accel += accel
 
-			// Just an sum of the two radii for approximate collision radius
-			collision_radius := (e1.size.radius + e2.size.radius)
-
-			if r2 < collision_radius * collision_radius {
+			if collision {
 				g.events[g.events_count] = Game_Event_Collision {
 					id1 = Entity(i),
 					id2 = Entity(j),

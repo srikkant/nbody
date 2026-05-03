@@ -53,16 +53,41 @@ sys_render_slingshot :: proc(g: ^Game) {
 	if !g.slingshot.active do return
 	end := input_mouse_pos(g)
 
+	// Slingshot end
 	rl.DrawCircle(i32(end.x), i32(end.y), g.slingshot.radius, rl.GRAY)
-
-	rl.DrawCircle(
-		i32(g.slingshot.start_pos.x),
-		i32(g.slingshot.start_pos.y),
-		g.slingshot.radius,
-		rl.WHITE,
-	)
-
+	// Slingshot trigger
 	rl.DrawLineEx(g.slingshot.start_pos, end, 1, rl.GRAY)
+
+	// Slingshot path: for now, we draw around 1 second worth of path (60 steps)
+	pos := g.slingshot.start_pos
+	vel := physics_get_slingshot_release_velocity(g.slingshot.start_pos, end)
+	draw_radius := g.slingshot.radius
+	end_radius := g.slingshot.radius * 0.25
+
+	dt := rl.GetFrameTime() * SLINGSHOT_PREVIEW_DT_MULTIPLIER
+
+	star := &g.entities[Entity(0)]
+	frames := SLINGSHOT_PREVIEW_FRAME_COUNT
+
+	for s in 0 ..= frames {
+		rl.DrawCircle(i32(pos.x), i32(pos.y), draw_radius, rl.Color{255, 255, 255, 255})
+
+		acc, collision := physics_get_graviational_acceleration(
+			pos,
+			g.slingshot.radius,
+			star.pos,
+			star.size.mass,
+			star.size.radius,
+		)
+
+		if collision do break
+
+		vel += acc * dt
+		pos += vel * dt
+
+		draw_radius = math.lerp(draw_radius, end_radius, dt)
+	}
+
 }
 
 sys_render_entities :: proc(g: ^Game) {

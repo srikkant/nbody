@@ -1,6 +1,5 @@
 package main
 
-import "core:compress/shoco"
 import rl "vendor:raylib"
 
 Entity :: distinct u64
@@ -93,4 +92,9 @@ Game :: struct {
 
 	// Input -> Slingshot
 	slingshot:           Game_Slingshot,
+
+	// Score
+	energy:              f64,
+	energy_in:           f64,
+	energy_out:          f64,
 }

@@ -14,7 +14,6 @@ sys_camera :: proc(g: ^Game) {
 
 		max_x = math.max(max_x, math.abs(e.pos.x))
 		max_y = math.max(max_y, math.abs(e.pos.y))
-
 	}
 
 	padding :: 200.0

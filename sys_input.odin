@@ -25,7 +25,7 @@ sys_input :: proc(g: ^Game) {
 		if (rl.IsMouseButtonReleased(.LEFT)) {
 			g.slingshot.active = false
 			end := input_mouse_pos(g)
-			vel := (g.slingshot.start_pos - end) * SLINGSHOT_STIFFNESS
+			vel := physics_get_slingshot_release_velocity(g.slingshot.start_pos, end)
 
 			// TODO: This is just random color for now.
 			color := COLORS[int(rand.uint32()) % len(COLORS)]
