@@ -3,8 +3,6 @@ package main
 import "core:math"
 import rl "vendor:raylib"
 
-RENDER_SIG: Signature : {.Position, .Size, .Renderable}
-
 sys_render :: proc(g: ^Game) {
 	g.elapsed += rl.GetFrameTime()
 	tx := &g.render_texture
@@ -52,25 +50,26 @@ sys_render :: proc(g: ^Game) {
 }
 
 sys_render_slingshot :: proc(g: ^Game) {
-	if !g.slingshot_active do return
+	if !g.slingshot.active do return
 	end := input_mouse_pos(g)
 
-	rl.DrawCircle(i32(end.x), i32(end.y), g.slingshot_radius, rl.GRAY)
+	rl.DrawCircle(i32(end.x), i32(end.y), g.slingshot.radius, rl.GRAY)
 
 	rl.DrawCircle(
-		i32(g.slingshot_start_pos.x),
-		i32(g.slingshot_start_pos.y),
-		g.slingshot_radius,
+		i32(g.slingshot.start_pos.x),
+		i32(g.slingshot.start_pos.y),
+		g.slingshot.radius,
 		rl.WHITE,
 	)
 
-	rl.DrawLineEx(g.slingshot_start_pos, end, 1, rl.GRAY)
+	rl.DrawLineEx(g.slingshot.start_pos, end, 1, rl.GRAY)
 }
 
 sys_render_entities :: proc(g: ^Game) {
-	for id in 0 ..< g.entity_count {
+	for id in 0 ..< g.entities_count {
 		e := g.entities[id]
 
+		// TODO: For now, all entities are just drawn as circles
 		if RENDER_SIG <= e.sig {
 			rl.DrawCircle(i32(e.pos.x), i32(e.pos.y), e.size.radius, e.renderable.color)
 		}

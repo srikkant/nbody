@@ -9,7 +9,7 @@ main :: proc() {
 	rl.SetTargetFPS(60)
 	defer rl.CloseWindow()
 
-	g := Game{}
+	g := new(Game)
 	g.render_texture = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
 	defer rl.UnloadRenderTexture(g.render_texture)
 
@@ -19,21 +19,23 @@ main :: proc() {
 
 	// TODO: Add Menus and whatnot
 	// For now, just add a star directly and start the game!
-	id := entity_create(&g)
-	entity_add_star(&g, id)
-	entity_add_size(&g, id, SizeComponent{STAR_MASS, STAR_RADIUS})
-	entity_add_position(&g, id, rl.Vector2(0))
-	entity_add_renderable(&g, id, RenderableComponent{rl.YELLOW})
-	entity_add_velocity(&g, id, rl.Vector2{0, 0})
+	g.events_count = 1
+	g.events[0] = Game_Event_ObjectSpawn {
+		pos    = rl.Vector2(0),
+		vel    = rl.Vector2(0),
+		mass   = STAR_MASS,
+		radius = STAR_RADIUS,
+		color  = rl.YELLOW,
+		tags   = {.Star},
+	}
 
 	for !rl.WindowShouldClose() {
-		input_update(&g)
+		sys_input(g)
+		sys_physics(g)
+		sys_lifecycle(g)
+		sys_render(g)
 
-		sys_physics(&g)
-
-		// TODO: enable this once slingshot is decoupled from world space
+		// TODO: enable this before the render system once slingshot is decoupled from world space
 		// sys_camera(&g)
-
-		sys_render(&g)
 	}
 }

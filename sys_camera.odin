@@ -8,7 +8,7 @@ sys_camera :: proc(g: ^Game) {
 	max_x: f32 = 0
 	max_y: f32 = 0
 
-	for id in 0 ..< g.entity_count {
+	for id in 0 ..< g.entities_count {
 		e := &g.entities[id]
 		if !(CAMERA_SIG <= e.sig) do continue
 
