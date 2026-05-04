@@ -34,6 +34,7 @@ sys_physics :: proc(g: ^Game) {
 				g.events[g.events_count] = Game_Event_Collision {
 					id1 = Entity(i),
 					id2 = Entity(j),
+					pos = (e1.pos + e2.pos) / 2,
 				}
 				g.events_count += 1
 			}

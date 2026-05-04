@@ -1,5 +1,6 @@
 package main
 
+import "core:debug/pe"
 import rl "vendor:raylib"
 
 Entity :: distinct u64
@@ -8,6 +9,7 @@ ComponentType :: enum {
 	Position,
 	Velocity,
 	Size,
+	Life,
 	Renderable,
 
 	// Tag components
@@ -19,6 +21,10 @@ Signature :: bit_set[ComponentType]
 PositionComponent :: rl.Vector2
 
 VelocityComponent :: rl.Vector2
+
+LifeComponent :: struct {
+	created_at: f32,
+}
 
 SizeComponent :: struct {
 	mass:   f32,
@@ -65,6 +71,7 @@ Game_Event :: union {
 
 Game_Entity :: struct {
 	sig:        Signature,
+	life:       LifeComponent,
 	pos:        PositionComponent,
 	vel:        VelocityComponent,
 	size:       SizeComponent,
@@ -97,4 +104,8 @@ Game :: struct {
 	energy:              f64,
 	energy_in:           f64,
 	energy_out:          f64,
+	energy_over_time:    [10000]f64,
+
+	// debug
+	draw_debug_panel:    bool,
 }

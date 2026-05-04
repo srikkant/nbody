@@ -5,13 +5,15 @@ import rl "vendor:raylib"
 main :: proc() {
 	rl.SetTraceLogLevel(rl.TraceLogLevel.WARNING)
 	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_HIGHDPI, .WINDOW_UNDECORATED})
-	rl.InitWindow(1440, 960, "cellular automata")
+	rl.InitWindow(1440, 810, "cellular automata")
 	rl.SetTargetFPS(60)
 	defer rl.CloseWindow()
 
 	g := new(Game)
 	g.render_texture = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
 	defer rl.UnloadRenderTexture(g.render_texture)
+
+	g.energy = 0.0
 
 	g.camera.zoom = 1.0
 	g.camera.offset = rl.Vector2{RENDER_WIDTH / 2, RENDER_HEIGHT / 2}
@@ -32,6 +34,7 @@ main :: proc() {
 	for !rl.WindowShouldClose() {
 		sys_input(g)
 		sys_physics(g)
+		sys_score(g)
 		sys_lifecycle(g)
 		sys_render(g)
 

@@ -23,7 +23,12 @@ COMET_MASS :: 10000
 COMET_RADIUS :: 4
 SOFTENING :: 2.0
 
+COLLISION_MASS_DROPOFF :: 0.8
+STAR_COLLISION_MASS_DROPOFF :: 0.2
+
+
 // Signatures used by different systems
 STAR_SIG: Signature : {.Star}
 RENDER_SIG: Signature : {.Position, .Size, .Renderable}
 PHYSICS_SIG: Signature : {.Position, .Velocity, .Size}
+SCORE_SIG: Signature : {.Position, .Velocity, .Size, .Life}

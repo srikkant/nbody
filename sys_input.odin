@@ -45,4 +45,8 @@ sys_input :: proc(g: ^Game) {
 	if (rl.IsKeyPressed(.C)) {
 		g.slingshot.active = false
 	}
+
+	if (rl.IsKeyPressed(.P)) {
+		g.draw_debug_panel = !g.draw_debug_panel
+	}
 }

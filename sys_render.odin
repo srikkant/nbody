@@ -1,6 +1,9 @@
 package main
 
+import "core:encoding/uuid/legacy"
+import "core:fmt"
 import "core:math"
+import "core:strings"
 import rl "vendor:raylib"
 
 sys_render :: proc(g: ^Game) {
@@ -29,7 +32,14 @@ sys_render :: proc(g: ^Game) {
 	rl.BeginMode2D(g.camera)
 	sys_render_entities(g)
 	sys_render_slingshot(g)
+
 	rl.EndMode2D()
+
+	sys_render_score(g)
+
+	if (g.draw_debug_panel) {
+		sys_render_debug_panel(g)
+	}
 
 	rl.EndTextureMode()
 
@@ -45,7 +55,9 @@ sys_render :: proc(g: ^Game) {
 		rl.WHITE,
 	)
 
-	rl.DrawFPS(10, 10)
+	if (g.draw_debug_panel) {
+		rl.DrawFPS(rl.GetScreenWidth() - 80, rl.GetScreenHeight() - 30)
+	}
 	rl.EndDrawing()
 }
 
@@ -98,5 +110,28 @@ sys_render_entities :: proc(g: ^Game) {
 		if RENDER_SIG <= e.sig {
 			rl.DrawCircle(i32(e.pos.x), i32(e.pos.y), e.size.radius, e.renderable.color)
 		}
+	}
+}
+
+sys_render_score :: proc(g: ^Game) {
+	base_x: i32 = 20
+	score_y: i32 = 20
+
+	str := fmt.tprintf("energy = %.1f", g.energy)
+	rl.DrawText(strings.clone_to_cstring(str), base_x, score_y, 20, rl.WHITE)
+}
+
+sys_render_debug_panel :: proc(g: ^Game) {
+	// Draw score over time as a graph
+	graph_y: i32 = RENDER_HEIGHT - 20
+	steps := int(math.floor(g.elapsed))
+
+	for s in 0 ..< steps - 1 {
+		x1: i32 = i32(s)
+		x2: i32 = x1 + 1
+		// TODO: scale this graph to larger steps as energy grows
+		y1: i32 = graph_y - i32(g.energy_over_time[s] / 100)
+		y2: i32 = graph_y - i32(g.energy_over_time[s + 1] / 100)
+		rl.DrawLine(x1, y1, x2, y2, rl.WHITE)
 	}
 }
