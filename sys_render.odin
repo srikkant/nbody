@@ -1,14 +1,21 @@
 package main
 
-import "core:encoding/uuid/legacy"
 import "core:fmt"
 import "core:math"
 import "core:strings"
 import rl "vendor:raylib"
 
+sys_render_init :: proc(g: ^Game) {
+	g.textures.render = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
+}
+
+sys_render_free :: proc(g: ^Game) {
+	rl.UnloadRenderTexture(g.textures.render)
+}
+
 sys_render :: proc(g: ^Game) {
 	g.elapsed += rl.GetFrameTime()
-	tx := &g.render_texture
+	tx := &g.textures.render
 
 	ww := f32(rl.GetScreenWidth())
 	sw := f32(ww) / RENDER_WIDTH
@@ -26,16 +33,24 @@ sys_render :: proc(g: ^Game) {
 	g.view = rl.Rectangle{off_x, off_y, fw, fh}
 	g.view_scale = scale
 
-	rl.BeginTextureMode(g.render_texture)
+	rl.BeginTextureMode(g.textures.render)
 	rl.ClearBackground(rl.BLACK)
+	rl.DrawTexturePro(
+		g.textures.bg.texture,
+		rl.Rectangle{0, 0, f32(g.textures.bg.texture.width), f32(-g.textures.bg.texture.height)},
+		rl.Rectangle{0, 0, RENDER_WIDTH, RENDER_HEIGHT},
+		rl.Vector2(0),
+		0,
+		rl.WHITE,
+	)
 
 	rl.BeginMode2D(g.camera)
-	sys_render_entities(g)
 	sys_render_slingshot(g)
+	sys_render_entities(g)
 
 	rl.EndMode2D()
 
-	sys_render_score(g)
+	sys_render_score_panel(g)
 
 	if (g.draw_debug_panel) {
 		sys_render_debug_panel(g)
@@ -44,7 +59,7 @@ sys_render :: proc(g: ^Game) {
 	rl.EndTextureMode()
 
 	rl.BeginDrawing()
-	rl.ClearBackground(rl.DARKGRAY)
+	rl.ClearBackground(rl.BLACK)
 
 	rl.DrawTexturePro(
 		tx.texture,
@@ -70,6 +85,8 @@ sys_render_slingshot :: proc(g: ^Game) {
 	// Slingshot trigger
 	rl.DrawLineEx(g.slingshot.start_pos, end, 1, rl.GRAY)
 
+	if g.slingshot.preview == 0 do return
+
 	// Slingshot path: for now, we draw around 1 second worth of path (60 steps)
 	pos := g.slingshot.start_pos
 	vel := physics_get_slingshot_release_velocity(g.slingshot.start_pos, end)
@@ -79,7 +96,7 @@ sys_render_slingshot :: proc(g: ^Game) {
 	dt := rl.GetFrameTime() * SLINGSHOT_PREVIEW_DT_MULTIPLIER
 
 	star := &g.entities[Entity(0)]
-	frames := SLINGSHOT_PREVIEW_FRAME_COUNT
+	frames := SLINGSHOT_PREVIEW_FRAME_COUNT * g.slingshot.preview
 
 	for s in 0 ..= frames {
 		rl.DrawCircle(i32(pos.x), i32(pos.y), draw_radius, rl.Color{255, 255, 255, 255})
@@ -87,7 +104,7 @@ sys_render_slingshot :: proc(g: ^Game) {
 		acc, collision := physics_get_graviational_acceleration(
 			pos,
 			g.slingshot.radius,
-			star.pos,
+			star.pos.current,
 			star.size.mass,
 			star.size.radius,
 		)
@@ -103,22 +120,52 @@ sys_render_slingshot :: proc(g: ^Game) {
 }
 
 sys_render_entities :: proc(g: ^Game) {
+
+	rl.BeginShaderMode(g.shaders.glow)
 	for id in 0 ..< g.entities_count {
 		e := g.entities[id]
 
 		// TODO: For now, all entities are just drawn as circles
 		if RENDER_SIG <= e.sig {
-			rl.DrawCircle(i32(e.pos.x), i32(e.pos.y), e.size.radius, e.renderable.color)
+			r := e.size.radius * 2
+			dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 2, r * 2}
+			origin := rl.Vector2{r, r}
+
+			hit_pos, hit := geometry_get_rectangle_intersection_point(
+				rl.Rectangle{-g.camera.offset.x, -g.camera.offset.y, RENDER_WIDTH, RENDER_HEIGHT},
+				e.pos.current,
+				40.0,
+			)
+
+			if (hit) {
+				dest_rect.x = hit_pos.x
+				dest_rect.y = hit_pos.y
+			}
+
+			rl.DrawTexturePro(
+				g.textures.star,
+				g.textures.star_rect,
+				dest_rect,
+				origin,
+				0,
+				rl.WHITE,
+			)
 		}
+
 	}
+	rl.EndShaderMode()
 }
 
-sys_render_score :: proc(g: ^Game) {
-	base_x: i32 = 20
-	score_y: i32 = 20
+sys_render_score_panel :: proc(g: ^Game) {
+	x: i32 = 20
+	y: i32 = 20
 
 	str := fmt.tprintf("energy = %.1f", g.energy)
-	rl.DrawText(strings.clone_to_cstring(str), base_x, score_y, 20, rl.WHITE)
+	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
+
+	y += 20
+	str = fmt.tprintf("objects = %d", g.total_objects)
+	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
 }
 
 sys_render_debug_panel :: proc(g: ^Game) {

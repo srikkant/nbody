@@ -10,29 +10,37 @@ main :: proc() {
 	defer rl.CloseWindow()
 
 	g := new(Game)
-	g.render_texture = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
-	defer rl.UnloadRenderTexture(g.render_texture)
 
-	g.energy = 0.0
+	assets_load_textures(g)
+	defer assets_free_textures(g)
 
-	g.camera.zoom = 1.0
-	g.camera.offset = rl.Vector2{RENDER_WIDTH / 2, RENDER_HEIGHT / 2}
-	g.camera.target = rl.Vector2(0)
+	assets_load_bg(g)
+	defer assets_free_bg(g)
+
+	assets_load_shaders(g)
+	defer assets_free_shaders(g)
+
+	sys_render_init(g)
+	defer sys_render_free(g)
+
+	sys_camera_init(g)
+	sys_lifecycle_init(g)
+
 
 	// TODO: Add Menus and whatnot
 	// For now, just add a star directly and start the game!
-	g.events_count = 1
 	g.events[0] = Game_Event_ObjectSpawn {
 		pos    = rl.Vector2(0),
 		vel    = rl.Vector2(0),
 		mass   = STAR_MASS,
 		radius = STAR_RADIUS,
-		color  = rl.YELLOW,
 		tags   = {.Star},
 	}
 
 	for !rl.WindowShouldClose() {
 		sys_input(g)
+		sys_modifier(g)
+		sys_emitters(g)
 		sys_physics(g)
 		sys_score(g)
 		sys_lifecycle(g)

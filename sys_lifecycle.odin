@@ -3,22 +3,28 @@ package main
 import "core:math"
 import rl "vendor:raylib"
 
+sys_lifecycle_init :: proc(g: ^Game) {
+	g.events_count = 1
+}
+
 sys_lifecycle :: proc(g: ^Game) {
 	delete_entities := [MAX_ENTITIES]bool{}
 	delete_entities_count := 0
 
 	mass_delta := [MAX_ENTITIES]f32{}
 
+	g.total_objects = 0
+
 	for i in 0 ..< g.events_count {
 		switch event in g.events[i] {
 		case Game_Event_ObjectSpawn:
 			id := entity_create(g)
 
-			entity_add_size(g, id, SizeComponent{event.mass, event.radius})
-			entity_add_position(g, id, event.pos)
-			entity_add_renderable(g, id, RenderableComponent{event.color})
+			entity_add_size(g, id, {event.mass, event.radius})
+			entity_add_position(g, id, {current = event.pos})
+			entity_add_renderable(g, id, {})
 			entity_add_velocity(g, id, event.vel)
-			entity_add_life(g, id, LifeComponent{g.elapsed})
+			entity_add_life(g, id, {g.elapsed})
 			entity_add_tags(g, id, event.tags)
 
 		case Game_Event_Collision:
@@ -58,7 +64,7 @@ sys_lifecycle :: proc(g: ^Game) {
 				vel := rl.Vector2{vel_x, vel_y}
 
 				speed := rl.Vector2Length(vel)
-				tangent := rl.Vector2Normalize(rl.Vector2{-e1.pos.y, e1.pos.x})
+				tangent := rl.Vector2Normalize(rl.Vector2{-e1.pos.current.y, e1.pos.current.x})
 				if rl.Vector2DotProduct(tangent, vel) < 0 {
 					tangent = rl.Vector2{-tangent.x, -tangent.y}
 				}
@@ -66,11 +72,12 @@ sys_lifecycle :: proc(g: ^Game) {
 				scaled_vel := tangent * speed
 				created_at := math.min(e1.life.created_at, e2.life.created_at)
 
-				entity_add_size(g, id, SizeComponent{mass, radius})
-				entity_add_position(g, id, event.pos)
-				entity_add_renderable(g, id, RenderableComponent{e1.renderable.color})
+				entity_add_size(g, id, {mass, radius})
+				entity_add_position(g, id, {current = event.pos})
+				entity_add_renderable(g, id, {})
 				entity_add_velocity(g, id, scaled_vel)
-				entity_add_life(g, id, LifeComponent{created_at})
+				entity_add_life(g, id, {created_at})
+				entity_add_tags(g, id, {.Comet})
 			}
 
 		case Game_Event_ObjectOutOfBounds:
@@ -85,14 +92,21 @@ sys_lifecycle :: proc(g: ^Game) {
 		// TODO: Spawn an explosion here
 		if delete_entities[i] {
 			entity_free(g, Entity(i))
+			continue
 		}
 
+		e := &g.entities[i]
+
 		if mass_delta[i] > 0 {
-			e := &g.entities[i]
 			mass_delta[i] = mass_delta[i] * STAR_COLLISION_MASS_DROPOFF
 			e.size.mass += mass_delta[i]
 			// Increase radius proportionally
 			e.size.radius += e.size.radius * (mass_delta[i] / e.size.mass)
+		}
+
+		// Count non-star physics objects
+		if PHYSICS_SIG <= e.sig && !(STAR_SIG <= e.sig) {
+			g.total_objects += 1
 		}
 	}
 }

@@ -12,7 +12,7 @@ sys_score :: proc(g: ^Game) {
 
 		mass_score := entity.size.mass / 10
 		vel_score := rl.Vector2LengthSqr(entity.vel) / 100
-		pos_score := 1 / (rl.Vector2LengthSqr(entity.pos) * 100)
+		pos_score := 1 / (rl.Vector2LengthSqr(entity.pos.current) * 100)
 
 		time_score := (g.elapsed - entity.life.created_at) * 10
 

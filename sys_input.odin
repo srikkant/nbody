@@ -27,16 +27,13 @@ sys_input :: proc(g: ^Game) {
 			end := input_mouse_pos(g)
 			vel := physics_get_slingshot_release_velocity(g.slingshot.start_pos, end)
 
-			// TODO: This is just random color for now.
-			color := COLORS[int(rand.uint32()) % len(COLORS)]
-
 			id := entity_create(g)
 			g.events[g.events_count] = Game_Event_ObjectSpawn {
 				pos    = g.slingshot.start_pos,
 				vel    = vel,
 				mass   = g.slingshot.mass,
 				radius = g.slingshot.radius,
-				color  = color,
+				tags   = {.Comet},
 			}
 			g.events_count += 1
 		}

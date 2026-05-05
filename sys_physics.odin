@@ -21,9 +21,9 @@ sys_physics :: proc(g: ^Game) {
 			if !(PHYSICS_SIG <= e2.sig) do continue
 
 			accel, collision := physics_get_graviational_acceleration(
-				e1.pos,
+				e1.pos.current,
 				e1.size.radius,
-				e2.pos,
+				e2.pos.current,
 				e2.size.mass,
 				e2.size.radius,
 			)
@@ -34,7 +34,7 @@ sys_physics :: proc(g: ^Game) {
 				g.events[g.events_count] = Game_Event_Collision {
 					id1 = Entity(i),
 					id2 = Entity(j),
-					pos = (e1.pos + e2.pos) / 2,
+					pos = (e1.pos.current + e2.pos.current) / 2,
 				}
 				g.events_count += 1
 			}
@@ -49,13 +49,13 @@ sys_physics :: proc(g: ^Game) {
 		if !(PHYSICS_SIG <= e.sig) || STAR_SIG <= e.sig do continue
 
 		e.vel += accels[i] * dt
-		e.pos += e.vel * dt
+		e.pos.current += e.vel * dt
 
-		dist_sq := e.pos.x * e.pos.x + e.pos.y * e.pos.y
+		dist_sq := rl.Vector2LengthSqr(e.pos.current)
 		if dist_sq > WORLD_RADUIS_SQ {
 			g.events[g.events_count] = Game_Event_ObjectOutOfBounds {
 				id  = Entity(i),
-				pos = e.pos,
+				pos = e.pos.current,
 			}
 			g.events_count += 1
 		}

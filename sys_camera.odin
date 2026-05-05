@@ -1,8 +1,15 @@
 package main
 
 import "core:math"
+import rl "vendor:raylib"
 
 CAMERA_SIG: Signature : {.Position}
+
+sys_camera_init :: proc(g: ^Game) {
+	g.camera.zoom = 1.0
+	g.camera.offset = rl.Vector2{RENDER_WIDTH / 2, RENDER_HEIGHT / 2}
+	g.camera.target = rl.Vector2(0)
+}
 
 sys_camera :: proc(g: ^Game) {
 	max_x: f32 = 0
@@ -12,8 +19,8 @@ sys_camera :: proc(g: ^Game) {
 		e := &g.entities[id]
 		if !(CAMERA_SIG <= e.sig) do continue
 
-		max_x = math.max(max_x, math.abs(e.pos.x))
-		max_y = math.max(max_y, math.abs(e.pos.y))
+		max_x = math.max(max_x, math.abs(e.pos.current.x))
+		max_y = math.max(max_y, math.abs(e.pos.current.y))
 	}
 
 	padding :: 200.0
