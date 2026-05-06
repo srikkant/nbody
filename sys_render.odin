@@ -80,8 +80,6 @@ sys_render_slingshot :: proc(g: ^Game) {
 	if !g.slingshot.active do return
 	end := input_mouse_pos(g)
 
-	// Slingshot end
-	rl.DrawCircle(i32(end.x), i32(end.y), g.slingshot.radius, rl.GRAY)
 	// Slingshot trigger
 	rl.DrawLineEx(g.slingshot.start_pos, end, 1, rl.GRAY)
 
@@ -91,7 +89,6 @@ sys_render_slingshot :: proc(g: ^Game) {
 	pos := g.slingshot.start_pos
 	vel := physics_get_slingshot_release_velocity(g, end)
 	draw_radius := g.slingshot.radius
-	end_radius := g.slingshot.radius * 0.25
 
 	dt := rl.GetFrameTime() * g.params.sim_rate
 
@@ -101,9 +98,9 @@ sys_render_slingshot :: proc(g: ^Game) {
 	preview_points[0] = g.slingshot.start_pos
 	preview_points_count: i32 = 1
 
-	for s in 0 ..= frames {
-		rl.DrawCircle(i32(pos.x), i32(pos.y), draw_radius, rl.Color{255, 255, 255, 255})
+	rl.DrawCircle(i32(pos.x), i32(pos.y), draw_radius, rl.Color{255, 255, 255, 255})
 
+	for _ in 0 ..= frames {
 		acc, dist := physics_get_graviational_acceleration(
 			g,
 			pos,
@@ -125,7 +122,7 @@ sys_render_slingshot :: proc(g: ^Game) {
 		preview_points_count += 1
 	}
 
-	rl.DrawLineStrip(preview_points, preview_points_count, rl.Color{255, 255, 255, 50})
+	rl.DrawLineStrip(preview_points, preview_points_count, rl.Color{255, 255, 255, 200})
 }
 
 sys_render_entities :: proc(g: ^Game) {

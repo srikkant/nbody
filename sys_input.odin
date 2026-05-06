@@ -1,7 +1,6 @@
 package main
 
 import "core:math"
-import "core:math/rand"
 import rl "vendor:raylib"
 
 // Temporary
@@ -28,8 +27,6 @@ sys_input :: proc(g: ^Game) {
 			vel := physics_get_slingshot_release_velocity(g, end)
 
 			// TODO: Check if user has energy
-
-			id := entity_create(g)
 			g.events[g.events_count] = Game_Event_ObjectSpawn {
 				pos    = g.slingshot.start_pos,
 				vel    = vel,
