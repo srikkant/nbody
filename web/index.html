@@ -31,9 +31,10 @@
         ></canvas>
         <script type="text/javascript" src="odin.js"></script>
         <script>
-            var odinMemoryInterface = new odin.WasmMemoryInterface();
+            const odinMemoryInterface = new odin.WasmMemoryInterface();
+            const odinImports = odin.setupDefaultImports(odinMemoryInterface);
+
             odinMemoryInterface.setIntSize(4);
-            var odinImports = odin.setupDefaultImports(odinMemoryInterface);
 
             // The Module is used as configuration for emscripten.
             var Module = {
@@ -59,15 +60,30 @@
                 onRuntimeInitialized: () => {
                     var e = wasmExports;
 
-                    e._start();
-                    e.main_start();
+                    const h = window.innerHeight;
+                    const w = window.innerWidth;
 
-                    function do_main_update() {
-                        e.main_run();
-                        window.requestAnimationFrame(do_main_update);
+                    e._start();
+                    e.start(h, w);
+
+                    function update() {
+                        e.run();
+                        window.requestAnimationFrame(update);
                     }
 
-                    window.requestAnimationFrame(do_main_update);
+                    window.requestAnimationFrame(update);
+
+                    const resizeObserver = new ResizeObserver((entries) => {
+                        for (let entry of entries) {
+                            const { width, height } = entry.contentRect;
+                            canvas.width = width;
+                            canvas.height = height;
+                            e.update_size(height, width);
+                        }
+                    });
+
+                    // Observe the body or the canvas itself
+                    resizeObserver.observe(document.body);
                 },
                 print: (function () {
                     return function (text) {

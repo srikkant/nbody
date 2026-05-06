@@ -6,6 +6,7 @@ import "base:intrinsics"
 import "base:runtime"
 import "core:c"
 import "core:mem"
+import rl "vendor:raylib"
 
 @(private = "file")
 web_context: runtime.Context
@@ -147,18 +148,23 @@ emscripten_allocator_proc :: proc(
 g: ^Game
 
 @(export)
-main_start :: proc "c" () {
+start :: proc "c" (h: c.int, w: c.int) {
 	context = runtime.default_context()
 	context.allocator = emscripten_allocator()
 	runtime.init_global_temporary_allocator(1 * mem.Megabyte)
 
 	web_context = context
 
-	g = game_init()
+	g = game_init({h = h, w = w})
 }
 
 @(export)
-main_run :: proc "c" () {
+run :: proc "c" () {
 	context = web_context
 	game_run(g)
+}
+
+@(export)
+update_size :: proc "c" (h: c.int, w: c.int) {
+	rl.SetWindowSize(h, w)
 }

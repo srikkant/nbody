@@ -2,10 +2,15 @@ package main
 
 import rl "vendor:raylib"
 
-game_init :: proc() -> ^Game {
+Game_InitParams :: struct {
+	w: i32,
+	h: i32,
+}
+
+game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.SetTraceLogLevel(rl.TraceLogLevel.WARNING)
-	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_HIGHDPI, .WINDOW_UNDECORATED})
-	rl.InitWindow(1440, 810, "cellular automata")
+	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_HIGHDPI})
+	rl.InitWindow(params.w, params.h, "cellular automata")
 	rl.SetTargetFPS(60)
 
 	g := new(Game)
