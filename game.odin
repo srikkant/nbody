@@ -1,9 +1,13 @@
 package main
 
-import "core:fmt"
 import rl "vendor:raylib"
 
 game_init :: proc() -> ^Game {
+	rl.SetTraceLogLevel(rl.TraceLogLevel.WARNING)
+	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_HIGHDPI, .WINDOW_UNDECORATED})
+	rl.InitWindow(1440, 810, "cellular automata")
+	rl.SetTargetFPS(60)
+
 	g := new(Game)
 
 	assets_load_textures(g)
@@ -38,11 +42,15 @@ game_init :: proc() -> ^Game {
 }
 
 game_free :: proc(g: ^Game) {
-	// Free systems before assets
+	rl.CloseWindow()
+
+	// Free systems before asset
 	sys_render_free(g)
+	// Free assets
 	assets_free_shaders(g)
 	assets_free_bg(g)
 	assets_free_textures(g)
+
 }
 
 game_run :: proc(g: ^Game) {
