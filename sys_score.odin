@@ -10,7 +10,7 @@ sys_score :: proc(g: ^Game) {
 		// Only compute score for celestial bodies minus stars
 		if !(SCORE_SIG <= entity.sig) || (STAR_SIG <= entity.sig) do continue
 
-		mass_score := entity.size.mass / 10
+		mass_score := entity.size.mass
 		vel_score := rl.Vector2LengthSqr(entity.vel) / 100
 		pos_score := 1 / (rl.Vector2LengthSqr(entity.pos.current) * 100)
 
@@ -18,7 +18,6 @@ sys_score :: proc(g: ^Game) {
 
 		g.energy += f64(0.5 * mass_score * vel_score * pos_score * time_score)
 	}
-
 
 	// Record energy over time
 	g.energy_over_time[int(math.floor(g.elapsed))] = g.energy

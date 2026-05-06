@@ -6,7 +6,7 @@ import rl "vendor:raylib"
 CAMERA_SIG: Signature : {.Position}
 
 sys_camera_init :: proc(g: ^Game) {
-	g.camera.zoom = 1.0
+	g.camera.zoom = 2.5
 	g.camera.offset = rl.Vector2{RENDER_WIDTH / 2, RENDER_HEIGHT / 2}
 	g.camera.target = rl.Vector2(0)
 }
@@ -30,7 +30,7 @@ sys_camera :: proc(g: ^Game) {
 	zoom_x := RENDER_WIDTH / total_w
 	zoom_y := RENDER_HEIGHT / total_h
 	target_zoom := min(zoom_x, zoom_y)
-	target_zoom = clamp(target_zoom, 0.01, 1.2)
+	target_zoom = clamp(target_zoom, 0.01, 2)
 
 	g.camera.zoom = math.lerp(g.camera.zoom, target_zoom, f32(0.8))
 }

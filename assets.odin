@@ -2,8 +2,11 @@ package main
 
 import rl "vendor:raylib"
 
+// TODO: This just draws a bunch of tiled images.
+// Needs to be overhauled fully
 assets_load_bg :: proc(g: ^Game) {
 	bg := rl.LoadTexture("./assets/textures/bg.png")
+	nebula := rl.LoadTexture("./assets/textures/nebula.png")
 	bg_texture := rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
 
 	rl.BeginTextureMode(bg_texture)
@@ -19,13 +22,23 @@ assets_load_bg :: proc(g: ^Game) {
 			source_rect := rl.Rectangle{0, 0, tile_size, tile_size}
 			dest_rect := rl.Rectangle{x + half_tile, y + half_tile, tile_size, tile_size}
 			origin := rl.Vector2{half_tile, half_tile}
+
+			rl.DrawTexturePro(
+				nebula,
+				source_rect,
+				dest_rect,
+				origin,
+				0.0,
+				rl.Color{255, 255, 255, 60},
+			)
+
 			rl.DrawTexturePro(
 				bg,
 				source_rect,
 				dest_rect,
 				origin,
 				rotation,
-				rl.Color{255, 255, 255, 80},
+				rl.Color{255, 255, 255, 60},
 			)
 		}
 	}
@@ -53,7 +66,7 @@ assets_load_textures :: proc(g: ^Game) {
 	g.textures.blank = rl.LoadTextureFromImage(blank_image)
 
 	g.textures.star = rl.LoadTexture("./assets/textures/star.png")
-	g.textures.star_rect = rl.Rectangle{0, 0, 384, 384} // TODO: Move to a more robust system
+	g.textures.star_rect = rl.Rectangle{0, 0, 200, 200} // TODO: Move to a more robust system
 }
 
 assets_free_textures :: proc(g: ^Game) {

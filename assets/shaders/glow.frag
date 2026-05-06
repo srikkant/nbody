@@ -12,7 +12,7 @@ void main() {
     float dist = distance(fragTexCoord, center);
 
     vec4 texColor = texture(texture0, fragTexCoord);
-    float glow = max(0.0, 1.0 - (dist * 2.0));
+    float glow = 1.0 - smoothstep(0.3, 0.6, dist);
 
     finalColor = vec4(texColor.rgb * glow, glow);
 }

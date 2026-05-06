@@ -17,15 +17,17 @@ sys_input :: proc(g: ^Game) {
 	if (rl.IsMouseButtonPressed(.LEFT)) {
 		g.slingshot.active = true
 		g.slingshot.start_pos = input_mouse_pos(g)
-		g.slingshot.mass = COMET_MASS
-		g.slingshot.radius = COMET_RADIUS
+		g.slingshot.mass = g.params.masses[.DwarfPlanet]
+		g.slingshot.radius = g.params.radii[.DwarfPlanet]
 	}
 
 	if g.slingshot.active {
 		if (rl.IsMouseButtonReleased(.LEFT)) {
 			g.slingshot.active = false
 			end := input_mouse_pos(g)
-			vel := physics_get_slingshot_release_velocity(g.slingshot.start_pos, end)
+			vel := physics_get_slingshot_release_velocity(g, end)
+
+			// TODO: Check if user has energy
 
 			id := entity_create(g)
 			g.events[g.events_count] = Game_Event_ObjectSpawn {
@@ -33,7 +35,7 @@ sys_input :: proc(g: ^Game) {
 				vel    = vel,
 				mass   = g.slingshot.mass,
 				radius = g.slingshot.radius,
-				tags   = {.Comet},
+				tags   = {.DwarfPlanet},
 			}
 			g.events_count += 1
 		}

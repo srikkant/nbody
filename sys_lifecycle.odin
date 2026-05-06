@@ -77,7 +77,7 @@ sys_lifecycle :: proc(g: ^Game) {
 				entity_add_renderable(g, id, {})
 				entity_add_velocity(g, id, scaled_vel)
 				entity_add_life(g, id, {created_at})
-				entity_add_tags(g, id, {.Comet})
+				entity_add_tags(g, id, {.DwarfPlanet})
 			}
 
 		case Game_Event_ObjectOutOfBounds:

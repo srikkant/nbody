@@ -3,7 +3,7 @@ package main
 import rl "vendor:raylib"
 
 sys_physics :: proc(g: ^Game) {
-	dt := rl.GetFrameTime() * SIM_DT_MULTIPLIER
+	dt := rl.GetFrameTime() * g.params.sim_rate
 
 	accels := make([]rl.Vector2, g.entities_count)
 	defer delete(accels)
@@ -20,7 +20,10 @@ sys_physics :: proc(g: ^Game) {
 			e2 := &g.entities[j]
 			if !(PHYSICS_SIG <= e2.sig) do continue
 
-			accel, collision := physics_get_graviational_acceleration(
+			// If the types are similar, add some extra chance of collision
+
+			accel, dist := physics_get_graviational_acceleration(
+				g,
 				e1.pos.current,
 				e1.size.radius,
 				e2.pos.current,
@@ -28,7 +31,23 @@ sys_physics :: proc(g: ^Game) {
 				e2.size.radius,
 			)
 
-			total_accel += accel
+			// Just an sum of the two radii for approximate collision radius
+			collision_radius := (e1.size.radius + e2.size.radius)
+			collision := dist < collision_radius * collision_radius
+
+			multiplier: f32 = 1
+			for size in ComponentType {
+				if size in e1.sig && size in e2.sig {
+					#partial switch size {
+					case .DwarfPlanet:
+						multiplier = 100
+					case .Planet:
+						multiplier = 1000
+					}
+				}
+			}
+
+			total_accel += (accel * multiplier)
 
 			if collision {
 				g.events[g.events_count] = Game_Event_Collision {

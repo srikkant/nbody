@@ -89,19 +89,23 @@ sys_render_slingshot :: proc(g: ^Game) {
 
 	// Slingshot path: for now, we draw around 1 second worth of path (60 steps)
 	pos := g.slingshot.start_pos
-	vel := physics_get_slingshot_release_velocity(g.slingshot.start_pos, end)
+	vel := physics_get_slingshot_release_velocity(g, end)
 	draw_radius := g.slingshot.radius
 	end_radius := g.slingshot.radius * 0.25
 
-	dt := rl.GetFrameTime() * SLINGSHOT_PREVIEW_DT_MULTIPLIER
+	dt := rl.GetFrameTime() * g.params.sim_rate
 
 	star := &g.entities[Entity(0)]
-	frames := SLINGSHOT_PREVIEW_FRAME_COUNT * g.slingshot.preview
+	frames := g.params.slingshot_preview_len * i32(g.slingshot.preview)
+	preview_points := make([^]rl.Vector2, frames + 1)
+	preview_points[0] = g.slingshot.start_pos
+	preview_points_count: i32 = 1
 
 	for s in 0 ..= frames {
 		rl.DrawCircle(i32(pos.x), i32(pos.y), draw_radius, rl.Color{255, 255, 255, 255})
 
-		acc, collision := physics_get_graviational_acceleration(
+		acc, dist := physics_get_graviational_acceleration(
+			g,
 			pos,
 			g.slingshot.radius,
 			star.pos.current,
@@ -109,25 +113,29 @@ sys_render_slingshot :: proc(g: ^Game) {
 			star.size.radius,
 		)
 
+		collision :=
+			dist <
+			(g.slingshot.radius + star.size.radius) * (g.slingshot.radius + star.size.radius)
 		if collision do break
 
 		vel += acc * dt
 		pos += vel * dt
 
-		draw_radius = math.lerp(draw_radius, end_radius, dt)
+		preview_points[preview_points_count] = pos
+		preview_points_count += 1
 	}
 
+	rl.DrawLineStrip(preview_points, preview_points_count, rl.Color{255, 255, 255, 50})
 }
 
 sys_render_entities :: proc(g: ^Game) {
-
 	rl.BeginShaderMode(g.shaders.glow)
 	for id in 0 ..< g.entities_count {
 		e := g.entities[id]
 
 		// TODO: For now, all entities are just drawn as circles
 		if RENDER_SIG <= e.sig {
-			r := e.size.radius * 2
+			r := e.size.radius
 			dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 2, r * 2}
 			origin := rl.Vector2{r, r}
 

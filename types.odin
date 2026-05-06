@@ -1,21 +1,22 @@
 package main
 
-import "core:math/big"
 import rl "vendor:raylib"
 
 Entity :: distinct u64
 
 ComponentType :: enum {
+	// Tag components
+	// TODO: Add more tags
+	Star,
+	DwarfPlanet,
+	Planet,
+
+	// General components
 	Position,
 	Velocity,
 	Size,
 	Life,
 	Renderable,
-
-	// Tag components
-	Star,
-	Comet,
-	// TODO: Add more tags
 }
 
 Signature :: bit_set[ComponentType]
@@ -101,55 +102,62 @@ Game_Textures :: struct {
 }
 
 Game_Modifier :: struct {
-	active:                 bool,
-	started_at:             f64,
-	duration:               f64,
-	star_radius:            f32,
-	star_mass:              f32,
-	slingshot_launch_power: f32,
-	slingshot_preview:      f32,
+	active:             bool,
+	started_at:         f64,
+	duration:           f64,
+	slingshot_power:    f32,
+	slingshot_preview:  f32,
+	mass_deltas:        [ComponentType]f32,
+	radii_deltas:       [ComponentType]f32,
+	launch_cost_deltas: [ComponentType]f32,
+}
+
+Game_Parameters :: struct {
+	g:                     f32,
+	masses:                [ComponentType]f32,
+	radii:                 [ComponentType]f32,
+	launch_costs:          [ComponentType]f32,
+	slingshot_power:       f32,
+	slingshot_preview_len: i32,
+	sim_rate:              f32,
 }
 
 Game :: struct {
-	elapsed:               f32,
+	elapsed:             f32,
+	params:              Game_Parameters,
 
 	// Event queue
-	events:                [MAX_ENTITIES]Game_Event,
-	events_count:          u64,
+	events:              [MAX_ENTITIES]Game_Event,
+	events_count:        u64,
 
 	// Modifiers / Upgrades
-	modifiers:             [MAX_MODIFIERS]Game_Modifier,
+	modifiers:           [MAX_MODIFIERS]Game_Modifier,
 
 	// Render
-	view:                  rl.Rectangle,
-	view_scale:            f32,
-	camera:                rl.Camera2D,
-	shaders:               Game_Shaders,
-	textures:              Game_Textures,
+	view:                rl.Rectangle,
+	view_scale:          f32,
+	camera:              rl.Camera2D,
+	shaders:             Game_Shaders,
+	textures:            Game_Textures,
 
 	// Entities
-	entities:              #soa[MAX_ENTITIES]Game_Entity,
-	entities_count:        u64,
-	free_entities:         [MAX_ENTITIES]Entity,
-	free_entities_count:   u64,
+	entities:            #soa[MAX_ENTITIES]Game_Entity,
+	entities_count:      u64,
+	free_entities:       [MAX_ENTITIES]Entity,
+	free_entities_count: u64,
 
 	// Input -> Slingshot
-	slingshot:             Game_Slingshot,
+	slingshot:           Game_Slingshot,
 
 
 	// Score
-	energy:                f64,
-	energy_in:             f64,
-	energy_out:            f64,
-	energy_rate:           f64,
-	energy_over_time:      [10000]f64,
-	dark_energy:           f64,
-	dark_energy_in:        f64,
-	dark_energy_out:       f64,
-	dark_energy_rate:      f64,
-	dark_energy_over_time: [10000]f64,
-	total_objects:         int,
+	energy:              f64,
+	energy_in:           f64,
+	energy_out:          f64,
+	energy_rate:         f64,
+	energy_over_time:    [10000]f64,
+	total_objects:       int,
 
 	// debug
-	draw_debug_panel:      bool,
+	draw_debug_panel:    bool,
 }

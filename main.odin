@@ -28,12 +28,21 @@ main :: proc() {
 
 
 	// TODO: Add Menus and whatnot
-	// For now, just add a star directly and start the game!
+	// For now, just add set some params, add a star directly and start the game!
+	g.params.g = 1
+	g.params.masses[.Star] = 1000000
+	g.params.radii[.Star] = 32
+	g.params.masses[.DwarfPlanet] = 1
+	g.params.radii[.DwarfPlanet] = 2
+	g.params.slingshot_power = 1
+	g.params.slingshot_preview_len = 2
+	g.params.sim_rate = 10
+
 	g.events[0] = Game_Event_ObjectSpawn {
 		pos    = rl.Vector2(0),
 		vel    = rl.Vector2(0),
-		mass   = STAR_MASS,
-		radius = STAR_RADIUS,
+		mass   = g.params.masses[.Star],
+		radius = g.params.radii[.Star],
 		tags   = {.Star},
 	}
 
@@ -44,9 +53,7 @@ main :: proc() {
 		sys_physics(g)
 		sys_score(g)
 		sys_lifecycle(g)
+		// sys_camera(g)
 		sys_render(g)
-
-		// TODO: enable this before the render system once slingshot is decoupled from world space
-		// sys_camera(&g)
 	}
 }

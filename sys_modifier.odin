@@ -18,7 +18,7 @@ sys_modifier :: proc(g: ^Game) {
 			continue
 		}
 
-		g.slingshot.launch_power += g.slingshot.launch_power * m.slingshot_launch_power
+		g.slingshot.launch_power += g.slingshot.launch_power * m.slingshot_power
 		g.slingshot.preview += g.slingshot.preview * m.slingshot_preview
 	}
 }
