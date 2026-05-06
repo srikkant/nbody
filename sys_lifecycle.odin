@@ -20,11 +20,13 @@ sys_lifecycle :: proc(g: ^Game) {
 		case Game_Event_ObjectSpawn:
 			id := entity_create(g)
 
-			entity_add_size(g, id, {event.mass, event.radius})
-			entity_add_position(g, id, {current = event.pos})
-			entity_add_renderable(g, id, {})
+			entity_add_size(g, id, event.size)
+			entity_add_position(g, id, event.pos)
 			entity_add_velocity(g, id, event.vel)
+			entity_add_energy_source(g, id, event.energy_source)
+
 			entity_add_life(g, id, {g.elapsed})
+			entity_add_renderable(g, id, {})
 			entity_add_tags(g, id, event.tags)
 
 		case Game_Event_Collision:

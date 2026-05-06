@@ -53,7 +53,15 @@ assets_free_bg :: proc(g: ^Game) {
 }
 
 assets_load_shaders :: proc(g: ^Game) {
-	g.shaders.glow = rl.LoadShader(nil, "./assets/shaders/glow.frag")
+	glow: rl.Shader
+
+	when ODIN_OS == .JS {
+		glow = rl.LoadShader(nil, "assets/shaders/glow_web.frag")
+	} else {
+		glow = rl.LoadShader(nil, "assets/shaders/glow.frag")
+	}
+
+	g.shaders.glow = glow
 }
 
 assets_free_shaders :: proc(g: ^Game) {

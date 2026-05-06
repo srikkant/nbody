@@ -14,7 +14,6 @@ sys_render_free :: proc(g: ^Game) {
 }
 
 sys_render :: proc(g: ^Game) {
-	g.elapsed += rl.GetFrameTime()
 	tx := &g.textures.render
 
 	ww := f32(rl.GetScreenWidth())
@@ -80,17 +79,27 @@ sys_render_slingshot :: proc(g: ^Game) {
 	if !g.slingshot.active do return
 	end := input_mouse_pos(g)
 
-	// Slingshot trigger
-	rl.DrawLineEx(g.slingshot.start_pos, end, 1, rl.GRAY)
+	ss_obj_type := g.slingshot.type
+	ss_obj_radius := g.params.radii[ss_obj_type]
 
-	if g.slingshot.preview == 0 do return
+	// Slingshot trigger
+	line_col := g.slingshot.can_launch ? rl.GRAY : rl.RED
+	rl.DrawLineEx(g.slingshot.start_pos, end, 1, line_col)
+	rl.DrawCircle(
+		i32(g.slingshot.start_pos.x),
+		i32(g.slingshot.start_pos.y),
+		ss_obj_radius,
+		rl.Color{255, 255, 255, 255},
+	)
+
+	if g.slingshot.preview == 0 || !g.slingshot.can_launch do return
 
 	// Slingshot path: for now, we draw around 1 second worth of path (60 steps)
 	pos := g.slingshot.start_pos
 	vel := physics_get_slingshot_release_velocity(g, end)
-	draw_radius := g.slingshot.radius
+	draw_radius := ss_obj_radius
 
-	dt := rl.GetFrameTime() * g.params.sim_rate
+	dt := rl.GetFrameTime() * g.params.sim_rate * 5 // 20x realtime for the preview
 
 	star := &g.entities[Entity(0)]
 	frames := g.params.slingshot_preview_len * i32(g.slingshot.preview)
@@ -98,21 +107,18 @@ sys_render_slingshot :: proc(g: ^Game) {
 	preview_points[0] = g.slingshot.start_pos
 	preview_points_count: i32 = 1
 
-	rl.DrawCircle(i32(pos.x), i32(pos.y), draw_radius, rl.Color{255, 255, 255, 255})
 
 	for _ in 0 ..= frames {
 		acc, dist := physics_get_graviational_acceleration(
 			g,
 			pos,
-			g.slingshot.radius,
+			ss_obj_radius,
 			star.pos.current,
 			star.size.mass,
 			star.size.radius,
 		)
 
-		collision :=
-			dist <
-			(g.slingshot.radius + star.size.radius) * (g.slingshot.radius + star.size.radius)
+		collision := dist < (ss_obj_radius + star.size.radius) * (ss_obj_radius + star.size.radius)
 		if collision do break
 
 		vel += acc * dt
@@ -166,6 +172,10 @@ sys_render_score_panel :: proc(g: ^Game) {
 	y: i32 = 20
 
 	str := fmt.tprintf("energy = %.1f", g.energy)
+	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
+
+	y += 20
+	str = fmt.tprintf("energy gain per s = %.1f", g.energy_gain_rate)
 	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
 
 	y += 20

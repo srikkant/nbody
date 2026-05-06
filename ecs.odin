@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 entity_create :: proc(g: ^Game) -> Entity {
 	id: Entity
 
@@ -35,6 +36,15 @@ entity_add_size :: proc(g: ^Game, id: Entity, size: SizeComponent) {
 entity_add_velocity :: proc(g: ^Game, id: Entity, vel: VelocityComponent) {
 	g.entities[id].vel = vel
 	g.entities[id].sig += {.Velocity}
+}
+
+entity_add_energy_source :: proc(g: ^Game, id: Entity, energy_source: EnergySourceComponent) {
+	if energy_source.output == 0 {
+		return
+	}
+
+	g.entities[id].energy_source = energy_source
+	g.entities[id].sig += {.EnergySource}
 }
 
 entity_add_life :: proc(g: ^Game, id: Entity, life: LifeComponent) {

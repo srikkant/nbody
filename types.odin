@@ -4,6 +4,11 @@ import rl "vendor:raylib"
 
 Entity :: distinct u64
 
+Timer :: struct {
+	acc: f32,
+	val: f32,
+}
+
 ComponentType :: enum {
 	// Tag components
 	// TODO: Add more tags
@@ -16,6 +21,7 @@ ComponentType :: enum {
 	Velocity,
 	Size,
 	Life,
+	EnergySource,
 	Renderable,
 }
 
@@ -32,6 +38,11 @@ LifeComponent :: struct {
 	created_at: f32,
 }
 
+EnergySourceComponent :: struct {
+	output: f32,
+	timer:  Timer,
+}
+
 SizeComponent :: struct {
 	mass:   f32,
 	radius: f32,
@@ -41,21 +52,20 @@ SizeComponent :: struct {
 RenderableComponent :: struct {}
 
 Game_Slingshot :: struct {
+	type:         ComponentType, // This should be better grouped and allow only tags or spawnables
 	active:       bool,
+	can_launch:   bool,
 	start_pos:    rl.Vector2,
-	canvas_pos:   rl.Vector2,
-	mass:         f32,
-	radius:       f32,
 	launch_power: f32,
 	preview:      f32,
 }
 
 Game_Event_ObjectSpawn :: struct {
-	pos:    rl.Vector2,
-	vel:    rl.Vector2,
-	mass:   f32,
-	radius: f32,
-	tags:   Signature,
+	pos:           PositionComponent,
+	vel:           VelocityComponent,
+	size:          SizeComponent,
+	energy_source: EnergySourceComponent,
+	tags:          Signature,
 }
 
 Game_Event_ObjectOutOfBounds :: struct {
@@ -79,12 +89,13 @@ Game_Event :: union {
 }
 
 Game_Entity :: struct {
-	sig:        Signature,
-	life:       LifeComponent,
-	pos:        PositionComponent,
-	vel:        VelocityComponent,
-	size:       SizeComponent,
-	renderable: RenderableComponent,
+	sig:           Signature,
+	life:          LifeComponent,
+	pos:           PositionComponent,
+	vel:           VelocityComponent,
+	size:          SizeComponent,
+	energy_source: EnergySourceComponent,
+	renderable:    RenderableComponent,
 }
 
 Game_Shaders :: struct {
@@ -120,6 +131,7 @@ Game_Parameters :: struct {
 	slingshot_power:       f32,
 	slingshot_preview_len: i32,
 	sim_rate:              f32,
+	energy_mass_factor:    f32,
 }
 
 Game :: struct {
@@ -151,8 +163,9 @@ Game :: struct {
 
 
 	// Score
+	score_timer:         Timer,
 	energy:              f64,
-	energy_in:           f64,
+	energy_gain_rate:    f64,
 	energy_out:          f64,
 	energy_rate:         f64,
 	energy_over_time:    [10000]f64,

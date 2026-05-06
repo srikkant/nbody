@@ -19,4 +19,5 @@ STAR_COLLISION_MASS_DROPOFF :: 0.2
 STAR_SIG: Signature : {.Star}
 RENDER_SIG: Signature : {.Position, .Size, .Renderable}
 PHYSICS_SIG: Signature : {.Position, .Velocity, .Size}
-SCORE_SIG: Signature : {.Position, .Velocity, .Size, .Life}
+KE_SCORE_SIG: Signature : {.Position, .Velocity, .Size, .Life}
+ENERGY_SOURCE_SIG: Signature : {.EnergySource, .Size}

@@ -4,21 +4,40 @@ import "core:math"
 import rl "vendor:raylib"
 
 sys_score :: proc(g: ^Game) {
-	// Compute score based on velocity of each entity
+	dt := rl.GetFrameTime()
+	score_ticker := utils_math_update_timer(&g.score_timer, dt)
+
+	static_gain := 0.0
+	dynamic_gain := 0.0
+
 	for i in 0 ..< g.entities_count {
-		entity := &g.entities[i]
-		// Only compute score for celestial bodies minus stars
-		if !(SCORE_SIG <= entity.sig) || (STAR_SIG <= entity.sig) do continue
+		e := &g.entities[i]
 
-		mass_score := entity.size.mass
-		vel_score := rl.Vector2LengthSqr(entity.vel) / 100
-		pos_score := 1 / (rl.Vector2LengthSqr(entity.pos.current) * 100)
+		if (score_ticker && KE_SCORE_SIG <= e.sig) {
+			mass_score := e.size.mass
+			vel_score := rl.Vector2LengthSqr(e.vel)
+			pos_score := 1 / (SOFTENING + rl.Vector2LengthSqr(e.pos.current))
 
-		time_score := (g.elapsed - entity.life.created_at) * 10
+			dynamic_gain += f64(mass_score * vel_score * pos_score)
+		}
 
-		g.energy += f64(0.5 * mass_score * vel_score * pos_score * time_score)
+		if (ENERGY_SOURCE_SIG <= e.sig) {
+			gain := f64(
+				e.energy_source.output +
+				(g.params.energy_mass_factor * e.size.mass * e.size.radius),
+			)
+
+			static_gain += gain
+			if (utils_math_update_timer(&e.energy_source.timer, dt)) {
+				g.energy += gain
+			}
+		}
+
 	}
 
-	// Record energy over time
-	g.energy_over_time[int(math.floor(g.elapsed))] = g.energy
+	if (score_ticker) {
+		g.energy += dynamic_gain
+		g.energy_gain_rate = static_gain + dynamic_gain
+		g.energy_over_time[int(math.floor(g.elapsed))] = g.energy
+	}
 }

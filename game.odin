@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import rl "vendor:raylib"
 
 Game_InitParams :: struct {
@@ -31,17 +32,20 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.params.masses[.DwarfPlanet] = 1
 	g.params.radii[.DwarfPlanet] = 2
 	g.params.slingshot_power = 1
-	g.params.slingshot_preview_len = 2
-	g.params.sim_rate = 10
+	g.params.slingshot_preview_len = 5
+	g.params.sim_rate = 2
+	g.params.energy_mass_factor = 1 / 10000.0 // TODO: This seems arbitrary. Fix.
 
+	second_timer := Timer{0, 1}
+
+	g.score_timer = second_timer
 	g.events[0] = Game_Event_ObjectSpawn {
-		pos    = rl.Vector2(0),
-		vel    = rl.Vector2(0),
-		mass   = g.params.masses[.Star],
-		radius = g.params.radii[.Star],
-		tags   = {.Star},
+		pos = {current = rl.Vector2(0)},
+		vel = rl.Vector2(0),
+		size = {mass = g.params.masses[.Star], radius = g.params.radii[.Star]},
+		energy_source = {output = 10, timer = second_timer},
+		tags = {.Star},
 	}
-
 
 	return g
 }
