@@ -5,8 +5,6 @@ env:
   itchio_channel: windows
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
