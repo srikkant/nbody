@@ -1,0 +1,45 @@
+name: itch.io deploy
+
+env:
+  itchio_project: dvoidpenguin/thenbodyforge
+  itchio_channel: windows
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-wasm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: +emsdk
+        uses: emscripten-core/setup-emsdk@v15
+        with:
+          version: 5.0.7
+          actions-cache-folder: 'emsdk-cache'
+
+      - name: +odin
+        uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: build
+        run: ./scripts/build_web.sh
+
+      - name: +version
+        run: |
+          echo "version=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+
+      - name: +upload
+        uses: robpc/itchio-upload-action@v1
+        with:
+          path: build/web
+          project: ${{ env.itchio_project }}
+          channel: ${{ env.itchio_channel }}
+          version: ${{ env.version }}
+          api-key: ${{ secrets.ITCHIO_API_KEY }}
