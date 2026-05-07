@@ -1,8 +1,8 @@
 package main
 
-import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
+
 
 // Temporary
 COLORS := []rl.Color{rl.RED, rl.GREEN, rl.BLUE, rl.YELLOW, rl.ORANGE, rl.PURPLE, rl.MAGENTA}
@@ -25,12 +25,17 @@ sys_input :: proc(g: ^Game) {
 
 	if g.slingshot.active {
 		obj_type := g.slingshot.type
-		obj_mass := g.params.masses[obj_type]
+		obj_density := g.params.densities[obj_type]
 		obj_radius := g.params.radii[obj_type]
 		end := input_mouse_pos(g)
 		vel := physics_get_slingshot_release_velocity(g, end)
 
-		cost := f64(g.params.launch_costs[obj_type] + (obj_mass * rl.Vector2LengthSqr(vel)))
+		cost := f64(
+			g.params.k_energy_loss *
+			(g.params.launch_costs[obj_type] +
+					(obj_density * obj_radius * obj_radius * rl.Vector2LengthSqr(vel))),
+		)
+
 		g.slingshot.can_launch = g.energy >= cost
 
 		if (rl.IsMouseButtonReleased(.LEFT)) {
@@ -38,10 +43,11 @@ sys_input :: proc(g: ^Game) {
 
 			if (g.slingshot.can_launch) {
 				g.events[g.events_count] = Game_Event_ObjectSpawn {
-					pos = {current = g.slingshot.start_pos},
-					vel = vel,
-					size = {mass = obj_mass, radius = obj_radius},
-					tags = {.DwarfPlanet},
+					pos     = g.slingshot.start_pos,
+					vel     = vel,
+					density = obj_density,
+					radius  = obj_radius,
+					tags    = {.DwarfPlanet},
 				}
 				g.events_count += 1
 				g.energy -= cost // TODO: should this be an event?

@@ -20,5 +20,7 @@ sys_modifier :: proc(g: ^Game) {
 
 		g.slingshot.launch_power += g.slingshot.launch_power * m.slingshot_power
 		g.slingshot.preview += g.slingshot.preview * m.slingshot_preview
+
+		// TODO: Update entity size/density/radius in the game params based on the modifier deltas
 	}
 }

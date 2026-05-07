@@ -99,7 +99,7 @@ sys_render_slingshot :: proc(g: ^Game) {
 	vel := physics_get_slingshot_release_velocity(g, end)
 	draw_radius := ss_obj_radius
 
-	dt := rl.GetFrameTime() * g.params.sim_rate * 5 // 20x realtime for the preview
+	dt := rl.GetFrameTime() * g.params.sim_rate * 5 // 5x realtime for the preview
 
 	star := &g.entities[Entity(0)]
 	frames := g.params.slingshot_preview_len * i32(g.slingshot.preview)
@@ -132,7 +132,6 @@ sys_render_slingshot :: proc(g: ^Game) {
 }
 
 sys_render_entities :: proc(g: ^Game) {
-	rl.BeginShaderMode(g.shaders.glow)
 	for id in 0 ..< g.entities_count {
 		e := g.entities[id]
 
@@ -164,7 +163,6 @@ sys_render_entities :: proc(g: ^Game) {
 		}
 
 	}
-	rl.EndShaderMode()
 }
 
 sys_render_score_panel :: proc(g: ^Game) {

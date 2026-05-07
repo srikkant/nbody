@@ -18,13 +18,20 @@ sys_score :: proc(g: ^Game) {
 			vel_score := rl.Vector2LengthSqr(e.vel)
 			pos_score := 1 / (SOFTENING + rl.Vector2LengthSqr(e.pos.current))
 
-			dynamic_gain += f64(mass_score * vel_score * pos_score)
+			dynamic_gain += f64(
+				g.params.k_energy_gain *
+				g.params.k_energy_momentum *
+				mass_score *
+				vel_score *
+				pos_score,
+			)
 		}
 
 		if (ENERGY_SOURCE_SIG <= e.sig) {
 			gain := f64(
-				e.energy_source.output +
-				(g.params.energy_mass_factor * e.size.mass * e.size.radius),
+				g.params.k_energy_gain *
+				(e.energy_source.output +
+						(g.params.k_energy_source * e.size.radius * e.size.radius)),
 			)
 
 			static_gain += gain

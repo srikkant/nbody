@@ -20,7 +20,7 @@ sys_physics :: proc(g: ^Game) {
 			e2 := &g.entities[j]
 			if !(PHYSICS_SIG <= e2.sig) do continue
 
-			// If the types are similar, add some extra chance of collision
+			// TODO: If the types are similar, add some extra chance of collision
 
 			accel, dist := physics_get_graviational_acceleration(
 				g,

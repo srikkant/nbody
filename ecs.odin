@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 entity_create :: proc(g: ^Game) -> Entity {
 	id: Entity
 

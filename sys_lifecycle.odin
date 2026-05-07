@@ -16,12 +16,14 @@ sys_lifecycle :: proc(g: ^Game) {
 	g.total_objects = 0
 
 	for i in 0 ..< g.events_count {
-		switch event in g.events[i] {
+		switch &event in g.events[i] {
 		case Game_Event_ObjectSpawn:
 			id := entity_create(g)
 
-			entity_add_size(g, id, event.size)
-			entity_add_position(g, id, event.pos)
+			mass := event.density * event.radius * event.radius
+
+			entity_add_size(g, id, {mass, event.radius})
+			entity_add_position(g, id, {current = event.pos})
 			entity_add_velocity(g, id, event.vel)
 			entity_add_energy_source(g, id, event.energy_source)
 
@@ -58,8 +60,10 @@ sys_lifecycle :: proc(g: ^Game) {
 			if merge {
 				// create a new entity
 				id := entity_create(g)
-				mass := (e1.size.mass + e2.size.mass) * COLLISION_MASS_DROPOFF
-				radius := (e1.size.radius + e2.size.radius) * COLLISION_MASS_DROPOFF
+				mass := (e1.size.mass + e2.size.mass)
+				radius := math.sqrt(
+					e1.size.radius * e1.size.radius + e2.size.radius * e2.size.radius,
+				)
 
 				vel_x := (e1.size.mass * e1.vel.x + e2.size.mass * e2.vel.x) / mass
 				vel_y := (e1.size.mass * e1.vel.y + e2.size.mass * e2.vel.y) / mass
@@ -73,6 +77,10 @@ sys_lifecycle :: proc(g: ^Game) {
 
 				scaled_vel := tangent * speed
 				created_at := math.min(e1.life.created_at, e2.life.created_at)
+
+				// TODO: Right now, this just selects the density of a DwarfPlanet.
+				// This will depend on the colliding entities
+				density := g.params.densities[.DwarfPlanet]
 
 				entity_add_size(g, id, {mass, radius})
 				entity_add_position(g, id, {current = event.pos})
@@ -100,7 +108,7 @@ sys_lifecycle :: proc(g: ^Game) {
 		e := &g.entities[i]
 
 		if mass_delta[i] > 0 {
-			mass_delta[i] = mass_delta[i] * STAR_COLLISION_MASS_DROPOFF
+			mass_delta[i] = mass_delta[i]
 			e.size.mass += mass_delta[i]
 			// Increase radius proportionally
 			e.size.radius += e.size.radius * (mass_delta[i] / e.size.mass)

@@ -61,9 +61,10 @@ Game_Slingshot :: struct {
 }
 
 Game_Event_ObjectSpawn :: struct {
-	pos:           PositionComponent,
-	vel:           VelocityComponent,
-	size:          SizeComponent,
+	density:       f32,
+	radius:        f32,
+	pos:           rl.Vector2,
+	vel:           rl.Vector2,
 	energy_source: EnergySourceComponent,
 	tags:          Signature,
 }
@@ -98,9 +99,7 @@ Game_Entity :: struct {
 	renderable:    RenderableComponent,
 }
 
-Game_Shaders :: struct {
-	glow: rl.Shader,
-}
+Game_Shaders :: struct {}
 
 Game_Textures :: struct {
 	render:    rl.RenderTexture2D,
@@ -118,20 +117,23 @@ Game_Modifier :: struct {
 	duration:           f64,
 	slingshot_power:    f32,
 	slingshot_preview:  f32,
-	mass_deltas:        [ComponentType]f32,
+	density_deltas:     [ComponentType]f32,
 	radii_deltas:       [ComponentType]f32,
 	launch_cost_deltas: [ComponentType]f32,
 }
 
 Game_Parameters :: struct {
 	g:                     f32,
-	masses:                [ComponentType]f32,
+	densities:             [ComponentType]f32,
 	radii:                 [ComponentType]f32,
 	launch_costs:          [ComponentType]f32,
 	slingshot_power:       f32,
 	slingshot_preview_len: i32,
 	sim_rate:              f32,
-	energy_mass_factor:    f32,
+	k_energy_gain:         f32,
+	k_energy_loss:         f32,
+	k_energy_source:       f32,
+	k_energy_momentum:     f32,
 }
 
 Game :: struct {
@@ -161,13 +163,11 @@ Game :: struct {
 	// Input -> Slingshot
 	slingshot:           Game_Slingshot,
 
-
 	// Score
 	score_timer:         Timer,
 	energy:              f64,
 	energy_gain_rate:    f64,
-	energy_out:          f64,
-	energy_rate:         f64,
+	energy_lose_rate:    f64,
 	energy_over_time:    [10000]f64,
 	total_objects:       int,
 

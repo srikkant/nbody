@@ -12,9 +12,6 @@ MAX_MODIFIERS :: 10
 WORLD_RADUIS_SQ :: 1000 * 1000
 SOFTENING :: 2.0
 
-COLLISION_MASS_DROPOFF :: 0.8
-STAR_COLLISION_MASS_DROPOFF :: 0.2
-
 // Signatures used by different systems
 STAR_SIG: Signature : {.Star}
 RENDER_SIG: Signature : {.Position, .Size, .Renderable}

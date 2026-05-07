@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 import rl "vendor:raylib"
 
 Game_InitParams :: struct {
@@ -27,22 +26,28 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	// TODO: Add Menus and whatnot
 	// For now, just add set some params, add a star directly and start the game!
 	g.params.g = 1
-	g.params.masses[.Star] = 1000000
-	g.params.radii[.Star] = 32
-	g.params.masses[.DwarfPlanet] = 1
+	g.params.densities[.Star] = 50
+	g.params.radii[.Star] = 40
+	g.params.densities[.DwarfPlanet] = 1
 	g.params.radii[.DwarfPlanet] = 2
 	g.params.slingshot_power = 1
 	g.params.slingshot_preview_len = 5
-	g.params.sim_rate = 2
-	g.params.energy_mass_factor = 1 / 10000.0 // TODO: This seems arbitrary. Fix.
+	g.params.sim_rate = 4
+
+	// Coefficient for economy
+	g.params.k_energy_gain = 0.01
+	g.params.k_energy_loss = 0.01
+	g.params.k_energy_source = 1
+	g.params.k_energy_momentum = 1000
 
 	second_timer := Timer{0, 1}
 
 	g.score_timer = second_timer
 	g.events[0] = Game_Event_ObjectSpawn {
-		pos = {current = rl.Vector2(0)},
+		pos = rl.Vector2(0),
 		vel = rl.Vector2(0),
-		size = {mass = g.params.masses[.Star], radius = g.params.radii[.Star]},
+		density = g.params.densities[.Star],
+		radius = g.params.radii[.Star],
 		energy_source = {output = 10, timer = second_timer},
 		tags = {.Star},
 	}

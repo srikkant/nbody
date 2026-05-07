@@ -53,19 +53,10 @@ assets_free_bg :: proc(g: ^Game) {
 }
 
 assets_load_shaders :: proc(g: ^Game) {
-	glow: rl.Shader
-
-	when ODIN_OS == .JS {
-		glow = rl.LoadShader(nil, "assets/shaders/glow_web.frag")
-	} else {
-		glow = rl.LoadShader(nil, "assets/shaders/glow.frag")
-	}
-
-	g.shaders.glow = glow
+	// TODO: Add shaders
 }
 
 assets_free_shaders :: proc(g: ^Game) {
-	rl.UnloadShader(g.shaders.glow)
 }
 
 assets_load_textures :: proc(g: ^Game) {
@@ -74,7 +65,7 @@ assets_load_textures :: proc(g: ^Game) {
 	g.textures.blank = rl.LoadTextureFromImage(blank_image)
 
 	g.textures.star = rl.LoadTexture("./assets/textures/star.png")
-	g.textures.star_rect = rl.Rectangle{0, 0, 200, 200} // TODO: Move to a more robust system
+	g.textures.star_rect = rl.Rectangle{0, 0, 192, 192} // TODO: Move to a more robust system
 }
 
 assets_free_textures :: proc(g: ^Game) {
