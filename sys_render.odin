@@ -107,7 +107,6 @@ sys_render_slingshot :: proc(g: ^Game) {
 	preview_points[0] = g.slingshot.start_pos
 	preview_points_count: i32 = 1
 
-
 	for _ in 0 ..= frames {
 		acc, dist := physics_get_graviational_acceleration(
 			g,
@@ -160,6 +159,25 @@ sys_render_entities :: proc(g: ^Game) {
 				0,
 				rl.WHITE,
 			)
+
+			// Draw the trail if present
+			if TRAIL_SIG <= e.sig {
+				ordered_points: [MAX_TRAIL_LENGTH + 1]rl.Vector2
+
+				for i in 0 ..< e.trail.count {
+					// Find the oldest point and work forward
+					oldest_index :=
+						(e.trail.head - e.trail.count + i + MAX_TRAIL_LENGTH) % MAX_TRAIL_LENGTH
+					ordered_points[i] = e.trail.points[oldest_index]
+				}
+
+				ordered_points[e.trail.count] = e.pos.current
+				rl.DrawLineStrip(
+					raw_data(ordered_points[:]),
+					i32(e.trail.count + 1),
+					rl.Fade(rl.WHITE, 0.5),
+				)
+			}
 		}
 
 	}
@@ -169,15 +187,25 @@ sys_render_score_panel :: proc(g: ^Game) {
 	x: i32 = 20
 	y: i32 = 20
 
-	str := fmt.tprintf("energy = %.1f", g.energy)
+	str := fmt.tprintf("energy = %f", g.energy)
 	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
 
 	y += 20
-	str = fmt.tprintf("energy gain per s = %.1f", g.energy_gain_rate)
+	str = fmt.tprintf("energy gain per s = %f", g.energy_gain_rate)
 	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
 
 	y += 20
 	str = fmt.tprintf("objects = %d", g.total_objects)
+	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
+
+	// Star stats are only for debugging for now
+
+	y += 20
+	str = fmt.tprintf("star mass = %f", g.entities[0].size.mass)
+	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
+
+	y += 20
+	str = fmt.tprintf("star radius = %f", g.entities[0].size.radius)
 	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
 }
 

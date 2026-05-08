@@ -37,6 +37,11 @@ entity_add_velocity :: proc(g: ^Game, id: Entity, vel: VelocityComponent) {
 	g.entities[id].sig += {.Velocity}
 }
 
+entity_add_position_trail :: proc(g: ^Game, id: Entity, trail: PositionTrailComponent) {
+	g.entities[id].trail = trail
+	g.entities[id].sig += {.PositionTrail}
+}
+
 entity_add_energy_source :: proc(g: ^Game, id: Entity, energy_source: EnergySourceComponent) {
 	if energy_source.output == 0 {
 		return

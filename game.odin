@@ -32,7 +32,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.params.radii[.DwarfPlanet] = 2
 	g.params.slingshot_power = 1
 	g.params.slingshot_preview_len = 5
-	g.params.sim_rate = 4
+	g.params.sim_rate = 10 // TODO: This needs to be studied more and set appropriately
 
 	// Coefficient for economy
 	g.params.k_energy_gain = 0.01

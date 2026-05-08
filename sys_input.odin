@@ -3,10 +3,6 @@ package main
 import "core:math"
 import rl "vendor:raylib"
 
-
-// Temporary
-COLORS := []rl.Color{rl.RED, rl.GREEN, rl.BLUE, rl.YELLOW, rl.ORANGE, rl.PURPLE, rl.MAGENTA}
-
 input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
 	relx := math.min(f32(rl.GetMouseX()) - g.view.x, f32(g.view.width))
 	rely := math.min(f32(rl.GetMouseY()) - g.view.y, f32(g.view.height))
@@ -43,11 +39,12 @@ sys_input :: proc(g: ^Game) {
 
 			if (g.slingshot.can_launch) {
 				g.events[g.events_count] = Game_Event_ObjectSpawn {
-					pos     = g.slingshot.start_pos,
-					vel     = vel,
-					density = obj_density,
-					radius  = obj_radius,
-					tags    = {.DwarfPlanet},
+					pos        = g.slingshot.start_pos,
+					vel        = vel,
+					density    = obj_density,
+					radius     = obj_radius,
+					show_trail = true,
+					tags       = {.DwarfPlanet},
 				}
 				g.events_count += 1
 				g.energy -= cost // TODO: should this be an event?

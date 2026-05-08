@@ -6,7 +6,7 @@ import rl "vendor:raylib"
 CAMERA_SIG: Signature : {.Position}
 
 sys_camera_init :: proc(g: ^Game) {
-	g.camera.zoom = 2.5
+	g.camera.zoom = 1
 	g.camera.offset = rl.Vector2{RENDER_WIDTH / 2, RENDER_HEIGHT / 2}
 	g.camera.target = rl.Vector2(0)
 }

@@ -31,6 +31,10 @@ sys_lifecycle :: proc(g: ^Game) {
 			entity_add_renderable(g, id, {})
 			entity_add_tags(g, id, event.tags)
 
+			if event.show_trail {
+				entity_add_position_trail(g, id, {})
+			}
+
 		case Game_Event_Collision:
 			// Handle collision event
 			e1 := &g.entities[event.id1]
@@ -88,6 +92,9 @@ sys_lifecycle :: proc(g: ^Game) {
 				entity_add_velocity(g, id, scaled_vel)
 				entity_add_life(g, id, {created_at})
 				entity_add_tags(g, id, {.DwarfPlanet})
+
+				// Trail: use the trail of the larger entity, if available
+				entity_add_position_trail(g, id, e1.size.mass > e2.size.mass ? e1.trail : e2.trail)
 			}
 
 		case Game_Event_ObjectOutOfBounds:

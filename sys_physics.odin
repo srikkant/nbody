@@ -1,5 +1,7 @@
 package main
 
+import "core:fmt"
+import "core:math"
 import rl "vendor:raylib"
 
 sys_physics :: proc(g: ^Game) {
@@ -69,6 +71,21 @@ sys_physics :: proc(g: ^Game) {
 
 		e.vel += accels[i] * dt
 		e.pos.current += e.vel * dt
+
+		if TRAIL_SIG <= e.sig {
+			angle := math.atan2(e.pos.current.y, e.pos.current.x)
+			diff := math.abs(angle - e.trail.angle)
+			if diff > math.PI do diff = (2.0 * math.PI) - diff
+
+			if diff > TRAIL_MIN_ANGLE {
+				e.trail.points[e.trail.head] = e.pos.current
+				e.trail.head = (e.trail.head + 1) % MAX_TRAIL_LENGTH
+				e.trail.angle = angle
+				if e.trail.count < MAX_TRAIL_LENGTH {
+					e.trail.count += 1
+				}
+			}
+		}
 
 		dist_sq := rl.Vector2LengthSqr(e.pos.current)
 		if dist_sq > WORLD_RADUIS_SQ {

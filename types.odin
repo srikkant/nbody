@@ -1,5 +1,6 @@
 package main
 
+import "core:terminal/ansi"
 import rl "vendor:raylib"
 
 Entity :: distinct u64
@@ -18,6 +19,7 @@ ComponentType :: enum {
 
 	// General components
 	Position,
+	PositionTrail,
 	Velocity,
 	Size,
 	Life,
@@ -28,8 +30,14 @@ ComponentType :: enum {
 Signature :: bit_set[ComponentType]
 
 PositionComponent :: struct {
-	current:  rl.Vector2,
-	previous: [20]rl.Vector2,
+	current: rl.Vector2,
+}
+
+PositionTrailComponent :: struct {
+	points: [20]rl.Vector2,
+	head:   int,
+	angle:  f32,
+	count:  int,
 }
 
 VelocityComponent :: rl.Vector2
@@ -64,6 +72,7 @@ Game_Event_ObjectSpawn :: struct {
 	density:       f32,
 	radius:        f32,
 	pos:           rl.Vector2,
+	show_trail:    bool,
 	vel:           rl.Vector2,
 	energy_source: EnergySourceComponent,
 	tags:          Signature,
@@ -93,6 +102,7 @@ Game_Entity :: struct {
 	sig:           Signature,
 	life:          LifeComponent,
 	pos:           PositionComponent,
+	trail:         PositionTrailComponent,
 	vel:           VelocityComponent,
 	size:          SizeComponent,
 	energy_source: EnergySourceComponent,
