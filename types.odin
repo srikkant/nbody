@@ -229,9 +229,9 @@ Game :: struct {
 	// Score
 	score_timer:         Timer,
 	energy:              f64,
-	energy_gain_rate:    f64,
-	energy_lose_rate:    f64,
-	energy_over_time:    [10000]f64,
+	energy_rate_ticker:  int,
+	energy_gains:        [RATE_CALC_TICKS]f64,
+	energy_losses:       [RATE_CALC_TICKS]f64,
 	total_objects:       int,
 
 	// debug

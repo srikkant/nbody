@@ -126,7 +126,7 @@ sys_lifecycle :: proc(g: ^Game) {
 		}
 
 		// Count non-star physics objects
-		if PHYSICS_SIG <= e.sig && !(e.celestial.type != .Star) {
+		if PHYSICS_SIG <= e.sig && e.celestial.type != .Star {
 			g.total_objects += 1
 		}
 	}

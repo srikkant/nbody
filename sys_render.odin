@@ -51,10 +51,6 @@ sys_render :: proc(g: ^Game) {
 
 	sys_render_score_panel(g)
 
-	if (g.draw_debug_panel) {
-		sys_render_debug_panel(g)
-	}
-
 	rl.EndTextureMode()
 
 	rl.BeginDrawing()
@@ -72,6 +68,7 @@ sys_render :: proc(g: ^Game) {
 	if (g.draw_debug_panel) {
 		rl.DrawFPS(rl.GetScreenWidth() - 80, rl.GetScreenHeight() - 30)
 	}
+
 	rl.EndDrawing()
 }
 
@@ -107,7 +104,7 @@ sys_render_slingshot :: proc(g: ^Game) {
 	preview_points_count: i32 = 1
 
 	for _ in 0 ..= frames {
-		acc, dist := physics_get_graviational_acceleration(
+		acc, dist := physics_get_gravitational_acceleration(
 			g,
 			pos,
 			ss_obj_radius,
@@ -190,10 +187,6 @@ sys_render_score_panel :: proc(g: ^Game) {
 	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
 
 	y += 20
-	str = fmt.tprintf("energy gain per s = %f", g.energy_gain_rate)
-	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
-
-	y += 20
 	str = fmt.tprintf("objects = %d", g.total_objects)
 	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
 
@@ -206,19 +199,14 @@ sys_render_score_panel :: proc(g: ^Game) {
 	y += 20
 	str = fmt.tprintf("star radius = %f", g.entities[0].radius)
 	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
-}
 
-sys_render_debug_panel :: proc(g: ^Game) {
-	// Draw score over time as a graph
-	graph_y: i32 = RENDER_HEIGHT - 20
-	steps := int(math.floor(g.elapsed))
+	avg_energy: f64
 
-	for s in 0 ..< steps - 1 {
-		x1: i32 = i32(s)
-		x2: i32 = x1 + 1
-		// TODO: scale this graph to larger steps as energy grows
-		y1: i32 = graph_y - i32(g.energy_over_time[s] / 100)
-		y2: i32 = graph_y - i32(g.energy_over_time[s + 1] / 100)
-		rl.DrawLine(x1, y1, x2, y2, rl.WHITE)
+	for i in 0 ..< RATE_CALC_TICKS {
+		avg_energy += g.energy_gains[i] / RATE_CALC_TICKS
 	}
+
+	y += 20
+	str = fmt.tprintf("energy gain per s = %f", avg_energy)
+	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
 }

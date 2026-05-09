@@ -3,7 +3,7 @@ package main
 import "core:math"
 import rl "vendor:raylib"
 
-physics_get_graviational_acceleration :: proc(
+physics_get_gravitational_acceleration :: proc(
 	g: ^Game,
 	target_pos: rl.Vector2,
 	target_radius: f32,

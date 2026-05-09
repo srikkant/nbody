@@ -10,6 +10,8 @@ MAX_COMPONENTS :: 10
 MAX_MODIFIERS :: 10
 MAX_TRAIL_LENGTH :: 100
 
+RATE_CALC_TICKS :: 10
+
 TRAIL_MIN_ANGLE :: (2 * math.PI) / (MAX_TRAIL_LENGTH - 1) // do a -1 so the orbit always closes
 
 // Game physics and system constants

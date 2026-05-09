@@ -21,7 +21,7 @@ sys_physics :: proc(g: ^Game) {
 			e2 := &g.entities[j]
 			if !(PHYSICS_SIG <= e2.sig) do continue
 
-			accel, dist := physics_get_graviational_acceleration(
+			accel, dist := physics_get_gravitational_acceleration(
 				g,
 				e1.pos.current,
 				e1.radius,
@@ -45,7 +45,6 @@ sys_physics :: proc(g: ^Game) {
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
-		// Stars do not move
 		if !(PHYSICS_SIG <= e.sig) || e.celestial.type == .Star do continue
 
 		e.velocity += accels[i] * dt

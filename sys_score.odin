@@ -7,8 +7,7 @@ sys_score :: proc(g: ^Game) {
 	dt := frame_time()
 	score_ticker := utils_math_update_timer(&g.score_timer, dt)
 
-	static_gain := 0.0
-	dynamic_gain := 0.0
+	curr_energy := g.energy
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
@@ -18,7 +17,7 @@ sys_score :: proc(g: ^Game) {
 			vel_score := rl.Vector2LengthSqr(e.velocity)
 			pos_score := 1 / (SOFTENING + rl.Vector2LengthSqr(e.pos.current))
 
-			dynamic_gain += f64(
+			g.energy += f64(
 				g.params.k_energy_gain *
 				g.params.k_energy_momentum *
 				mass_score *
@@ -33,17 +32,14 @@ sys_score :: proc(g: ^Game) {
 				(e.energy_source.output + (g.params.k_energy_source * e.radius * e.radius)),
 			)
 
-			static_gain += gain
 			if (utils_math_update_timer(&e.energy_source.timer, dt)) {
 				g.energy += gain
 			}
 		}
-
 	}
 
 	if (score_ticker) {
-		g.energy += dynamic_gain
-		g.energy_gain_rate = static_gain + dynamic_gain
-		g.energy_over_time[int(math.floor(g.elapsed))] = g.energy
+		g.energy_gains[g.energy_rate_ticker] = (g.energy - curr_energy)
+		g.energy_rate_ticker = (g.energy_rate_ticker + 1) % RATE_CALC_TICKS
 	}
 }
