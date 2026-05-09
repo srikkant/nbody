@@ -68,7 +68,6 @@ sys_lifecycle :: proc(g: ^Game) {
 				// create a new entity
 				id := entity_create(g)
 				mass := (e1.mass + e2.mass)
-				density := g.params.densities[.DwarfPlanet]
 				radius := math.sqrt(e1.radius * e1.radius + e2.radius * e2.radius)
 
 				vel_x := (e1.mass * e1.velocity.x + e2.mass * e2.velocity.x) / mass

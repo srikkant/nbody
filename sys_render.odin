@@ -97,7 +97,6 @@ sys_render_slingshot :: proc(g: ^Game) {
 	// Slingshot path: for now, we draw around 1 second worth of path (60 steps)
 	pos := g.slingshot.start_pos
 	vel := physics_get_slingshot_release_velocity(g, end)
-	draw_radius := ss_obj_radius
 
 	dt := rl.GetFrameTime() * g.params.sim_rate * 5 // 5x realtime for the preview
 
