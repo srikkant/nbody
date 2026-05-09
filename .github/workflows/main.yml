@@ -14,18 +14,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: +emsdk
         uses: emscripten-core/setup-emsdk@v15
         with:
           version: 5.0.7
-          actions-cache-folder: 'emsdk-cache'
+          actions-cache-folder: "emsdk-cache"
 
       - name: +odin
         uses: laytan/setup-odin@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: build
         run: ./scripts/build_web.sh
 

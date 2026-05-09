@@ -14,8 +14,8 @@ sys_score :: proc(g: ^Game) {
 		e := &g.entities[i]
 
 		if (score_ticker && KE_SCORE_SIG <= e.sig) {
-			mass_score := e.size.mass
-			vel_score := rl.Vector2LengthSqr(e.vel)
+			mass_score := e.mass
+			vel_score := rl.Vector2LengthSqr(e.velocity)
 			pos_score := 1 / (SOFTENING + rl.Vector2LengthSqr(e.pos.current))
 
 			dynamic_gain += f64(
@@ -30,8 +30,7 @@ sys_score :: proc(g: ^Game) {
 		if (ENERGY_SOURCE_SIG <= e.sig) {
 			gain := f64(
 				g.params.k_energy_gain *
-				(e.energy_source.output +
-						(g.params.k_energy_source * e.size.radius * e.size.radius)),
+				(e.energy_source.output + (g.params.k_energy_source * e.radius * e.radius)),
 			)
 
 			static_gain += gain

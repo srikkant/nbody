@@ -79,8 +79,8 @@ sys_render_slingshot :: proc(g: ^Game) {
 	if !g.slingshot.active do return
 	end := input_mouse_pos(g)
 
-	ss_obj_type := g.slingshot.type
-	ss_obj_radius := g.params.radii[ss_obj_type]
+	// TODO: Update this
+	ss_obj_radius := g.params.radii[.DwarfPlanet]
 
 	// Slingshot trigger
 	line_col := g.slingshot.can_launch ? rl.GRAY : rl.RED
@@ -113,11 +113,11 @@ sys_render_slingshot :: proc(g: ^Game) {
 			pos,
 			ss_obj_radius,
 			star.pos.current,
-			star.size.mass,
-			star.size.radius,
+			star.mass,
+			star.radius,
 		)
 
-		collision := dist < (ss_obj_radius + star.size.radius) * (ss_obj_radius + star.size.radius)
+		collision := dist < (ss_obj_radius + star.radius) * (ss_obj_radius + star.radius)
 		if collision do break
 
 		vel += acc * dt
@@ -136,7 +136,8 @@ sys_render_entities :: proc(g: ^Game) {
 
 		// TODO: For now, all entities are just drawn as circles
 		if RENDER_SIG <= e.sig {
-			r := e.size.radius
+
+			r := e.radius
 			dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 2, r * 2}
 			origin := rl.Vector2{r, r}
 
@@ -151,6 +152,10 @@ sys_render_entities :: proc(g: ^Game) {
 				dest_rect.x = hit_pos.x
 				dest_rect.y = hit_pos.y
 				texture_rect = g.textures.marker_rect
+			}
+
+			if .Emitter in e.sig {
+				texture_rect = g.textures.emitter_rect
 			}
 
 			rl.DrawTexturePro(g.textures.atlas, texture_rect, dest_rect, origin, 0, rl.WHITE)
@@ -196,11 +201,11 @@ sys_render_score_panel :: proc(g: ^Game) {
 	// Star stats are only for debugging for now
 
 	y += 20
-	str = fmt.tprintf("star mass = %f", g.entities[0].size.mass)
+	str = fmt.tprintf("star mass = %f", g.entities[0].mass)
 	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
 
 	y += 20
-	str = fmt.tprintf("star radius = %f", g.entities[0].size.radius)
+	str = fmt.tprintf("star radius = %f", g.entities[0].radius)
 	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
 }
 

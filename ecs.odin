@@ -27,13 +27,24 @@ entity_add_position :: proc(g: ^Game, id: Entity, pos: PositionComponent) {
 	g.entities[id].sig += {.Position}
 }
 
-entity_add_size :: proc(g: ^Game, id: Entity, size: SizeComponent) {
-	g.entities[id].size = size
-	g.entities[id].sig += {.Size}
+entity_add_mass :: proc(g: ^Game, id: Entity, mass: MassComponent) {
+	if mass == 0 {
+		return
+	}
+	g.entities[id].mass = mass
+	g.entities[id].sig += {.Mass}
+}
+
+entity_add_radius :: proc(g: ^Game, id: Entity, radius: RadiusComponent) {
+	if radius == 0 {
+		return
+	}
+	g.entities[id].radius = radius
+	g.entities[id].sig += {.Radius}
 }
 
 entity_add_velocity :: proc(g: ^Game, id: Entity, vel: VelocityComponent) {
-	g.entities[id].vel = vel
+	g.entities[id].velocity = vel
 	g.entities[id].sig += {.Velocity}
 }
 
@@ -56,7 +67,16 @@ entity_add_life :: proc(g: ^Game, id: Entity, life: LifeComponent) {
 	g.entities[id].sig += {.Life}
 }
 
+entity_add_celestial :: proc(g: ^Game, id: Entity, celestial: CelestialComponent) {
+	g.entities[id].celestial = celestial
+	g.entities[id].sig += {.Celestial}
+}
+
 entity_add_emitter :: proc(g: ^Game, id: Entity, emitter: EmitterComponent) {
+	if emitter.base_cost == 0 {
+		return
+	}
+
 	g.entities[id].emitter = emitter
 	g.entities[id].sig += {.Emitter}
 }
@@ -68,4 +88,9 @@ entity_add_renderable :: proc(g: ^Game, id: Entity, renderable: RenderableCompon
 
 entity_add_tags :: proc(g: ^Game, id: Entity, tags: Signature) {
 	g.entities[id].sig += tags
+}
+
+push_event :: proc(g: ^Game, event: Game_Event) {
+	g.events[g.events_count] = event
+	g.events_count += 1
 }

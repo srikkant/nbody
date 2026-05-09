@@ -22,14 +22,17 @@ sys_lifecycle :: proc(g: ^Game) {
 
 			mass := event.density * event.radius * event.radius
 
-			entity_add_size(g, id, {mass, event.radius})
+			entity_add_mass(g, id, mass)
+			entity_add_radius(g, id, event.radius)
 			entity_add_position(g, id, {current = event.pos})
-			entity_add_velocity(g, id, event.vel)
+			entity_add_velocity(g, id, event.velocity)
 			entity_add_energy_source(g, id, event.energy_source)
 
 			entity_add_life(g, id, {g.elapsed})
 			entity_add_renderable(g, id, {})
 			entity_add_tags(g, id, event.tags)
+			entity_add_emitter(g, id, event.emitter)
+			entity_add_celestial(g, id, event.celestial)
 
 			if event.show_trail {
 				entity_add_position_trail(g, id, {})
@@ -47,30 +50,29 @@ sys_lifecycle :: proc(g: ^Game) {
 			}
 
 			// Stars do not get deleted on collision
-			if !(STAR_SIG <= e1.sig) {
+			if e1.celestial.type != .Star {
 				delete_entities[event.id1] = true
 			} else {
 				merge = false
-				mass_delta[event.id1] += e2.size.mass
+				mass_delta[event.id1] += e2.mass
 			}
 
-			if !(STAR_SIG <= e2.sig) {
+			if e2.celestial.type != .Star {
 				delete_entities[event.id2] = true
 			} else {
 				merge = false
-				mass_delta[event.id2] += e1.size.mass
+				mass_delta[event.id2] += e1.mass
 			}
 
 			if merge {
 				// create a new entity
 				id := entity_create(g)
-				mass := (e1.size.mass + e2.size.mass)
-				radius := math.sqrt(
-					e1.size.radius * e1.size.radius + e2.size.radius * e2.size.radius,
-				)
+				mass := (e1.mass + e2.mass)
+				density := g.params.densities[.DwarfPlanet]
+				radius := math.sqrt(e1.radius * e1.radius + e2.radius * e2.radius)
 
-				vel_x := (e1.size.mass * e1.vel.x + e2.size.mass * e2.vel.x) / mass
-				vel_y := (e1.size.mass * e1.vel.y + e2.size.mass * e2.vel.y) / mass
+				vel_x := (e1.mass * e1.velocity.x + e2.mass * e2.velocity.x) / mass
+				vel_y := (e1.mass * e1.velocity.y + e2.mass * e2.velocity.y) / mass
 				vel := rl.Vector2{vel_x, vel_y}
 
 				speed := rl.Vector2Length(vel)
@@ -82,22 +84,25 @@ sys_lifecycle :: proc(g: ^Game) {
 				scaled_vel := tangent * speed
 				created_at := math.min(e1.life.created_at, e2.life.created_at)
 
-				// TODO: Right now, this just selects the density of a DwarfPlanet.
-				// This will depend on the colliding entities
-				density := g.params.densities[.DwarfPlanet]
-
-				entity_add_size(g, id, {mass, radius})
-				entity_add_position(g, id, {current = event.pos})
+				entity_add_mass(g, id, mass)
+				entity_add_radius(g, id, radius)
+				entity_add_position(
+					g,
+					id,
+					{current = e1.mass > e2.mass ? e1.pos.current : e2.pos.current},
+				)
 				entity_add_renderable(g, id, {})
 				entity_add_velocity(g, id, scaled_vel)
 				entity_add_life(g, id, {created_at})
-				entity_add_tags(g, id, {.DwarfPlanet})
-
-				// Trail: use the trail of the larger entity, if available
-				entity_add_position_trail(g, id, e1.size.mass > e2.size.mass ? e1.trail : e2.trail)
+				entity_add_celestial(g, id, {.DwarfPlanet})
+				entity_add_position_trail(g, id, e1.mass > e2.mass ? e1.trail : e2.trail)
 			}
 
 		case Game_Event_ObjectOutOfBounds:
+			delete_entities[event.id] = true
+			delete_entities_count += 1
+
+		case Game_Event_ObjectDestroyed:
 			delete_entities[event.id] = true
 			delete_entities_count += 1
 		}
@@ -116,13 +121,13 @@ sys_lifecycle :: proc(g: ^Game) {
 
 		if mass_delta[i] > 0 {
 			mass_delta[i] = mass_delta[i]
-			e.size.mass += mass_delta[i]
+			e.mass += mass_delta[i]
 			// Increase radius proportionally
-			e.size.radius += e.size.radius * (mass_delta[i] / e.size.mass)
+			e.radius += e.radius * (mass_delta[i] / e.mass)
 		}
 
 		// Count non-star physics objects
-		if PHYSICS_SIG <= e.sig && !(STAR_SIG <= e.sig) {
+		if PHYSICS_SIG <= e.sig && !(e.celestial.type != .Star) {
 			g.total_objects += 1
 		}
 	}

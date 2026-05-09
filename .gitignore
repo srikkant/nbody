@@ -1,4 +1,9 @@
 build/
 nbody
 
+.zed
+.vscode
+
+nbody.dSYM/
+
 .DS_Store

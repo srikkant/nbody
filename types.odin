@@ -5,35 +5,22 @@ import rl "vendor:raylib"
 Entity :: distinct u64
 
 Timer :: struct {
-	acc: f32,
-	val: f32,
+	curr:     f32,
+	interval: f32,
 }
 
 ComponentType :: enum {
 	// Tag components
 	// TODO: Add more tags
-	Star,
-
-	// Planet types
-	SuperJupiter,
-	GiantPlanet,
-	SuperNeptune,
-	SubNeptune,
-	MiniNeptune,
-	MegaEarth,
-	SuperEarth,
-	SubEarth,
-	DwarfPlanet,
-
-	// other objects
+	Celestial,
 	Emitter,
-
 	// General components
 	Position,
 	PositionTrail,
 	Velocity,
-	Size,
 	Life,
+	Mass,
+	Radius,
 	EnergySource,
 	Renderable,
 }
@@ -53,6 +40,10 @@ PositionTrailComponent :: struct {
 
 VelocityComponent :: rl.Vector2
 
+MassComponent :: f32
+
+RadiusComponent :: f32
+
 LifeComponent :: struct {
 	created_at: f32,
 }
@@ -62,24 +53,55 @@ EnergySourceComponent :: struct {
 	timer:  Timer,
 }
 
-SizeComponent :: struct {
-	mass:   f32,
-	radius: f32,
-}
-
 EmitterComponent :: struct {
-	emit_signature: Signature,
 	emit_density:   f32,
 	emit_radius:    f32,
+	emit_vel:       rl.Vector2,
+	emit_celestial: CelestialComponent,
+	max_count:      int,
+	current_count:  int,
 	timer:          Timer,
-	base_cost:      f32,
+	base_cost:      f64,
+}
+
+
+CelestialType :: enum {
+	None,
+	Star,
+	SuperJupiter,
+	GiantPlanet,
+	SuperNeptune,
+	SubNeptune,
+	MiniNeptune,
+	MegaEarth,
+	SuperEarth,
+	SubEarth,
+	DwarfPlanet,
+}
+
+CelestialComponent :: struct {
+	type: CelestialType,
 }
 
 // TODO: Add some render specific properties here
 RenderableComponent :: struct {}
 
+Game_SlingshotOutput_Emitter :: struct {
+	emitter: EmitterComponent,
+}
+
+Game_SlingshotOutput_Celestial :: struct {
+	celestial: CelestialComponent,
+}
+
+Game_SlingshotOutput :: union {
+	Game_SlingshotOutput_Emitter,
+	Game_SlingshotOutput_Celestial,
+}
+
 Game_Slingshot :: struct {
-	type:         ComponentType, // This should be better grouped and allow only tags or spawnables
+	// This should be better grouped and allow only tags or spawnables
+	output:       Game_SlingshotOutput,
 	active:       bool,
 	can_launch:   bool,
 	start_pos:    rl.Vector2,
@@ -88,18 +110,23 @@ Game_Slingshot :: struct {
 }
 
 Game_Event_ObjectSpawn :: struct {
+	pos:           rl.Vector2,
 	density:       f32,
 	radius:        f32,
-	pos:           rl.Vector2,
+	velocity:      rl.Vector2,
 	show_trail:    bool,
-	vel:           rl.Vector2,
 	energy_source: EnergySourceComponent,
+	emitter:       EmitterComponent,
+	celestial:     CelestialComponent,
 	tags:          Signature,
 }
 
 Game_Event_ObjectOutOfBounds :: struct {
-	id:  Entity,
-	pos: rl.Vector2,
+	id: Entity,
+}
+
+Game_Event_ObjectDestroyed :: struct {
+	id: Entity,
 }
 
 // TODO: We might need extra fields here later
@@ -108,13 +135,13 @@ Game_Event_ApplyModifier :: Game_Modifier
 Game_Event_Collision :: struct {
 	id1: Entity,
 	id2: Entity,
-	pos: rl.Vector2,
 }
 
 Game_Event :: union {
 	Game_Event_ObjectSpawn,
 	Game_Event_Collision,
 	Game_Event_ObjectOutOfBounds,
+	Game_Event_ObjectDestroyed,
 }
 
 Game_Entity :: struct {
@@ -122,10 +149,12 @@ Game_Entity :: struct {
 	life:          LifeComponent,
 	pos:           PositionComponent,
 	trail:         PositionTrailComponent,
-	vel:           VelocityComponent,
-	size:          SizeComponent,
+	velocity:      VelocityComponent,
+	mass:          MassComponent,
+	radius:        RadiusComponent,
 	energy_source: EnergySourceComponent,
 	emitter:       EmitterComponent,
+	celestial:     CelestialComponent,
 	renderable:    RenderableComponent,
 }
 
@@ -147,16 +176,16 @@ Game_Modifier :: struct {
 	duration:           f64,
 	slingshot_power:    f32,
 	slingshot_preview:  f32,
-	density_deltas:     [ComponentType]f32,
-	radii_deltas:       [ComponentType]f32,
-	launch_cost_deltas: [ComponentType]f32,
+	density_deltas:     [CelestialType]f32,
+	radii_deltas:       [CelestialType]f32,
+	launch_cost_deltas: [CelestialType]f32,
 }
 
 Game_Parameters :: struct {
 	g:                     f32,
-	densities:             [ComponentType]f32,
-	radii:                 [ComponentType]f32,
-	launch_costs:          [ComponentType]f32,
+	densities:             [CelestialType]f32,
+	radii:                 [CelestialType]f32,
+	launch_costs:          [CelestialType]f32,
 	slingshot_power:       f32,
 	slingshot_preview_len: i32,
 	sim_rate:              f32,
