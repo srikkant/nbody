@@ -98,7 +98,7 @@ sys_render_slingshot :: proc(g: ^Game) {
 	pos := g.slingshot.start_pos
 	vel := physics_get_slingshot_release_velocity(g, end)
 
-	dt := rl.GetFrameTime() * g.params.sim_rate * 5 // 5x realtime for the preview
+	dt := frame_time() * g.params.sim_rate * 5 // 5x realtime for the preview
 
 	star := &g.entities[Entity(0)]
 	frames := g.params.slingshot_preview_len * i32(g.slingshot.preview)
@@ -160,7 +160,7 @@ sys_render_entities :: proc(g: ^Game) {
 			rl.DrawTexturePro(g.textures.atlas, texture_rect, dest_rect, origin, 0, rl.WHITE)
 
 			// Draw the trail if present
-			if TRAIL_SIG <= e.sig {
+			if g.show_trails && TRAIL_SIG <= e.sig {
 				ordered_points: [MAX_TRAIL_LENGTH + 1]rl.Vector2
 
 				for i in 0 ..< e.trail.count {

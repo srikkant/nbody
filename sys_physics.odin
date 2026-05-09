@@ -4,7 +4,7 @@ import "core:math"
 import rl "vendor:raylib"
 
 sys_physics :: proc(g: ^Game) {
-	dt := rl.GetFrameTime() * g.params.sim_rate
+	dt := frame_time() * g.params.sim_rate
 
 	accels := make([]rl.Vector2, g.entities_count)
 	defer delete(accels)

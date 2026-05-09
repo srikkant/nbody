@@ -11,7 +11,7 @@ input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
 
 sys_input :: proc(g: ^Game) {
 	// Update all timers in the input system
-	g.elapsed += rl.GetFrameTime()
+	g.elapsed += frame_time()
 
 	if (rl.IsMouseButtonPressed(.LEFT)) {
 		g.slingshot.active = true
@@ -92,6 +92,10 @@ sys_input :: proc(g: ^Game) {
 		g.slingshot.output = Game_SlingshotOutput_Celestial {
 			celestial = {.DwarfPlanet},
 		}
+	}
+
+	if rl.IsKeyPressed(.T) {
+		g.show_trails = !g.show_trails
 	}
 
 }

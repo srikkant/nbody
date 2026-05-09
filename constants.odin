@@ -15,6 +15,7 @@ TRAIL_MIN_ANGLE :: (2 * math.PI) / (MAX_TRAIL_LENGTH - 1) // do a -1 so the orbi
 // Game physics and system constants
 WORLD_RADIUS_SQ :: 1000 * 1000
 SOFTENING :: 2.0
+MAX_DT :: 0.05
 
 // Signatures used by different systems
 EMITTER_SIG: Signature : {.Emitter, .Position}

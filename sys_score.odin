@@ -4,7 +4,7 @@ import "core:math"
 import rl "vendor:raylib"
 
 sys_score :: proc(g: ^Game) {
-	dt := rl.GetFrameTime()
+	dt := frame_time()
 	score_ticker := utils_math_update_timer(&g.score_timer, dt)
 
 	static_gain := 0.0

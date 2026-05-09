@@ -213,6 +213,9 @@ Game :: struct {
 	shaders:             Game_Shaders,
 	textures:            Game_Textures,
 
+	// View options
+	show_trails:         bool,
+
 	// Entities
 	entities:            #soa[MAX_ENTITIES]Game_Entity,
 	entities_count:      u64,

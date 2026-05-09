@@ -28,3 +28,7 @@ physics_get_graviational_acceleration :: proc(
 physics_get_slingshot_release_velocity :: proc(g: ^Game, release_pos: rl.Vector2) -> rl.Vector2 {
 	return (g.slingshot.start_pos - release_pos) * g.params.slingshot_power
 }
+
+frame_time :: proc() -> f32 {
+	return math.min(rl.GetFrameTime(), MAX_DT)
+}

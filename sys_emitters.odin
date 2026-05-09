@@ -1,9 +1,7 @@
 package main
 
-import rl "vendor:raylib"
-
 sys_emitters :: proc(g: ^Game) {
-	dt := rl.GetFrameTime()
+	dt := frame_time()
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
