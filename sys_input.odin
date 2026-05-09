@@ -38,7 +38,6 @@ sys_input :: proc(g: ^Game) {
 			event.emitter.emit_vel = vel
 			event.emitter.emit_density = g.params.densities[out.emitter.emit_celestial.type]
 			event.emitter.emit_radius = g.params.radii[out.emitter.emit_celestial.type]
-			event.emitter.max_count = 2
 			cost = f64(
 				g.params.k_energy_loss *
 				(event.density * event.radius * event.radius * rl.Vector2LengthSqr(vel)),
