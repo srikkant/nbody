@@ -140,25 +140,20 @@ sys_render_entities :: proc(g: ^Game) {
 			dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 2, r * 2}
 			origin := rl.Vector2{r, r}
 
-			hit_pos, hit := geometry_get_rectangle_intersection_point(
+			hit_pos, out_of_bounds := geometry_get_rectangle_intersection_point(
 				rl.Rectangle{-g.camera.offset.x, -g.camera.offset.y, RENDER_WIDTH, RENDER_HEIGHT},
 				e.pos.current,
 				40.0,
 			)
 
-			if (hit) {
+			texture_rect := g.textures.star_rect
+			if (out_of_bounds) {
 				dest_rect.x = hit_pos.x
 				dest_rect.y = hit_pos.y
+				texture_rect = g.textures.marker_rect
 			}
 
-			rl.DrawTexturePro(
-				g.textures.star,
-				g.textures.star_rect,
-				dest_rect,
-				origin,
-				0,
-				rl.WHITE,
-			)
+			rl.DrawTexturePro(g.textures.atlas, texture_rect, dest_rect, origin, 0, rl.WHITE)
 
 			// Draw the trail if present
 			if TRAIL_SIG <= e.sig {

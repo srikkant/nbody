@@ -42,6 +42,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 
 	second_timer := Timer{0, 1}
 
+	g.available_objects = {.DwarfPlanet}
 	g.score_timer = second_timer
 	g.events[0] = Game_Event_ObjectSpawn {
 		pos = rl.Vector2(0),

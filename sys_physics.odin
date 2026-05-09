@@ -43,7 +43,7 @@ sys_physics :: proc(g: ^Game) {
 					#partial switch size {
 					case .DwarfPlanet:
 						multiplier = 100
-					case .Planet:
+					case .SubEarth:
 						multiplier = 1000
 					}
 				}

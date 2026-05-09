@@ -56,6 +56,11 @@ entity_add_life :: proc(g: ^Game, id: Entity, life: LifeComponent) {
 	g.entities[id].sig += {.Life}
 }
 
+entity_add_emitter :: proc(g: ^Game, id: Entity, emitter: EmitterComponent) {
+	g.entities[id].emitter = emitter
+	g.entities[id].sig += {.Emitter}
+}
+
 entity_add_renderable :: proc(g: ^Game, id: Entity, renderable: RenderableComponent) {
 	g.entities[id].renderable = renderable
 	g.entities[id].sig += {.Renderable}

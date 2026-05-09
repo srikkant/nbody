@@ -1,6 +1,5 @@
 package main
 
-import "core:terminal/ansi"
 import rl "vendor:raylib"
 
 Entity :: distinct u64
@@ -14,8 +13,20 @@ ComponentType :: enum {
 	// Tag components
 	// TODO: Add more tags
 	Star,
+
+	// Planet types
+	SuperJupiter,
+	GiantPlanet,
+	SuperNeptune,
+	SubNeptune,
+	MiniNeptune,
+	MegaEarth,
+	SuperEarth,
+	SubEarth,
 	DwarfPlanet,
-	Planet,
+
+	// other objects
+	Emitter,
 
 	// General components
 	Position,
@@ -34,7 +45,7 @@ PositionComponent :: struct {
 }
 
 PositionTrailComponent :: struct {
-	points: [20]rl.Vector2,
+	points: [MAX_TRAIL_LENGTH]rl.Vector2,
 	head:   int,
 	angle:  f32,
 	count:  int,
@@ -54,6 +65,14 @@ EnergySourceComponent :: struct {
 SizeComponent :: struct {
 	mass:   f32,
 	radius: f32,
+}
+
+EmitterComponent :: struct {
+	emit_signature: Signature,
+	emit_density:   f32,
+	emit_radius:    f32,
+	timer:          Timer,
+	base_cost:      f32,
 }
 
 // TODO: Add some render specific properties here
@@ -106,19 +125,20 @@ Game_Entity :: struct {
 	vel:           VelocityComponent,
 	size:          SizeComponent,
 	energy_source: EnergySourceComponent,
+	emitter:       EmitterComponent,
 	renderable:    RenderableComponent,
 }
 
 Game_Shaders :: struct {}
 
 Game_Textures :: struct {
-	render:    rl.RenderTexture2D,
-	blank:     rl.Texture2D,
-	bg:        rl.RenderTexture2D,
-
-	// Star texture and rect
-	star:      rl.Texture2D,
-	star_rect: rl.Rectangle,
+	render:       rl.RenderTexture2D,
+	blank:        rl.Texture2D,
+	bg:           rl.RenderTexture2D,
+	atlas:        rl.Texture2D,
+	star_rect:    rl.Rectangle,
+	marker_rect:  rl.Rectangle,
+	emitter_rect: rl.Rectangle,
 }
 
 Game_Modifier :: struct {
@@ -172,6 +192,7 @@ Game :: struct {
 
 	// Input -> Slingshot
 	slingshot:           Game_Slingshot,
+	available_objects:   Signature, // TODO: Maybe move to something more specific?
 
 	// Score
 	score_timer:         Timer,

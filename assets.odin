@@ -64,11 +64,13 @@ assets_load_textures :: proc(g: ^Game) {
 	defer rl.UnloadImage(blank_image)
 	g.textures.blank = rl.LoadTextureFromImage(blank_image)
 
-	g.textures.star = rl.LoadTexture("./assets/textures/star.png")
-	g.textures.star_rect = rl.Rectangle{0, 0, 192, 192} // TODO: Move to a more robust system
+	g.textures.atlas = rl.LoadTexture("./assets/textures/atlas.png")
+	g.textures.star_rect = rl.Rectangle{0, 0, 96, 96} // TODO: Move to a more robust system
+	g.textures.marker_rect = rl.Rectangle{96, 0, 96, 96}
+	g.textures.emitter_rect = rl.Rectangle{192, 0, 96, 96}
 }
 
 assets_free_textures :: proc(g: ^Game) {
 	rl.UnloadTexture(g.textures.blank)
-	rl.UnloadTexture(g.textures.star)
+	rl.UnloadTexture(g.textures.atlas)
 }
