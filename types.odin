@@ -129,6 +129,11 @@ Game_Event_ObjectDestroyed :: struct {
 	id: Entity,
 }
 
+Game_Event_StarCollision :: struct {
+	star_id: Entity,
+	id:      Entity,
+}
+
 // TODO: We might need extra fields here later
 Game_Event_ApplyModifier :: Game_Modifier
 
@@ -182,18 +187,22 @@ Game_Modifier :: struct {
 }
 
 Game_Parameters :: struct {
-	g:                     f32,
-	densities:             [CelestialType]f32,
-	radii:                 [CelestialType]f32,
-	launch_costs:          [CelestialType]f32,
-	slingshot_power:       f32,
-	slingshot_preview_len: i32,
-	sim_rate:              f32,
-	k_energy_gain:         f32,
-	k_energy_loss:         f32,
-	k_energy_source:       f32,
-	k_energy_momentum:     f32,
+	g:                      f32,
+	densities:              [CelestialType]f32,
+	radii:                  [CelestialType]f32,
+	launch_costs:           [CelestialType]f32,
+	slingshot_power:        f32,
+	slingshot_preview_len:  i32,
+	sim_rate:               f32,
+	k_energy_gain:          f32,
+	k_energy_loss:          f32,
+	k_energy_source:        f32,
+	k_energy_momentum:      f32,
+	k_mass_loss:            f32,
+	k_shatter_speed:        f32,
+	k_collision_mass_scale: f32,
 }
+
 
 Game :: struct {
 	elapsed:             f32,

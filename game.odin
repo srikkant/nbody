@@ -9,7 +9,7 @@ Game_InitParams :: struct {
 
 game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.SetTraceLogLevel(rl.TraceLogLevel.WARNING)
-	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_HIGHDPI})
+	rl.SetConfigFlags({.MSAA_4X_HINT})
 	rl.InitWindow(params.w, params.h, "cellular automata")
 	rl.SetTargetFPS(60)
 
@@ -46,6 +46,8 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.params.k_energy_loss = 0.01
 	g.params.k_energy_source = 1
 	g.params.k_energy_momentum = 1000
+	g.params.k_mass_loss = 0.5
+	g.params.k_shatter_speed = 100
 
 	second_timer := Timer{0, 1}
 
