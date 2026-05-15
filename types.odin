@@ -129,11 +129,6 @@ Game_Event_ObjectDestroyed :: struct {
 	id: Entity,
 }
 
-Game_Event_StarCollision :: struct {
-	star_id: Entity,
-	id:      Entity,
-}
-
 // TODO: We might need extra fields here later
 Game_Event_ApplyModifier :: Game_Modifier
 

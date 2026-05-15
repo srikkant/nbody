@@ -32,19 +32,26 @@ sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^Game_Event_ObjectSpawn) {
 	}
 }
 
-sys_lifecycle_handle_star_collision :: proc(g: ^Game, event: ^Game_Event_StarCollision) {
-	delete_entities[event.id] = true
-	mass_delta[event.star_id] += g.entities[event.id].mass * g.params.k_mass_loss
-}
-
 sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^Game_Event_Collision) {
 	// Handle collision event
 	e1 := &g.entities[event.id1]
 	e2 := &g.entities[event.id2]
-	merge := true
 
 	// Skip if either entity is marked for deletion
 	if delete_entities[event.id1] || delete_entities[event.id2] {
+		return
+	}
+
+	// if either is a star, delete the other
+	if e1.celestial.type == .Star {
+		delete_entities[event.id2] = true
+		mass_delta[event.id1] += g.entities[event.id2].mass * g.params.k_mass_loss
+		return
+	}
+
+	if e2.celestial.type == .Star {
+		delete_entities[event.id1] = true
+		mass_delta[event.id2] += g.entities[event.id1].mass * g.params.k_mass_loss
 		return
 	}
 
@@ -53,6 +60,9 @@ sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^Game_Event_Collision) {
 
 	// Merge the two entities
 	if speed < g.params.k_shatter_speed {
+		delete_entities[event.id1] = true
+		delete_entities[event.id2] = true
+
 		id := entity_create(g)
 		mass := (e1.mass + e2.mass)
 		radius := math.sqrt(e1.radius * e1.radius + e2.radius * e2.radius)
@@ -61,13 +71,13 @@ sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^Game_Event_Collision) {
 		vel_y := (e1.mass * e1.velocity.y + e2.mass * e2.velocity.y) / mass
 		vel := rl.Vector2{vel_x, vel_y}
 
-		speed := rl.Vector2Length(vel)
+		new_speed := rl.Vector2Length(vel)
 		tangent := rl.Vector2Normalize(rl.Vector2{-e1.pos.current.y, e1.pos.current.x})
 		if rl.Vector2DotProduct(tangent, vel) < 0 {
 			tangent = rl.Vector2{-tangent.x, -tangent.y}
 		}
 
-		scaled_vel := tangent * speed
+		scaled_vel := tangent * new_speed
 		created_at := math.min(e1.life.created_at, e2.life.created_at)
 
 		entity_add_mass(g, id, mass)
@@ -85,13 +95,18 @@ sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^Game_Event_Collision) {
 	// One entity is much bigger than the other
 	if e1.mass / e2.mass > g.params.k_collision_mass_scale {
 		delete_entities[event.id2] = true
+		return
 	}
 
 	if e2.mass / e1.mass > g.params.k_collision_mass_scale {
 		delete_entities[event.id1] = true
+		return
 	}
 
-
+	// if both entities are of similar sizes and their speed is greater than shatter speed,
+	// delete both entities and spawn an explosion
+	delete_entities[event.id1] = true
+	delete_entities[event.id2] = true
 }
 
 sys_lifecycle_handle_out_of_bounds :: proc(g: ^Game, event: ^Game_Event_ObjectOutOfBounds) {
