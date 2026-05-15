@@ -11,7 +11,6 @@ Timer :: struct {
 
 ComponentType :: enum {
 	// Tag components
-	// TODO: Add more tags
 	Celestial,
 	Emitter,
 	// General components
@@ -23,6 +22,7 @@ ComponentType :: enum {
 	Radius,
 	EnergySource,
 	Renderable,
+	CollectibleEnergy,
 }
 
 Signature :: bit_set[ComponentType]
@@ -64,27 +64,34 @@ EmitterComponent :: struct {
 	base_cost:      f64,
 }
 
-
 CelestialType :: enum {
 	None,
-	Star,
-	SuperJupiter,
-	GiantPlanet,
-	SuperNeptune,
-	SubNeptune,
-	MiniNeptune,
-	MegaEarth,
-	SuperEarth,
-	SubEarth,
+	EnergyFragment,
+	Shard,
+	Pebble,
+	Asteroid,
+	Moonlet,
 	DwarfPlanet,
+	SubEarth,
+	SuperEarth,
+	MegaEarth,
+	MiniNeptune,
+	SubNeptune,
+	SuperNeptune,
+	GiantPlanet,
+	SuperJupiter,
+	Star,
 }
 
 CelestialComponent :: struct {
 	type: CelestialType,
 }
 
-// TODO: Add some render specific properties here
 RenderableComponent :: struct {}
+
+CollectibleEnergyComponent :: struct {
+	energy: f64,
+}
 
 Game_SlingshotOutput_Emitter :: struct {
 	emitter: EmitterComponent,
@@ -100,7 +107,6 @@ Game_SlingshotOutput :: union {
 }
 
 Game_Slingshot :: struct {
-	// This should be better grouped and allow only tags or spawnables
 	output:       Game_SlingshotOutput,
 	active:       bool,
 	can_launch:   bool,
@@ -129,7 +135,6 @@ Game_Event_ObjectDestroyed :: struct {
 	id: Entity,
 }
 
-// TODO: We might need extra fields here later
 Game_Event_ApplyModifier :: Game_Modifier
 
 Game_Event_Collision :: struct {
@@ -145,29 +150,31 @@ Game_Event :: union {
 }
 
 Game_Entity :: struct {
-	sig:           Signature,
-	life:          LifeComponent,
-	pos:           PositionComponent,
-	trail:         PositionTrailComponent,
-	velocity:      VelocityComponent,
-	mass:          MassComponent,
-	radius:        RadiusComponent,
-	energy_source: EnergySourceComponent,
-	emitter:       EmitterComponent,
-	celestial:     CelestialComponent,
-	renderable:    RenderableComponent,
+	sig:                Signature,
+	life:               LifeComponent,
+	pos:                PositionComponent,
+	trail:              PositionTrailComponent,
+	velocity:           VelocityComponent,
+	mass:               MassComponent,
+	radius:             RadiusComponent,
+	energy_source:      EnergySourceComponent,
+	emitter:            EmitterComponent,
+	celestial:          CelestialComponent,
+	renderable:         RenderableComponent,
+	collectible_energy: CollectibleEnergyComponent,
 }
 
 Game_Shaders :: struct {}
 
 Game_Textures :: struct {
-	render:       rl.RenderTexture2D,
-	blank:        rl.Texture2D,
-	bg:           rl.RenderTexture2D,
-	atlas:        rl.Texture2D,
-	star_rect:    rl.Rectangle,
-	marker_rect:  rl.Rectangle,
-	emitter_rect: rl.Rectangle,
+	render:                  rl.RenderTexture2D,
+	blank:                   rl.Texture2D,
+	bg:                      rl.RenderTexture2D,
+	atlas:                   rl.Texture2D,
+	star_rect:               rl.Rectangle,
+	marker_rect:             rl.Rectangle,
+	emitter_rect:            rl.Rectangle,
+	collectible_energy_rect: rl.Rectangle,
 }
 
 Game_Modifier :: struct {
@@ -182,22 +189,26 @@ Game_Modifier :: struct {
 }
 
 Game_Parameters :: struct {
-	g:                      f32,
-	densities:              [CelestialType]f32,
-	radii:                  [CelestialType]f32,
-	launch_costs:           [CelestialType]f32,
-	slingshot_power:        f32,
-	slingshot_preview_len:  i32,
-	sim_rate:               f32,
-	k_energy_gain:          f32,
-	k_energy_loss:          f32,
-	k_energy_source:        f32,
-	k_energy_momentum:      f32,
-	k_mass_loss:            f32,
-	k_shatter_speed:        f32,
-	k_collision_mass_scale: f32,
+	g:                       f32,
+	densities:               [CelestialType]f32,
+	radii:                   [CelestialType]f32,
+	launch_costs:            [CelestialType]f32,
+	slingshot_power:         f32,
+	slingshot_preview_len:   i32,
+	sim_rate:                f32,
+	k_energy_gain:           f32,
+	k_energy_loss:           f32,
+	k_energy_source:         f32,
+	k_energy_momentum:       f32,
+	k_mass_loss:             f32,
+	k_shatter_speed:         f32,
+	k_collision_mass_scale:  f32,
+	k_shatter_base:          f32,
+	k_debris_mass_loss:      f32,
+	k_fragment_absorb_ratio: f32,
+	k_out_of_bounds_refund:  f32,
+	k_star_energy_scale:     f32,
 }
-
 
 Game :: struct {
 	elapsed:             f32,
@@ -228,7 +239,7 @@ Game :: struct {
 
 	// Input -> Slingshot
 	slingshot:           Game_Slingshot,
-	available_objects:   Signature, // TODO: Maybe move to something more specific?
+	available_objects:   bit_set[CelestialType],
 
 	// Score
 	score_timer:         Timer,

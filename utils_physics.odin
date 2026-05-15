@@ -29,6 +29,11 @@ physics_get_slingshot_release_velocity :: proc(g: ^Game, release_pos: rl.Vector2
 	return (g.slingshot.start_pos - release_pos) * g.params.slingshot_power
 }
 
+physics_radius_from_mass_density :: proc(mass: f32, density: f32) -> f32 {
+	if density <= 0 do return 0
+	return math.sqrt(mass / density)
+}
+
 frame_time :: proc() -> f32 {
 	return math.min(rl.GetFrameTime(), MAX_DT)
 }

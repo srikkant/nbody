@@ -86,11 +86,38 @@ entity_add_renderable :: proc(g: ^Game, id: Entity, renderable: RenderableCompon
 	g.entities[id].sig += {.Renderable}
 }
 
+entity_add_collectible_energy :: proc(g: ^Game, id: Entity, ce: CollectibleEnergyComponent) {
+	if ce.energy <= 0 {
+		return
+	}
+	g.entities[id].collectible_energy = ce
+	g.entities[id].sig += {.CollectibleEnergy}
+}
+
 entity_add_tags :: proc(g: ^Game, id: Entity, tags: Signature) {
 	g.entities[id].sig += tags
 }
 
 push_event :: proc(g: ^Game, event: Game_Event) {
+	if g.events_count == MAX_ENTITIES do return
+
 	g.events[g.events_count] = event
 	g.events_count += 1
+}
+
+entity_celestial_next_type :: proc(t: CelestialType) -> CelestialType {
+	if t == .None do return .None
+	if t == .Star do return .Star
+	return CelestialType(int(t) + 1)
+}
+
+entity_celestial_prev_type :: proc(t: CelestialType, steps: int = 1) -> CelestialType {
+	if t == .None do return .None
+	idx := int(t) - steps
+	if idx <= int(CelestialType.EnergyFragment) do return CelestialType.EnergyFragment
+	return CelestialType(idx)
+}
+
+entity_celestial_is_unlockable :: proc(t: CelestialType) -> bool {
+	return t >= .Asteroid && t < .Star
 }

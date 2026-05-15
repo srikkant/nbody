@@ -14,9 +14,11 @@ sys_physics :: proc(g: ^Game) {
 		if !(PHYSICS_SIG <= e1.sig) do continue
 
 		total_accel := rl.Vector2(0)
+		e1_is_new := g.elapsed - e1.life.created_at < SPAWN_INVINCIBLE_DURATION
+		e1_is_star := e1.celestial.type == .Star
 
 		for j in 0 ..< g.entities_count {
-			if i == j do continue
+			if j == i do continue
 
 			e2 := &g.entities[j]
 			if !(PHYSICS_SIG <= e2.sig) do continue
@@ -30,13 +32,17 @@ sys_physics :: proc(g: ^Game) {
 				e2.radius,
 			)
 
-			// Just an sum of the two radii for approximate collision radius
 			collision_radius := (e1.radius + e2.radius)
 			collision := dist < collision_radius * collision_radius
 			total_accel += accel
 
-			if collision {
-				push_event(g, Game_Event_Collision{Entity(i), Entity(j)})
+			e2_is_star := e2.celestial.type == .Star
+			e2_is_new := g.elapsed - e2.life.created_at < SPAWN_INVINCIBLE_DURATION
+
+			invincible := (e1_is_new || e2_is_new) && !(e1_is_star || e2_is_star)
+
+			if collision && !invincible {
+				push_event(g, Game_Event_Collision{id1 = Entity(i), id2 = Entity(j)})
 			}
 		}
 

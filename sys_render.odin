@@ -154,6 +154,10 @@ sys_render_entities :: proc(g: ^Game) {
 				texture_rect = g.textures.emitter_rect
 			}
 
+			if .CollectibleEnergy in e.sig {
+				texture_rect = g.textures.collectible_energy_rect
+			}
+
 			rl.DrawTexturePro(g.textures.atlas, texture_rect, dest_rect, origin, 0, rl.WHITE)
 
 			// Draw the trail if present
