@@ -12,6 +12,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_RESIZABLE})
 	rl.InitWindow(params.w, params.h, "n-body forge")
 	rl.SetTargetFPS(60)
+	rl.HideCursor()
 
 	g := new(Game)
 
@@ -73,6 +74,8 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.params.k_debris_mass_loss = 0.25
 	g.params.k_out_of_bounds_refund = 0.1
 	g.params.k_star_energy_scale = 0.05
+	g.params.k_collect_dist = 50
+	g.params.k_collect_dist_sq = g.params.k_collect_dist * g.params.k_collect_dist
 
 	g.available_objects += {.DwarfPlanet}
 

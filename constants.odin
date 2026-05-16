@@ -13,6 +13,7 @@ MAX_TRAIL_LENGTH :: 100
 RATE_CALC_TICKS :: 10
 SPAWN_INVINCIBLE_DURATION :: 1 // seconds
 
+ENERGY_FRAGMENT_SIZE :: 4
 TRAIL_MIN_ANGLE :: (2 * math.PI) / (MAX_TRAIL_LENGTH - 1) // do a -1 so the orbit always closes
 
 // Game physics and system constants

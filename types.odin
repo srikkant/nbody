@@ -204,11 +204,14 @@ Game_Parameters :: struct {
 	k_debris_mass_loss:     f32,
 	k_out_of_bounds_refund: f32,
 	k_star_energy_scale:    f32,
+	k_collect_dist:         f32,
+	k_collect_dist_sq:      f32,
 }
 
 Game :: struct {
 	elapsed:             f32,
 	params:              Game_Parameters,
+	mouse_pos:           rl.Vector2,
 
 	// Event queue
 	events:              [MAX_ENTITIES]Game_Event,

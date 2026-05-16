@@ -12,6 +12,7 @@ input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
 sys_input :: proc(g: ^Game) {
 	// Update all timers in the input system
 	g.elapsed += frame_time()
+	g.mouse_pos = input_mouse_pos(g)
 
 	if (rl.IsMouseButtonPressed(.LEFT)) {
 		g.slingshot.active = true

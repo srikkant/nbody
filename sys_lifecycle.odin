@@ -17,6 +17,29 @@ sys_lifecycle_init :: proc(g: ^Game) {
 	g.events_count = 0
 }
 
+sys_lifecycle_spawn_fragments :: proc(g: ^Game, energy: f64, rel_speed: f32, pos: rl.Vector2) {
+	frag_count := math.max(6, 3 + int(math.mod_f32(rel_speed * 0.7, 4.0)))
+	frag_energy_each := energy / f64(frag_count)
+
+	frag_radius := ENERGY_FRAGMENT_SIZE + f32(math.min(energy / 100, 10))
+
+	for f in 0 ..< frag_count {
+		angle := (math.PI * 2.0 * f32(f)) / f32(frag_count) + math.PI / f32(frag_count)
+		spread := rel_speed * 0.15
+		vel := rl.Vector2{math.cos(angle) * spread, math.sin(angle) * spread}
+
+		id := entity_create(g)
+		offset := rl.Vector2{pos.x + math.cos(angle), pos.y + math.sin(angle)}
+
+		entity_add_position(g, id, {current = offset})
+		// TODO: change radius based on mass
+		entity_add_radius(g, id, frag_radius)
+		entity_add_life(g, id, {g.elapsed})
+		entity_add_renderable(g, id, {})
+		entity_add_collectible_energy(g, id, {energy = frag_energy_each})
+	}
+}
+
 sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^Game_Event_ObjectSpawn) {
 	id := entity_create(g)
 
@@ -105,24 +128,7 @@ sys_lifecycle_resolve_shatter :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	rel_speed := rl.Vector2Length(e1.velocity - e2.velocity)
 	impact_point := (e1.pos.current + e2.pos.current) * 0.5
 
-	total_energy := f64(e1.mass + e2.mass) * 0.5
-	frag_count := math.max(6, 3 + int(math.mod_f32(rel_speed * 0.7, 4.0)))
-	frag_energy_each := total_energy / f64(frag_count)
-
-	for f in 0 ..< frag_count {
-		angle := (math.PI * 2.0 * f32(f)) / f32(frag_count) + math.PI / f32(frag_count)
-		spread := rel_speed * 0.15
-		vel := rl.Vector2{math.cos(angle) * spread, math.sin(angle) * spread}
-
-		id := entity_create(g)
-		offset := rl.Vector2{impact_point.x + math.cos(angle), impact_point.y + math.sin(angle)}
-
-		entity_add_position(g, id, {current = offset})
-		entity_add_radius(g, id, 10)
-		entity_add_life(g, id, {g.elapsed})
-		entity_add_renderable(g, id, {})
-		entity_add_collectible_energy(g, id, {energy = frag_energy_each})
-	}
+	sys_lifecycle_spawn_fragments(g, f64(e1.mass + e2.mass) * 0.5, rel_speed, impact_point)
 }
 
 sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^Game_Event_Collision) {
@@ -155,17 +161,14 @@ sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	loss := math.min(big_mass * 0.4, small_mass * (g.params.k_debris_mass_loss + rel_speed * 0.01))
 	remaining_mass := big_mass - loss
 
-	if remaining_mass < small_mass {
-		delete_entities[big_id] = true
-		return
-	}
-
-	new_density := g.params.densities[big_type]
-
 	e_big := &g.entities[big_id]
-	e_big.mass = remaining_mass
-	e_big.radius = physics_radius_from_mass_density(remaining_mass, new_density)
 	e_big.celestial.type = entity_celestial_prev_type(big_type)
+	e_big.mass = remaining_mass
+
+	new_density := g.params.densities[e_big.celestial.type]
+	e_big.radius = physics_radius_from_mass_density(remaining_mass, new_density)
+
+	sys_lifecycle_spawn_fragments(g, f64(remaining_mass), rel_speed, big_pos)
 }
 
 sys_lifecycle_handle_star_absorb :: proc(g: ^Game, e: ^Game_Event_Collision) {
@@ -217,7 +220,7 @@ sys_lifecycle_handle_destroyed :: proc(g: ^Game, event: ^Game_Event_ObjectDestro
 }
 
 sys_lifecycle_handle_fragments :: proc(g: ^Game) {
-	cursor := input_mouse_pos(g)
+	cursor := &g.mouse_pos
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
@@ -228,7 +231,7 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 		dy := cursor.y - e.pos.current.y
 		dist_sq := dx * dx + dy * dy
 
-		if dist_sq < e.radius * e.radius {
+		if dist_sq < g.params.k_collect_dist_sq {
 			g.energy += e.collectible_energy.energy
 			delete_entities[i] = true
 		}

@@ -44,6 +44,8 @@ sys_render :: proc(g: ^Game) {
 	)
 
 	rl.BeginMode2D(g.camera)
+
+	sys_render_cursor(g)
 	sys_render_slingshot(g)
 	sys_render_entities(g)
 
@@ -72,9 +74,23 @@ sys_render :: proc(g: ^Game) {
 	rl.EndDrawing()
 }
 
+sys_render_cursor :: proc(g: ^Game) {
+	// TODO: Move to a custom texture
+	rl.DrawCircle(i32(g.mouse_pos.x), i32(g.mouse_pos.y), 4, rl.WHITE)
+
+	if g.slingshot.active do return
+
+	rl.DrawCircle(
+		i32(g.mouse_pos.x),
+		i32(g.mouse_pos.y),
+		g.params.k_collect_dist,
+		rl.Color{255, 255, 255, 64},
+	)
+}
+
 sys_render_slingshot :: proc(g: ^Game) {
 	if !g.slingshot.active do return
-	end := input_mouse_pos(g)
+	end := g.mouse_pos
 
 	// TODO: Update this
 	ss_obj_radius := g.params.radii[.DwarfPlanet]
