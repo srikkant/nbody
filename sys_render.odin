@@ -6,16 +6,45 @@ import "core:strings"
 import rl "vendor:raylib"
 
 sys_render_init :: proc(g: ^Game) {
-	g.textures.render = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
+	g.render_target = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
+
+	// TODO: This just draws a tiled images.
+	// Needs to be overhauled fully
+	g.bg_texture = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
+
+	rl.BeginTextureMode(g.bg_texture)
+	rl.ClearBackground(rl.BLACK)
+
+	tile_size: f32 = 512
+	half_tile: f32 = tile_size / 2
+
+	for y: f32 = 0; y < RENDER_HEIGHT; y += 512 {
+		for x: f32 = 0; x < RENDER_WIDTH; x += 512 {
+			rotation := f32(rl.GetRandomValue(0, 3)) * 90.0
+
+			source_rect := rl.Rectangle{0, 0, tile_size, tile_size}
+			dest_rect := rl.Rectangle{x + half_tile, y + half_tile, tile_size, tile_size}
+			origin := rl.Vector2{half_tile, half_tile}
+
+			rl.DrawTexturePro(
+				g.assets.textures[.Bg],
+				source_rect,
+				dest_rect,
+				origin,
+				rotation,
+				rl.Color{255, 255, 255, 60},
+			)
+		}
+	}
+	rl.EndTextureMode()
 }
 
 sys_render_free :: proc(g: ^Game) {
-	rl.UnloadRenderTexture(g.textures.render)
+	rl.UnloadRenderTexture(g.render_target)
+	rl.UnloadRenderTexture(g.bg_texture)
 }
 
 sys_render :: proc(g: ^Game) {
-	tx := &g.textures.render
-
 	ww := f32(rl.GetScreenWidth())
 	sw := f32(ww) / RENDER_WIDTH
 
@@ -32,11 +61,11 @@ sys_render :: proc(g: ^Game) {
 	g.view = rl.Rectangle{off_x, off_y, fw, fh}
 	g.view_scale = scale
 
-	rl.BeginTextureMode(g.textures.render)
+	rl.BeginTextureMode(g.render_target)
 	rl.ClearBackground(rl.BLACK)
 	rl.DrawTexturePro(
-		g.textures.bg.texture,
-		rl.Rectangle{0, 0, f32(g.textures.bg.texture.width), f32(-g.textures.bg.texture.height)},
+		g.bg_texture.texture,
+		rl.Rectangle{0, 0, f32(g.bg_texture.texture.width), f32(-g.bg_texture.texture.height)},
 		rl.Rectangle{0, 0, RENDER_WIDTH, RENDER_HEIGHT},
 		rl.Vector2(0),
 		0,
@@ -59,8 +88,13 @@ sys_render :: proc(g: ^Game) {
 	rl.ClearBackground(rl.BLACK)
 
 	rl.DrawTexturePro(
-		tx.texture,
-		rl.Rectangle{0, 0, f32(tx.texture.width), f32(-tx.texture.height)},
+		g.render_target.texture,
+		rl.Rectangle {
+			0,
+			0,
+			f32(g.render_target.texture.width),
+			f32(-g.render_target.texture.height),
+		},
 		g.view,
 		rl.Vector2(0),
 		0,
@@ -148,7 +182,6 @@ sys_render_entities :: proc(g: ^Game) {
 
 		// TODO: For now, all entities are just drawn as circles
 		if RENDER_SIG <= e.sig {
-
 			r := e.radius
 			dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 2, r * 2}
 			origin := rl.Vector2{r, r}
@@ -159,22 +192,23 @@ sys_render_entities :: proc(g: ^Game) {
 				40.0,
 			)
 
-			texture_rect := g.textures.star_rect
+			texture: Game_TextureType = .Objects_Star
+
 			if (out_of_bounds) {
 				dest_rect.x = hit_pos.x
 				dest_rect.y = hit_pos.y
-				texture_rect = g.textures.marker_rect
+				texture = .Markers_OutOfBounds
 			}
 
 			if .Emitter in e.sig {
-				texture_rect = g.textures.emitter_rect
+				texture = .Objects_Emitter
 			}
 
 			if .CollectibleEnergy in e.sig {
-				texture_rect = g.textures.collectible_energy_rect
+				texture = .Collectibles_Energy
 			}
 
-			rl.DrawTexturePro(g.textures.atlas, texture_rect, dest_rect, origin, 0, rl.WHITE)
+			rl_texture_draw(g, texture, dest_rect, origin)
 
 			// Draw the trail if present
 			if g.show_trails && TRAIL_SIG <= e.sig {
@@ -200,33 +234,25 @@ sys_render_entities :: proc(g: ^Game) {
 }
 
 sys_render_score_panel :: proc(g: ^Game) {
-	x: i32 = 20
-	y: i32 = 20
+	draw_pos := rl.Vector2{20, 20}
+	size: rl.Vector2
+	str: cstring
 
-	str := fmt.tprintf("energy = %f", g.energy)
-	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
+	str = strings.clone_to_cstring(fmt.tprintf("energy = %f", g.energy))
+	size = rl_text_measure(g, .Body, str)
+	rl_text_draw(g, .Body, str, draw_pos)
 
-	y += 20
-	str = fmt.tprintf("objects = %d", g.total_objects)
-	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
-
-	// Star stats are only for debugging for now
-
-	y += 20
-	str = fmt.tprintf("star mass = %f", g.entities[0].mass)
-	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
-
-	y += 20
-	str = fmt.tprintf("star radius = %f", g.entities[0].radius)
-	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
+	draw_pos.y += size.y + g.fonts[.Body].size
+	str = strings.clone_to_cstring(fmt.tprintf("objects = %d", g.total_objects))
+	size = rl_text_measure(g, .Body, str)
+	rl_text_draw(g, .Body, str, draw_pos)
 
 	avg_energy: f64
-
 	for i in 0 ..< RATE_CALC_TICKS {
 		avg_energy += g.energy_gains[i] / RATE_CALC_TICKS
 	}
 
-	y += 20
-	str = fmt.tprintf("energy gain per s = %f", avg_energy)
-	rl.DrawText(strings.clone_to_cstring(str), x, y, 20, rl.WHITE)
+	draw_pos.y += size.y + g.fonts[.Body].size
+	str = strings.clone_to_cstring(fmt.tprintf("energy gain per s = %f", avg_energy))
+	rl_text_draw(g, .Body, str, draw_pos)
 }

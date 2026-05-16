@@ -9,16 +9,16 @@ Game_InitParams :: struct {
 
 game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.SetTraceLogLevel(rl.TraceLogLevel.WARNING)
-	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_RESIZABLE})
+	rl.SetConfigFlags({.MSAA_4X_HINT})
 	rl.InitWindow(params.w, params.h, "n-body forge")
 	rl.SetTargetFPS(60)
 	rl.HideCursor()
 
 	g := new(Game)
 
-	assets_load_textures(g)
-	assets_load_bg(g)
-	assets_load_shaders(g)
+	assets_map_load(g)
+	assets_textures_load(g)
+	assets_fonts_load(g)
 
 	sys_render_init(g)
 	sys_camera_init(g)
@@ -100,10 +100,7 @@ game_free :: proc(g: ^Game) {
 	rl.CloseWindow()
 
 	sys_render_free(g)
-	assets_free_shaders(g)
-	assets_free_bg(g)
-	assets_free_textures(g)
-
+	assets_map_free(g)
 }
 
 game_run :: proc(g: ^Game) {

@@ -2,76 +2,48 @@ package main
 
 import rl "vendor:raylib"
 
-// TODO: This just draws a bunch of tiled images.
-// Needs to be overhauled fully
-assets_load_bg :: proc(g: ^Game) {
-	bg := rl.LoadTexture("./assets/textures/bg.png")
-	nebula := rl.LoadTexture("./assets/textures/nebula.png")
-	bg_texture := rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
+assets_map_load :: proc(g: ^Game) {
+	g.assets.fonts[.Heading] = rl.LoadFontEx("./assets/fonts/heading.ttf", 18, nil, 0)
+	g.assets.fonts[.Body] = rl.LoadFontEx("./assets/fonts/body.ttf", 14, nil, 0)
 
-	rl.BeginTextureMode(bg_texture)
-	rl.ClearBackground(rl.BLACK)
+	g.assets.textures[.Bg] = rl.LoadTexture("./assets/textures/bg.png")
+	g.assets.textures[.Atlas] = rl.LoadTexture("./assets/textures/atlas.png")
+}
 
-	tile_size: f32 = 512
-	half_tile: f32 = tile_size / 2
+assets_map_free :: proc(g: ^Game) {
+	rl.UnloadFont(g.assets.fonts[.Heading])
+	rl.UnloadFont(g.assets.fonts[.Body])
+	rl.UnloadTexture(g.assets.textures[.Bg])
+	rl.UnloadTexture(g.assets.textures[.Atlas])
+}
 
-	for y: f32 = 0; y < 1080; y += 512 {
-		for x: f32 = 0; x < 1920; x += 512 {
-			rotation := f32(rl.GetRandomValue(0, 3)) * 90.0
-
-			source_rect := rl.Rectangle{0, 0, tile_size, tile_size}
-			dest_rect := rl.Rectangle{x + half_tile, y + half_tile, tile_size, tile_size}
-			origin := rl.Vector2{half_tile, half_tile}
-
-			rl.DrawTexturePro(
-				nebula,
-				source_rect,
-				dest_rect,
-				origin,
-				0.0,
-				rl.Color{255, 255, 255, 60},
-			)
-
-			rl.DrawTexturePro(
-				bg,
-				source_rect,
-				dest_rect,
-				origin,
-				rotation,
-				rl.Color{255, 255, 255, 60},
-			)
-		}
+assets_fonts_load :: proc(g: ^Game) {
+	g.fonts[.Heading] = {
+		font = .Heading,
+		size = 18,
 	}
-	rl.EndTextureMode()
 
-	g.textures.bg = bg_texture
+	g.fonts[.Body] = {
+		font = .Body,
+		size = 14,
+	}
 }
 
-assets_free_bg :: proc(g: ^Game) {
-	rl.UnloadRenderTexture(g.textures.bg)
-	rl.UnloadTexture(g.textures.bg.texture)
-}
-
-assets_load_shaders :: proc(g: ^Game) {
-	// TODO: Add shaders
-}
-
-assets_free_shaders :: proc(g: ^Game) {
-}
-
-assets_load_textures :: proc(g: ^Game) {
-	blank_image := rl.GenImageColor(1, 1, rl.WHITE)
-	defer rl.UnloadImage(blank_image)
-	g.textures.blank = rl.LoadTextureFromImage(blank_image)
-
-	g.textures.atlas = rl.LoadTexture("./assets/textures/atlas.png")
-	g.textures.star_rect = rl.Rectangle{0, 0, 96, 96} // TODO: Move to a more robust system
-	g.textures.marker_rect = rl.Rectangle{96, 0, 96, 96}
-	g.textures.emitter_rect = rl.Rectangle{192, 0, 96, 96}
-	g.textures.collectible_energy_rect = rl.Rectangle{192, 0, 96, 96}
-}
-
-assets_free_textures :: proc(g: ^Game) {
-	rl.UnloadTexture(g.textures.blank)
-	rl.UnloadTexture(g.textures.atlas)
+assets_textures_load :: proc(g: ^Game) {
+	g.textures[.Objects_Star] = {
+		texture = .Atlas,
+		rect    = rl.Rectangle{0, 0, 96, 96},
+	}
+	g.textures[.Markers_OutOfBounds] = {
+		texture = .Atlas,
+		rect    = rl.Rectangle{96, 0, 96, 96},
+	}
+	g.textures[.Objects_Emitter] = {
+		texture = .Atlas,
+		rect    = rl.Rectangle{192, 0, 96, 96},
+	}
+	g.textures[.Collectibles_Energy] = {
+		texture = .Atlas,
+		rect    = rl.Rectangle{192, 0, 96, 96},
+	}
 }

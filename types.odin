@@ -162,17 +162,42 @@ Game_Entity :: struct {
 	collectible_energy: CollectibleEnergyComponent,
 }
 
-Game_Shaders :: struct {}
+Assets_Font :: enum {
+	Heading,
+	Body,
+}
 
-Game_Textures :: struct {
-	render:                  rl.RenderTexture2D,
-	blank:                   rl.Texture2D,
-	bg:                      rl.RenderTexture2D,
-	atlas:                   rl.Texture2D,
-	star_rect:               rl.Rectangle,
-	marker_rect:             rl.Rectangle,
-	emitter_rect:            rl.Rectangle,
-	collectible_energy_rect: rl.Rectangle,
+Assets_Texture :: enum {
+	Bg,
+	Atlas,
+}
+
+Assets_Map :: struct {
+	fonts:    [Assets_Font]rl.Font,
+	textures: [Assets_Texture]rl.Texture2D,
+}
+
+Game_TextureType :: enum {
+	Objects_Star,
+	Objects_Emitter,
+	Markers_OutOfBounds,
+	Collectibles_Energy,
+}
+
+Game_Texture :: struct {
+	texture: Assets_Texture,
+	rect:    rl.Rectangle,
+}
+
+Game_Font :: struct {
+	font:    Assets_Font,
+	size:    f32,
+	spacing: f32,
+}
+
+Game_FontType :: enum {
+	Heading,
+	Body,
 }
 
 Game_Modifier :: struct {
@@ -224,8 +249,15 @@ Game :: struct {
 	view:                rl.Rectangle,
 	view_scale:          f32,
 	camera:              rl.Camera2D,
-	shaders:             Game_Shaders,
-	textures:            Game_Textures,
+
+	// Assets
+	assets:              Assets_Map,
+	textures:            [Game_TextureType]Game_Texture,
+	fonts:               [Game_FontType]Game_Font,
+
+	// Special render textures
+	render_target:       rl.RenderTexture2D,
+	bg_texture:          rl.RenderTexture2D,
 
 	// View options
 	show_trails:         bool,
