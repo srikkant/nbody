@@ -9,7 +9,7 @@ Game_InitParams :: struct {
 
 game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.SetTraceLogLevel(rl.TraceLogLevel.WARNING)
-	rl.SetConfigFlags({.MSAA_4X_HINT})
+	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_RESIZABLE})
 	rl.InitWindow(params.w, params.h, "n-body forge")
 	rl.SetTargetFPS(60)
 
@@ -50,12 +50,6 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.params.radii[.Moonlet] = 1.5
 	g.params.densities[.Asteroid] = 0.6
 	g.params.radii[.Asteroid] = 1
-	g.params.densities[.Pebble] = 0.4
-	g.params.radii[.Pebble] = 0.6
-	g.params.densities[.Shard] = 0.3
-	g.params.radii[.Shard] = 0.4
-	g.params.densities[.EnergyFragment] = 0.2
-	g.params.radii[.EnergyFragment] = 0.3
 
 	g.params.launch_costs[.DwarfPlanet] = 10
 	g.params.launch_costs[.Moonlet] = 5
@@ -74,11 +68,9 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.params.k_energy_source = 1
 	g.params.k_energy_momentum = 1000
 	g.params.k_mass_loss = 0.5
-	g.params.k_shatter_speed = 100
 	g.params.k_collision_mass_scale = 3.0
 	g.params.k_shatter_base = 50
 	g.params.k_debris_mass_loss = 0.25
-	g.params.k_fragment_absorb_ratio = 0.25
 	g.params.k_out_of_bounds_refund = 0.1
 	g.params.k_star_energy_scale = 0.05
 

@@ -1,12 +1,12 @@
 package main
 
 import "core:math"
+
 // TODO: Make these configurable
 RENDER_WIDTH :: 1920
 RENDER_HEIGHT :: 1080
 
 MAX_ENTITIES :: 8192
-MAX_COMPONENTS :: 10
 MAX_MODIFIERS :: 10
 MAX_TRAIL_LENGTH :: 100
 

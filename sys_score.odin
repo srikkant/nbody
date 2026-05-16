@@ -12,8 +12,6 @@ sys_score :: proc(g: ^Game) {
 		e := &g.entities[i]
 
 		if score_ticker && KE_SCORE_SIG <= e.sig {
-			if e.celestial.type <= .Pebble do continue
-
 			mass_score := e.mass
 			vel_score := rl.Vector2LengthSqr(e.velocity)
 			pos_score := 1 / (SOFTENING + rl.Vector2LengthSqr(e.pos.current))

@@ -115,21 +115,12 @@ sys_lifecycle_resolve_shatter :: proc(g: ^Game, e: ^Game_Event_Collision) {
 		vel := rl.Vector2{math.cos(angle) * spread, math.sin(angle) * spread}
 
 		id := entity_create(g)
-		frag_mass :=
-			g.params.densities[.EnergyFragment] *
-			g.params.radii[.EnergyFragment] *
-			g.params.radii[.EnergyFragment]
-		offset := rl.Vector2 {
-			impact_point.x + math.cos(angle) * (g.params.radii[.EnergyFragment] * 3),
-			impact_point.y + math.sin(angle) * (g.params.radii[.EnergyFragment] * 3),
-		}
+		offset := rl.Vector2{impact_point.x + math.cos(angle), impact_point.y + math.sin(angle)}
 
-		entity_add_mass(g, id, frag_mass)
-		entity_add_radius(g, id, g.params.radii[.EnergyFragment])
 		entity_add_position(g, id, {current = offset})
+		entity_add_radius(g, id, 10)
 		entity_add_life(g, id, {g.elapsed})
 		entity_add_renderable(g, id, {})
-		entity_add_celestial(g, id, {.EnergyFragment})
 		entity_add_collectible_energy(g, id, {energy = frag_energy_each})
 	}
 }
@@ -230,7 +221,6 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
-		if e.celestial.type != .EnergyFragment do continue
 		if delete_entities[i] do continue
 		if !(.CollectibleEnergy in e.sig) do continue
 

@@ -83,7 +83,8 @@ sys_input :: proc(g: ^Game) {
 				emit_density = g.params.densities[.DwarfPlanet],
 				emit_radius = g.params.radii[.DwarfPlanet],
 				base_cost = f64(g.params.launch_costs[.DwarfPlanet]),
-				timer = Timer{interval = 3},
+				timer = Timer{interval = 2},
+				destroy_timer = Timer{interval = 10},
 			},
 		}
 	}

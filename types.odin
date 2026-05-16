@@ -61,14 +61,12 @@ EmitterComponent :: struct {
 	max_count:      int,
 	current_count:  int,
 	timer:          Timer,
+	destroy_timer:  Timer,
 	base_cost:      f64,
 }
 
 CelestialType :: enum {
 	None,
-	EnergyFragment,
-	Shard,
-	Pebble,
 	Asteroid,
 	Moonlet,
 	DwarfPlanet,
@@ -189,25 +187,23 @@ Game_Modifier :: struct {
 }
 
 Game_Parameters :: struct {
-	g:                       f32,
-	densities:               [CelestialType]f32,
-	radii:                   [CelestialType]f32,
-	launch_costs:            [CelestialType]f32,
-	slingshot_power:         f32,
-	slingshot_preview_len:   i32,
-	sim_rate:                f32,
-	k_energy_gain:           f32,
-	k_energy_loss:           f32,
-	k_energy_source:         f32,
-	k_energy_momentum:       f32,
-	k_mass_loss:             f32,
-	k_shatter_speed:         f32,
-	k_collision_mass_scale:  f32,
-	k_shatter_base:          f32,
-	k_debris_mass_loss:      f32,
-	k_fragment_absorb_ratio: f32,
-	k_out_of_bounds_refund:  f32,
-	k_star_energy_scale:     f32,
+	g:                      f32,
+	densities:              [CelestialType]f32,
+	radii:                  [CelestialType]f32,
+	launch_costs:           [CelestialType]f32,
+	slingshot_power:        f32,
+	slingshot_preview_len:  i32,
+	sim_rate:               f32,
+	k_energy_gain:          f32,
+	k_energy_loss:          f32,
+	k_energy_source:        f32,
+	k_energy_momentum:      f32,
+	k_mass_loss:            f32,
+	k_collision_mass_scale: f32,
+	k_shatter_base:         f32,
+	k_debris_mass_loss:     f32,
+	k_out_of_bounds_refund: f32,
+	k_star_energy_scale:    f32,
 }
 
 Game :: struct {

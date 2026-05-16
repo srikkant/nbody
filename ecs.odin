@@ -114,7 +114,7 @@ entity_celestial_next_type :: proc(t: CelestialType) -> CelestialType {
 entity_celestial_prev_type :: proc(t: CelestialType, steps: int = 1) -> CelestialType {
 	if t == .None do return .None
 	idx := int(t) - steps
-	if idx <= int(CelestialType.EnergyFragment) do return CelestialType.EnergyFragment
+	if idx <= int(CelestialType.Asteroid) do return CelestialType.Asteroid
 	return CelestialType(idx)
 }
 

@@ -7,6 +7,7 @@ sys_emitters :: proc(g: ^Game) {
 		e := &g.entities[i]
 		if EMITTER_SIG <= e.sig {
 			done := utils_math_update_timer(&e.emitter.timer, dt)
+			destroy := utils_math_update_timer(&e.emitter.destroy_timer, dt)
 
 			if done && g.energy >= e.emitter.base_cost {
 				push_event(
@@ -21,10 +22,15 @@ sys_emitters :: proc(g: ^Game) {
 					},
 				)
 
+
 				e.emitter.current_count += 1
 				if e.emitter.current_count == e.emitter.max_count {
-					push_event(g, Game_Event_ObjectDestroyed{Entity(i)})
+					destroy = true
 				}
+			}
+
+			if destroy {
+				push_event(g, Game_Event_ObjectDestroyed{Entity(i)})
 			}
 		}
 	}
