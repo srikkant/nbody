@@ -1,5 +1,6 @@
 package main
 
+import "core:sys/haiku"
 import rl "vendor:raylib"
 
 Entity :: distinct u64
@@ -58,6 +59,7 @@ EmitterComponent :: struct {
 	emit_radius:    f32,
 	emit_vel:       rl.Vector2,
 	emit_celestial: CelestialComponent,
+	emit_color:     rl.Color,
 	max_count:      int,
 	current_count:  int,
 	timer:          Timer,
@@ -85,7 +87,9 @@ CelestialComponent :: struct {
 	type: CelestialType,
 }
 
-RenderableComponent :: struct {}
+RenderableComponent :: struct {
+	color: rl.Color,
+}
 
 CollectibleEnergyComponent :: struct {
 	energy: f64,
@@ -119,6 +123,7 @@ Game_Event_ObjectSpawn :: struct {
 	radius:        f32,
 	velocity:      rl.Vector2,
 	show_trail:    bool,
+	renderable:    RenderableComponent,
 	energy_source: EnergySourceComponent,
 	emitter:       EmitterComponent,
 	celestial:     CelestialComponent,
@@ -168,13 +173,19 @@ Assets_Font :: enum {
 }
 
 Assets_Texture :: enum {
+	Blank,
 	Bg,
 	Atlas,
+}
+
+Assets_Shader :: enum {
+	Objects_Base,
 }
 
 Assets_Map :: struct {
 	fonts:    [Assets_Font]rl.Font,
 	textures: [Assets_Texture]rl.Texture2D,
+	shaders:  [Assets_Shader]rl.Shader,
 }
 
 Game_TextureType :: enum {
@@ -182,6 +193,15 @@ Game_TextureType :: enum {
 	Objects_Emitter,
 	Markers_OutOfBounds,
 	Collectibles_Energy,
+}
+
+Game_FontType :: enum {
+	Heading,
+	Body,
+}
+
+Game_ShaderType :: enum {
+	Objects_Layer,
 }
 
 Game_Texture :: struct {
@@ -195,9 +215,8 @@ Game_Font :: struct {
 	spacing: f32,
 }
 
-Game_FontType :: enum {
-	Heading,
-	Body,
+Game_Shader :: struct {
+	shader: Assets_Shader,
 }
 
 Game_Modifier :: struct {
@@ -253,6 +272,7 @@ Game :: struct {
 	// Assets
 	assets:              Assets_Map,
 	textures:            [Game_TextureType]Game_Texture,
+	shaders:             [Game_ShaderType]Game_Shader,
 	fonts:               [Game_FontType]Game_Font,
 
 	// Special render textures
@@ -260,6 +280,7 @@ Game :: struct {
 	bg_texture:          rl.RenderTexture2D,
 
 	// View options
+	available_colors:    [10]rl.Color,
 	show_trails:         bool,
 
 	// Entities

@@ -9,7 +9,7 @@ Game_InitParams :: struct {
 
 game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.SetTraceLogLevel(rl.TraceLogLevel.WARNING)
-	rl.SetConfigFlags({.MSAA_4X_HINT})
+	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_RESIZABLE})
 	rl.InitWindow(params.w, params.h, "n-body forge")
 	rl.SetTargetFPS(60)
 	rl.HideCursor()
@@ -78,6 +78,17 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.params.k_collect_dist_sq = g.params.k_collect_dist * g.params.k_collect_dist
 
 	g.available_objects += {.DwarfPlanet}
+
+	g.available_colors[0] = rl.Color{255, 179, 0, 255} // bright orange
+	g.available_colors[1] = rl.Color{255, 94, 98, 255} // coral / warm red
+	g.available_colors[2] = rl.Color{0, 183, 255, 255} // sky cyan
+	g.available_colors[3] = rl.Color{102, 255, 178, 255} // teal / aqua
+	g.available_colors[4] = rl.Color{177, 228, 255, 255}
+	g.available_colors[5] = rl.Color{255, 198, 255, 255} // soft pink
+	g.available_colors[6] = rl.Color{255, 235, 59, 255} // bright yellow
+	g.available_colors[7] = rl.Color{0, 132, 255, 255} // vivid blue
+	g.available_colors[8] = rl.Color{102, 255, 102, 255} // lime green
+	g.available_colors[9] = rl.Color{255, 255, 255, 255} // white
 
 	second_timer := Timer{0, 1}
 

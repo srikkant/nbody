@@ -19,6 +19,7 @@ sys_emitters :: proc(g: ^Game) {
 						radius = e.emitter.emit_radius,
 						show_trail = true,
 						celestial = e.emitter.emit_celestial,
+						renderable = RenderableComponent{color = e.emitter.emit_color},
 					},
 				)
 

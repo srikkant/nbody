@@ -52,7 +52,7 @@ sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^Game_Event_ObjectSpawn) {
 	entity_add_energy_source(g, id, event.energy_source)
 
 	entity_add_life(g, id, {g.elapsed})
-	entity_add_renderable(g, id, {})
+	entity_add_renderable(g, id, event.renderable)
 	entity_add_tags(g, id, event.tags)
 	entity_add_emitter(g, id, event.emitter)
 	entity_add_celestial(g, id, event.celestial)

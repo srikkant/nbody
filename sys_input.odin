@@ -29,6 +29,7 @@ sys_input :: proc(g: ^Game) {
 		}
 
 		cost: f64
+		color := get_object_color(g)
 
 		switch out in g.slingshot.output {
 		case Game_SlingshotOutput_Emitter:
@@ -39,6 +40,7 @@ sys_input :: proc(g: ^Game) {
 			event.emitter.emit_vel = vel
 			event.emitter.emit_density = g.params.densities[out.emitter.emit_celestial.type]
 			event.emitter.emit_radius = g.params.radii[out.emitter.emit_celestial.type]
+			event.emitter.emit_color = color
 			cost = f64(
 				g.params.k_energy_loss *
 				(event.density * event.radius * event.radius * rl.Vector2LengthSqr(vel)),
@@ -50,6 +52,7 @@ sys_input :: proc(g: ^Game) {
 			event.radius = g.params.radii[out.celestial.type]
 			event.velocity = vel
 			event.show_trail = true
+			event.renderable = RenderableComponent{color}
 			cost = f64(
 				g.params.launch_costs[out.celestial.type] +
 				g.params.k_energy_loss *

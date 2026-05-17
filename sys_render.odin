@@ -225,7 +225,7 @@ sys_render_entities :: proc(g: ^Game) {
 				rl.DrawLineStrip(
 					raw_data(ordered_points[:]),
 					i32(e.trail.count + 1),
-					rl.Fade(rl.WHITE, 0.5),
+					rl.Fade(e.renderable.color, 0.5),
 				)
 			}
 		}
