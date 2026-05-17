@@ -13,7 +13,7 @@ sys_score :: proc(g: ^Game) {
 
 		if score_ticker && KE_SCORE_SIG <= e.sig {
 			mass_score := e.mass
-			vel_score := rl.Vector2LengthSqr(e.velocity)
+			vel_score := rl.Vector2LengthSqr(e.velocity.current)
 			pos_score := 1 / (SOFTENING + rl.Vector2LengthSqr(e.pos.current))
 
 			g.energy += f64(

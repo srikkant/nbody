@@ -15,6 +15,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.HideCursor()
 
 	g := new(Game)
+	defer free(g)
 
 	assets_map_load(g)
 	assets_textures_load(g)

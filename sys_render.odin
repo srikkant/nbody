@@ -148,12 +148,11 @@ sys_render_slingshot :: proc(g: ^Game) {
 	dt := frame_time() * g.params.sim_rate * 5 // 5x realtime for the preview
 
 	star := &g.entities[Entity(0)]
-	frames := g.params.slingshot_preview_len * i32(g.slingshot.preview)
-	preview_points := make([^]rl.Vector2, frames + 1)
-	preview_points[0] = g.slingshot.start_pos
-	preview_points_count: i32 = 1
 
-	for _ in 0 ..= frames {
+	frames := g.params.slingshot_preview_len * i32(g.slingshot.preview)
+
+	g.slingshot.preview_points[0] = g.slingshot.start_pos
+	for idx in 1 ..= frames {
 		acc, dist := physics_get_gravitational_acceleration(
 			g,
 			pos,
@@ -164,16 +163,19 @@ sys_render_slingshot :: proc(g: ^Game) {
 		)
 
 		collision := dist < (ss_obj_radius + star.radius) * (ss_obj_radius + star.radius)
-		if collision do break
+		if collision {
+			frames = idx
+			break
+		}
 
 		vel += acc * dt
 		pos += vel * dt
 
-		preview_points[preview_points_count] = pos
-		preview_points_count += 1
+		g.slingshot.preview_points[idx] = pos
 	}
 
-	rl.DrawLineStrip(preview_points, preview_points_count, rl.Color{255, 255, 255, 200})
+	raw_ptr := ([^][2]f32)(&g.slingshot.preview_points[0])
+	rl.DrawLineStrip(raw_ptr, frames, rl.Color{255, 255, 255, 200})
 }
 
 sys_render_entities :: proc(g: ^Game) {
@@ -236,16 +238,20 @@ sys_render_entities :: proc(g: ^Game) {
 sys_render_score_panel :: proc(g: ^Game) {
 	draw_pos := rl.Vector2{20, 20}
 	size: rl.Vector2
-	str: cstring
 
-	str = strings.clone_to_cstring(fmt.tprintf("energy = %f", g.energy))
-	size = rl_text_measure(g, .Body, str)
-	rl_text_draw(g, .Body, str, draw_pos)
+	cstr: cstring
+
+	str := fmt.bprintf(g.render_state.score_energy_buf[:], "energy = %.2f", g.energy)
+	cstr = cstring(raw_data(str))
+	size = rl_text_measure(g, .Body, cstr)
+	rl_text_draw(g, .Body, cstr, draw_pos)
+
 
 	draw_pos.y += size.y + g.fonts[.Body].size
-	str = strings.clone_to_cstring(fmt.tprintf("objects = %d", g.total_objects))
-	size = rl_text_measure(g, .Body, str)
-	rl_text_draw(g, .Body, str, draw_pos)
+	str = fmt.bprintf(g.render_state.score_objects_count_buf[:], "objects = %d", g.total_objects)
+	cstr = cstring(raw_data(str))
+	size = rl_text_measure(g, .Body, cstr)
+	rl_text_draw(g, .Body, cstr, draw_pos)
 
 	avg_energy: f64
 	for i in 0 ..< RATE_CALC_TICKS {
@@ -253,6 +259,11 @@ sys_render_score_panel :: proc(g: ^Game) {
 	}
 
 	draw_pos.y += size.y + g.fonts[.Body].size
-	str = strings.clone_to_cstring(fmt.tprintf("energy gain per s = %f", avg_energy))
-	rl_text_draw(g, .Body, str, draw_pos)
+	str = fmt.bprintf(
+		g.render_state.score_avg_energy_buf[:],
+		"energy gain per s = %.2f",
+		avg_energy,
+	)
+	cstr = cstring(raw_data(str))
+	rl_text_draw(g, .Body, cstr, draw_pos)
 }

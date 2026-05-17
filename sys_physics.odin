@@ -6,11 +6,9 @@ import rl "vendor:raylib"
 sys_physics :: proc(g: ^Game) {
 	dt := frame_time() * g.params.sim_rate
 
-	accels := make([]rl.Vector2, g.entities_count)
-	defer delete(accels)
-
 	for i in 0 ..< g.entities_count {
 		e1 := &g.entities[i]
+
 		if !(PHYSICS_SIG <= e1.sig) do continue
 
 		total_accel := rl.Vector2(0)
@@ -46,15 +44,15 @@ sys_physics :: proc(g: ^Game) {
 			}
 		}
 
-		accels[i] = total_accel
+		e1.velocity.acceleration = total_accel
 	}
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
 		if !(PHYSICS_SIG <= e.sig) || e.celestial.type == .Star do continue
 
-		e.velocity += accels[i] * dt
-		e.pos.current += e.velocity * dt
+		e.velocity.current += e.velocity.acceleration * dt
+		e.pos.current += e.velocity.current * dt
 
 		if TRAIL_SIG <= e.sig {
 			angle := math.atan2(e.pos.current.y, e.pos.current.x)

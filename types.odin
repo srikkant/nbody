@@ -1,6 +1,5 @@
 package main
 
-import "core:sys/haiku"
 import rl "vendor:raylib"
 
 Entity :: distinct u64
@@ -39,7 +38,10 @@ PositionTrailComponent :: struct {
 	count:  int,
 }
 
-VelocityComponent :: rl.Vector2
+VelocityComponent :: struct {
+	current:      rl.Vector2,
+	acceleration: rl.Vector2,
+}
 
 MassComponent :: f32
 
@@ -109,12 +111,13 @@ Game_SlingshotOutput :: union {
 }
 
 Game_Slingshot :: struct {
-	output:       Game_SlingshotOutput,
-	active:       bool,
-	can_launch:   bool,
-	start_pos:    rl.Vector2,
-	launch_power: f32,
-	preview:      f32,
+	output:         Game_SlingshotOutput,
+	active:         bool,
+	can_launch:     bool,
+	start_pos:      rl.Vector2,
+	launch_power:   f32,
+	preview:        f32,
+	preview_points: [100]rl.Vector2,
 }
 
 Game_Event_ObjectSpawn :: struct {
@@ -252,6 +255,18 @@ Game_Parameters :: struct {
 	k_collect_dist_sq:      f32,
 }
 
+Game_RenderState :: struct {
+	objects:                 [MAX_ENTITIES]Entity,
+	objects_count:           int,
+	collectibles:            [MAX_ENTITIES]Entity,
+	collectibles_count:      int,
+	trails:                  [MAX_ENTITIES]PositionTrailComponent,
+	trails_count:            int,
+	score_energy_buf:        [128]byte,
+	score_objects_count_buf: [128]byte,
+	score_avg_energy_buf:    [128]byte,
+}
+
 Game :: struct {
 	elapsed:             f32,
 	params:              Game_Parameters,
@@ -268,6 +283,7 @@ Game :: struct {
 	view:                rl.Rectangle,
 	view_scale:          f32,
 	camera:              rl.Camera2D,
+	render_state:        Game_RenderState,
 
 	// Assets
 	assets:              Assets_Map,
