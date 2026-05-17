@@ -38,7 +38,7 @@ assets_fonts_load :: proc(g: ^Game) {
 }
 
 assets_textures_load :: proc(g: ^Game) {
-	g.textures[.Objects_Star] = {
+	g.textures[.Objects_Celestial] = {
 		texture = .Blank,
 		rect    = rl.Rectangle{0, 0, 1, 1},
 	}

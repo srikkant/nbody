@@ -38,6 +38,7 @@ rl_texture_draw :: proc(
 	dest: rl.Rectangle,
 	origin: rl.Vector2 = rl.Vector2(0),
 	rotation: f32 = 0,
+	tint: rl.Color = rl.WHITE,
 ) {
 	rl.DrawTexturePro(
 		g.assets.textures[g.textures[type].texture],
@@ -45,6 +46,14 @@ rl_texture_draw :: proc(
 		dest,
 		origin,
 		rotation,
-		rl.WHITE,
+		tint,
 	)
+}
+
+rl_begin_shader :: proc(g: ^Game, type: Game_ShaderType) {
+	rl.BeginShaderMode(g.assets.shaders[g.shaders[type].shader])
+}
+
+rl_end_shader :: proc(g: ^Game) {
+	rl.EndShaderMode()
 }

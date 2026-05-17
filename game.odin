@@ -102,6 +102,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 			density = g.params.densities[.Star],
 			radius = g.params.radii[.Star],
 			energy_source = {output = 10, timer = second_timer},
+			renderable = {rl.WHITE},
 		},
 	)
 

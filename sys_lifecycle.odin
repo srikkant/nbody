@@ -104,12 +104,13 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	pos := (e1.pos.current + e2.pos.current) * 0.5
 
 	id := entity_create(g)
+
 	entity_add_mass(g, id, new_mass)
 	entity_add_radius(g, id, new_radius)
 	entity_add_position(g, id, {current = pos})
 	entity_add_velocity(g, id, {current = new_vel})
 	entity_add_life(g, id, {g.elapsed})
-	entity_add_renderable(g, id, {})
+	entity_add_renderable(g, id, {e1.renderable.color})
 	entity_add_celestial(g, id, {new_type})
 	entity_add_position_trail(g, id, {})
 

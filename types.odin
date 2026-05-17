@@ -192,7 +192,7 @@ Assets_Map :: struct {
 }
 
 Game_TextureType :: enum {
-	Objects_Star,
+	Objects_Celestial,
 	Objects_Emitter,
 	Markers_OutOfBounds,
 	Collectibles_Energy,
@@ -260,7 +260,7 @@ Game_RenderState :: struct {
 	objects_count:           int,
 	collectibles:            [MAX_ENTITIES]Entity,
 	collectibles_count:      int,
-	trails:                  [MAX_ENTITIES]PositionTrailComponent,
+	trails:                  [MAX_ENTITIES]Entity,
 	trails_count:            int,
 	score_energy_buf:        [128]byte,
 	score_objects_count_buf: [128]byte,

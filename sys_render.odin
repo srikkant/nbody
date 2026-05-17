@@ -74,6 +74,10 @@ sys_render :: proc(g: ^Game) {
 
 	rl.BeginMode2D(g.camera)
 
+	g.render_state.trails_count = 0
+	g.render_state.objects_count = 0
+	g.render_state.collectibles_count = 0
+
 	sys_render_cursor(g)
 	sys_render_slingshot(g)
 	sys_render_entities(g)
@@ -182,56 +186,92 @@ sys_render_entities :: proc(g: ^Game) {
 	for id in 0 ..< g.entities_count {
 		e := g.entities[id]
 
-		// TODO: For now, all entities are just drawn as circles
 		if RENDER_SIG <= e.sig {
-			r := e.radius
-			dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 2, r * 2}
-			origin := rl.Vector2{r, r}
-
-			hit_pos, out_of_bounds := geometry_get_rectangle_intersection_point(
-				rl.Rectangle{-g.camera.offset.x, -g.camera.offset.y, RENDER_WIDTH, RENDER_HEIGHT},
-				e.pos.current,
-				40.0,
-			)
-
-			texture: Game_TextureType = .Objects_Star
-
-			if (out_of_bounds) {
-				dest_rect.x = hit_pos.x
-				dest_rect.y = hit_pos.y
-				texture = .Markers_OutOfBounds
+			if .Celestial in e.sig {
+				g.render_state.objects[g.render_state.objects_count] = Entity(id)
+				g.render_state.objects_count += 1
 			}
 
-			if .Emitter in e.sig {
-				texture = .Objects_Emitter
+			if .PositionTrail in e.sig {
+				g.render_state.trails[g.render_state.trails_count] = Entity(id)
+				g.render_state.trails_count += 1
 			}
 
 			if .CollectibleEnergy in e.sig {
-				texture = .Collectibles_Energy
-			}
-
-			rl_texture_draw(g, texture, dest_rect, origin)
-
-			// Draw the trail if present
-			if g.show_trails && TRAIL_SIG <= e.sig {
-				ordered_points: [MAX_TRAIL_LENGTH + 1]rl.Vector2
-
-				for i in 0 ..< e.trail.count {
-					// Find the oldest point and work forward
-					oldest_index :=
-						(e.trail.head - e.trail.count + i + MAX_TRAIL_LENGTH) % MAX_TRAIL_LENGTH
-					ordered_points[i] = e.trail.points[oldest_index]
-				}
-
-				ordered_points[e.trail.count] = e.pos.current
-				rl.DrawLineStrip(
-					raw_data(ordered_points[:]),
-					i32(e.trail.count + 1),
-					rl.Fade(e.renderable.color, 0.5),
-				)
+				g.render_state.collectibles[g.render_state.collectibles_count] = Entity(id)
+				g.render_state.collectibles_count += 1
 			}
 		}
+	}
 
+	rl_begin_shader(g, .Objects_Layer)
+
+	for i in 0 ..< g.render_state.objects_count {
+		texture: Game_TextureType = .Objects_Celestial
+
+		e := &g.entities[g.render_state.objects[i]]
+		r := e.radius
+		tint := e.renderable.color
+
+		dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 2, r * 2}
+		hit_pos, out_of_bounds := geometry_get_rectangle_intersection_point(
+			rl.Rectangle{-g.camera.offset.x, -g.camera.offset.y, RENDER_WIDTH, RENDER_HEIGHT},
+			e.pos.current,
+			40.0,
+		)
+
+		if (out_of_bounds) {
+			dest_rect.x = hit_pos.x
+			dest_rect.y = hit_pos.y
+			texture = .Markers_OutOfBounds
+		}
+
+		if .Emitter in e.sig {
+			texture = .Objects_Emitter
+			tint = e.emitter.emit_color
+		}
+
+		rl_texture_draw(g, texture, dest_rect, rl.Vector2(r), tint = tint)
+	}
+
+	rl_end_shader(g)
+
+	rl_begin_shader(g, .Objects_Layer)
+
+	for i in 0 ..< g.render_state.collectibles_count {
+		e := &g.entities[g.render_state.collectibles[i]]
+
+		rl_texture_draw(
+			g,
+			.Collectibles_Energy,
+			rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius * 2, e.radius * 2},
+			rl.Vector2(e.radius),
+			tint = rl.BLUE, // TODO: Change to some collectible energy color
+		)
+	}
+
+	rl_end_shader(g)
+
+	if g.show_trails {
+		for i in 0 ..< g.render_state.trails_count {
+			e := &g.entities[g.render_state.trails[i]]
+
+			ordered_points: [MAX_TRAIL_LENGTH + 1]rl.Vector2
+
+			for i in 0 ..< e.trail.count {
+				// Find the oldest point and work forward
+				oldest_index :=
+					(e.trail.head - e.trail.count + i + MAX_TRAIL_LENGTH) % MAX_TRAIL_LENGTH
+				ordered_points[i] = e.trail.points[oldest_index]
+			}
+
+			ordered_points[e.trail.count] = e.pos.current
+			rl.DrawLineStrip(
+				raw_data(ordered_points[:]),
+				i32(e.trail.count + 1),
+				rl.Fade(e.renderable.color, 0.5),
+			)
+		}
 	}
 }
 
