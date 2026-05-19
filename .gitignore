@@ -5,5 +5,9 @@ nbody
 .vscode
 
 nbody.dSYM/
+*.exe
+*.pdb
+*.dSYM
+*.rdi
 
 .DS_Store
