@@ -25,9 +25,6 @@ sys_lifecycle_spawn_fragments :: proc(g: ^Game, energy: f64, rel_speed: f32, pos
 
 	for f in 0 ..< frag_count {
 		angle := (math.PI * 2.0 * f32(f)) / f32(frag_count) + math.PI / f32(frag_count)
-		spread := rel_speed * 0.15
-		vel := rl.Vector2{math.cos(angle) * spread, math.sin(angle) * spread}
-
 		id := entity_create(g)
 		offset := rl.Vector2{pos.x + math.cos(angle), pos.y + math.sin(angle)}
 

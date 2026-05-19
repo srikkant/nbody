@@ -19,12 +19,13 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	assets_map_load(g)
 	assets_textures_load(g)
 	assets_fonts_load(g)
+	assets_shaders_load(g)
 
 	sys_render_init(g)
 	sys_camera_init(g)
 	sys_lifecycle_init(g)
 
-	g.theme.color_bg = rl.Color{11, 12, 24, 255}
+	g.theme.color_bg = rl.Color{12, 12, 24, 255}
 
 	g.params.g = 1
 
@@ -107,7 +108,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 			density = g.params.densities[.Star],
 			radius = g.params.radii[.Star],
 			energy_source = {output = 10, timer = {interval = 1}},
-			renderable = {rl.WHITE},
+			renderable = {rl.RAYWHITE},
 		},
 	)
 

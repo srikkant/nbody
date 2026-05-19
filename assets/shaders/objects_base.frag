@@ -6,9 +6,17 @@ in vec4 fragColor;
 out vec4 finalColor;
 
 void main() {
-    vec2 center = vec2(0.5, 0.5);
-    float dist = distance(fragTexCoord, center);
-    float glow = 1.0 - smoothstep(0.4, 0.6, dist);
+    vec2 uv = fragTexCoord - vec2(0.5);
+    float dist = length(uv);
 
-    finalColor = vec4(fragColor.rgb * glow, glow);
+    // Assuming quad is drawn at 4x physics radius.
+    // dist 0.25 = physics radius.
+    // dist 0.5 = edge of quad.
+
+    float core = 1.0 - smoothstep(0.24, 0.25, dist);
+    float halo = 1.0 - smoothstep(0.20, 0.5, dist);
+
+    float alpha = max(core, halo * 0.5) * fragColor.a;
+
+    finalColor = vec4(fragColor.rgb, alpha);
 }

@@ -185,6 +185,8 @@ Assets_Texture :: enum {
 }
 
 Assets_Shader :: enum {
+	Vignette,
+	Objects_Glow,
 	Objects_Base,
 }
 
@@ -195,6 +197,7 @@ Assets_Map :: struct {
 }
 
 Game_TextureType :: enum {
+	Blank,
 	Objects_Celestial,
 	Objects_Emitter,
 	Markers_OutOfBounds,
@@ -207,6 +210,8 @@ Game_FontType :: enum {
 }
 
 Game_ShaderType :: enum {
+	Bg_Vignette,
+	Stars_Layer,
 	Objects_Layer,
 }
 
@@ -259,6 +264,8 @@ Game_Parameters :: struct {
 }
 
 Game_RenderState :: struct {
+	stars:                   [MAX_ENTITIES]Entity,
+	stars_count:             int,
 	objects:                 [MAX_ENTITIES]Entity,
 	objects_count:           int,
 	collectibles:            [MAX_ENTITIES]Entity,

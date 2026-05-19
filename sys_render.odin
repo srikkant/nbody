@@ -2,18 +2,10 @@ package main
 
 import "core:fmt"
 import "core:math"
-import "core:strings"
 import rl "vendor:raylib"
 
 sys_render_init :: proc(g: ^Game) {
 	g.render_target = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
-
-	// TODO: This just draws a tiled images.
-	// Needs to be overhauled fully
-	g.bg_texture = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
-
-	rl.BeginTextureMode(g.bg_texture)
-	rl.EndTextureMode()
 }
 
 sys_render_free :: proc(g: ^Game) {
@@ -39,22 +31,20 @@ sys_render :: proc(g: ^Game) {
 	g.view_scale = scale
 
 	rl.BeginTextureMode(g.render_target)
+
+	rl_begin_shader(g, .Bg_Vignette)
+	rl.ClearBackground(rl.BLACK)
+	rl_texture_draw(g, .Blank, {0, 0, RENDER_WIDTH, RENDER_HEIGHT}, tint = g.theme.color_bg)
+	rl_end_shader(g)
+
 	rl.BeginBlendMode(.ADDITIVE)
-	rl.ClearBackground(g.theme.color_bg)
-	rl.DrawTexturePro(
-		g.bg_texture.texture,
-		rl.Rectangle{0, 0, f32(g.bg_texture.texture.width), f32(-g.bg_texture.texture.height)},
-		rl.Rectangle{0, 0, RENDER_WIDTH, RENDER_HEIGHT},
-		rl.Vector2(0),
-		0,
-		rl.WHITE,
-	)
 
 	rl.BeginMode2D(g.camera)
 
 	g.render_state.orbit_points_count = 0
 	g.render_state.objects_count = 0
 	g.render_state.collectibles_count = 0
+	g.render_state.stars_count = 0
 
 	sys_render_cursor(g)
 	sys_render_slingshot(g)
@@ -166,8 +156,14 @@ sys_render_entities :: proc(g: ^Game) {
 
 		if RENDER_SIG <= e.sig {
 			if .Celestial in e.sig {
-				g.render_state.objects[g.render_state.objects_count] = Entity(id)
-				g.render_state.objects_count += 1
+				// Celestials will be further classified.
+				if e.celestial.type == .Star {
+					g.render_state.stars[g.render_state.stars_count] = Entity(id)
+					g.render_state.stars_count += 1
+				} else {
+					g.render_state.objects[g.render_state.objects_count] = Entity(id)
+					g.render_state.objects_count += 1
+				}
 			}
 
 			if .Orbit in e.sig {
@@ -182,6 +178,23 @@ sys_render_entities :: proc(g: ^Game) {
 		}
 	}
 
+	rl_begin_shader(g, .Stars_Layer)
+
+	shader := g.assets.shaders[g.shaders[.Stars_Layer].shader]
+	loc := rl.GetShaderLocation(shader, "seconds")
+	rl.SetShaderValue(shader, loc, &g.elapsed, .FLOAT)
+
+	for i in 0 ..< g.render_state.stars_count {
+		e := &g.entities[g.render_state.stars[i]]
+		r := e.radius
+		tint := e.renderable.color
+
+		dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 4, r * 4}
+		rl_texture_draw(g, .Objects_Celestial, dest_rect, rl.Vector2(r * 2), tint = tint)
+	}
+
+	rl_end_shader(g)
+
 	rl_begin_shader(g, .Objects_Layer)
 
 	for i in 0 ..< g.render_state.objects_count {
@@ -191,7 +204,7 @@ sys_render_entities :: proc(g: ^Game) {
 		r := e.radius
 		tint := e.renderable.color
 
-		dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 2, r * 2}
+		dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 4, r * 4}
 		hit_pos, out_of_bounds := geometry_get_rectangle_intersection_point(
 			rl.Rectangle{-g.camera.offset.x, -g.camera.offset.y, RENDER_WIDTH, RENDER_HEIGHT},
 			e.pos.current,
@@ -209,7 +222,7 @@ sys_render_entities :: proc(g: ^Game) {
 			tint = e.emitter.emit_color
 		}
 
-		rl_texture_draw(g, texture, dest_rect, rl.Vector2(r), tint = tint)
+		rl_texture_draw(g, texture, dest_rect, rl.Vector2(r * 2), tint = tint)
 	}
 
 	rl_end_shader(g)
@@ -222,8 +235,8 @@ sys_render_entities :: proc(g: ^Game) {
 		rl_texture_draw(
 			g,
 			.Collectibles_Energy,
-			rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius * 2, e.radius * 2},
-			rl.Vector2(e.radius),
+			rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius * 4, e.radius * 4},
+			rl.Vector2(e.radius * 2),
 			tint = rl.BLUE, // TODO: Change to some collectible energy color
 		)
 	}
@@ -235,36 +248,34 @@ sys_render_entities :: proc(g: ^Game) {
 
 		zero: rl.Vector2
 
-		for i in 0 ..< POSITION_TRAIL_LENGTH - 1 {
-			start := (e.pos.trail_head + i) % POSITION_TRAIL_LENGTH
-			end := (e.pos.trail_head + i + 1) % POSITION_TRAIL_LENGTH
+		for j in 0 ..< POSITION_TRAIL_LENGTH - 1 {
+			start := (e.pos.trail_head + j) % POSITION_TRAIL_LENGTH
+			end := (e.pos.trail_head + j + 1) % POSITION_TRAIL_LENGTH
 
 			if e.pos.trail[start] == e.pos.trail[end] do break
 			if e.pos.trail[start] == zero || e.pos.trail[end] == zero do continue
 
-			fade_factor := (f32(i) / f32(POSITION_TRAIL_LENGTH))
+			fade_factor := (f32(j) / f32(POSITION_TRAIL_LENGTH))
 			trail_col := e.renderable.color
 			trail_col.a = u8(255.0 * fade_factor)
 			thickness := 2 * e.radius * fade_factor
 
 			rl.DrawLineEx(e.pos.trail[start], e.pos.trail[end], thickness, trail_col)
 
-			if i == POSITION_TRAIL_LENGTH - 2 {
+			if j == POSITION_TRAIL_LENGTH - 2 {
 				rl.DrawLineEx(e.pos.trail[end], e.pos.current, e.radius * 2, e.renderable.color)
 			}
 		}
 
 		ordered_points: [MAX_ORBIT_LENGTH + 1]rl.Vector2
-		for i in 0 ..< e.orbit.count {
+		for j in 0 ..< e.orbit.count {
 			// Find the oldest point and work forward
 			oldest_index :=
-				(e.orbit.head - e.orbit.count + i + MAX_ORBIT_LENGTH) % MAX_ORBIT_LENGTH
-			ordered_points[i] = e.orbit.points[oldest_index]
+				(e.orbit.head - e.orbit.count + j + MAX_ORBIT_LENGTH) % MAX_ORBIT_LENGTH
+			ordered_points[j] = e.orbit.points[oldest_index]
 		}
 
 		ordered_points[e.orbit.count] = e.pos.current
-
-		// TODO: Potentially move this to the loop above
 		if g.show_orbits {
 			rl.DrawLineStrip(
 				raw_data(ordered_points[:]),
