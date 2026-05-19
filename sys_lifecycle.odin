@@ -57,8 +57,8 @@ sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^Game_Event_ObjectSpawn) {
 	entity_add_emitter(g, id, event.emitter)
 	entity_add_celestial(g, id, event.celestial)
 
-	if event.show_trail {
-		entity_add_position_trail(g, id, {})
+	if event.show_orbit {
+		entity_add_orbit(g, id, {})
 	}
 }
 
@@ -112,7 +112,7 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	entity_add_life(g, id, {g.elapsed})
 	entity_add_renderable(g, id, {e1.renderable.color})
 	entity_add_celestial(g, id, {new_type})
-	entity_add_position_trail(g, id, {})
+	entity_add_orbit(g, id, {})
 
 	if entity_celestial_is_unlockable(new_type) {
 		g.available_objects += {new_type}

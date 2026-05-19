@@ -7,6 +7,7 @@ Entity :: distinct u64
 Timer :: struct {
 	curr:     f32,
 	interval: f32,
+	done:     bool,
 }
 
 ComponentType :: enum {
@@ -15,7 +16,7 @@ ComponentType :: enum {
 	Emitter,
 	// General components
 	Position,
-	PositionTrail,
+	Orbit,
 	Velocity,
 	Life,
 	Mass,
@@ -28,11 +29,13 @@ ComponentType :: enum {
 Signature :: bit_set[ComponentType]
 
 PositionComponent :: struct {
-	current: rl.Vector2,
+	current:    rl.Vector2,
+	trail:      [POSITION_TRAIL_LENGTH]rl.Vector2,
+	trail_head: int,
 }
 
-PositionTrailComponent :: struct {
-	points: [MAX_TRAIL_LENGTH]rl.Vector2,
+OrbitComponent :: struct {
+	points: [MAX_ORBIT_LENGTH]rl.Vector2,
 	head:   int,
 	angle:  f32,
 	count:  int,
@@ -125,7 +128,7 @@ Game_Event_ObjectSpawn :: struct {
 	density:       f32,
 	radius:        f32,
 	velocity:      rl.Vector2,
-	show_trail:    bool,
+	show_orbit:    bool,
 	renderable:    RenderableComponent,
 	energy_source: EnergySourceComponent,
 	emitter:       EmitterComponent,
@@ -159,7 +162,7 @@ Game_Entity :: struct {
 	sig:                Signature,
 	life:               LifeComponent,
 	pos:                PositionComponent,
-	trail:              PositionTrailComponent,
+	orbit:              OrbitComponent,
 	velocity:           VelocityComponent,
 	mass:               MassComponent,
 	radius:             RadiusComponent,
@@ -260,11 +263,20 @@ Game_RenderState :: struct {
 	objects_count:           int,
 	collectibles:            [MAX_ENTITIES]Entity,
 	collectibles_count:      int,
-	trails:                  [MAX_ENTITIES]Entity,
-	trails_count:            int,
+	orbit_points:            [MAX_ENTITIES]Entity,
+	orbit_points_count:      int,
 	score_energy_buf:        [128]byte,
 	score_objects_count_buf: [128]byte,
 	score_avg_energy_buf:    [128]byte,
+}
+
+Game_Theme :: struct {
+	color_bg: rl.Color,
+}
+
+Game_TimerType :: enum {
+	Score,
+	Trail,
 }
 
 Game :: struct {
@@ -280,6 +292,7 @@ Game :: struct {
 	modifiers:           [MAX_MODIFIERS]Game_Modifier,
 
 	// Render
+	theme:               Game_Theme,
 	view:                rl.Rectangle,
 	view_scale:          f32,
 	camera:              rl.Camera2D,
@@ -297,7 +310,7 @@ Game :: struct {
 
 	// View options
 	available_colors:    [10]rl.Color,
-	show_trails:         bool,
+	show_orbits:         bool,
 
 	// Entities
 	entities:            #soa[MAX_ENTITIES]Game_Entity,
@@ -309,8 +322,11 @@ Game :: struct {
 	slingshot:           Game_Slingshot,
 	available_objects:   bit_set[CelestialType],
 
+	// Timers
+	// These are updated every frame
+	timers:              [Game_TimerType]Timer,
+
 	// Score
-	score_timer:         Timer,
 	energy:              f64,
 	energy_rate_ticker:  int,
 	energy_gains:        [RATE_CALC_TICKS]f64,

@@ -25,6 +25,8 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	sys_camera_init(g)
 	sys_lifecycle_init(g)
 
+	g.theme.color_bg = rl.Color{11, 12, 24, 255}
+
 	g.params.g = 1
 
 	g.params.densities[.Star] = 50
@@ -91,9 +93,13 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.available_colors[8] = rl.Color{102, 255, 102, 255} // lime green
 	g.available_colors[9] = rl.Color{255, 255, 255, 255} // white
 
-	second_timer := Timer{0, 1}
+	g.timers[.Score] = Timer {
+		interval = 1,
+	}
+	g.timers[.Trail] = Timer {
+		interval = 0.05,
+	}
 
-	g.score_timer = second_timer
 	push_event(
 		g,
 		Game_Event_ObjectSpawn {
@@ -101,7 +107,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 			celestial = {.Star},
 			density = g.params.densities[.Star],
 			radius = g.params.radii[.Star],
-			energy_source = {output = 10, timer = second_timer},
+			energy_source = {output = 10, timer = {interval = 1}},
 			renderable = {rl.WHITE},
 		},
 	)

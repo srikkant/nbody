@@ -13,29 +13,6 @@ sys_render_init :: proc(g: ^Game) {
 	g.bg_texture = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
 
 	rl.BeginTextureMode(g.bg_texture)
-	rl.ClearBackground(rl.BLACK)
-
-	tile_size: f32 = 512
-	half_tile: f32 = tile_size / 2
-
-	for y: f32 = 0; y < RENDER_HEIGHT; y += 512 {
-		for x: f32 = 0; x < RENDER_WIDTH; x += 512 {
-			rotation := f32(rl.GetRandomValue(0, 3)) * 90.0
-
-			source_rect := rl.Rectangle{0, 0, tile_size, tile_size}
-			dest_rect := rl.Rectangle{x + half_tile, y + half_tile, tile_size, tile_size}
-			origin := rl.Vector2{half_tile, half_tile}
-
-			rl.DrawTexturePro(
-				g.assets.textures[.Bg],
-				source_rect,
-				dest_rect,
-				origin,
-				rotation,
-				rl.Color{255, 255, 255, 60},
-			)
-		}
-	}
 	rl.EndTextureMode()
 }
 
@@ -62,7 +39,8 @@ sys_render :: proc(g: ^Game) {
 	g.view_scale = scale
 
 	rl.BeginTextureMode(g.render_target)
-	rl.ClearBackground(rl.BLACK)
+	rl.BeginBlendMode(.ADDITIVE)
+	rl.ClearBackground(g.theme.color_bg)
 	rl.DrawTexturePro(
 		g.bg_texture.texture,
 		rl.Rectangle{0, 0, f32(g.bg_texture.texture.width), f32(-g.bg_texture.texture.height)},
@@ -74,7 +52,7 @@ sys_render :: proc(g: ^Game) {
 
 	rl.BeginMode2D(g.camera)
 
-	g.render_state.trails_count = 0
+	g.render_state.orbit_points_count = 0
 	g.render_state.objects_count = 0
 	g.render_state.collectibles_count = 0
 
@@ -192,9 +170,9 @@ sys_render_entities :: proc(g: ^Game) {
 				g.render_state.objects_count += 1
 			}
 
-			if .PositionTrail in e.sig {
-				g.render_state.trails[g.render_state.trails_count] = Entity(id)
-				g.render_state.trails_count += 1
+			if .Orbit in e.sig {
+				g.render_state.orbit_points[g.render_state.orbit_points_count] = Entity(id)
+				g.render_state.orbit_points_count += 1
 			}
 
 			if .CollectibleEnergy in e.sig {
@@ -252,24 +230,46 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_end_shader(g)
 
-	if g.show_trails {
-		for i in 0 ..< g.render_state.trails_count {
-			e := &g.entities[g.render_state.trails[i]]
+	for i in 0 ..< g.render_state.orbit_points_count {
+		e := &g.entities[g.render_state.orbit_points[i]]
 
-			ordered_points: [MAX_TRAIL_LENGTH + 1]rl.Vector2
+		zero: rl.Vector2
 
-			for i in 0 ..< e.trail.count {
-				// Find the oldest point and work forward
-				oldest_index :=
-					(e.trail.head - e.trail.count + i + MAX_TRAIL_LENGTH) % MAX_TRAIL_LENGTH
-				ordered_points[i] = e.trail.points[oldest_index]
+		for i in 0 ..< POSITION_TRAIL_LENGTH - 1 {
+			start := (e.pos.trail_head + i) % POSITION_TRAIL_LENGTH
+			end := (e.pos.trail_head + i + 1) % POSITION_TRAIL_LENGTH
+
+			if e.pos.trail[start] == e.pos.trail[end] do break
+			if e.pos.trail[start] == zero || e.pos.trail[end] == zero do continue
+
+			fade_factor := (f32(i) / f32(POSITION_TRAIL_LENGTH))
+			trail_col := e.renderable.color
+			trail_col.a = u8(255.0 * fade_factor)
+			thickness := 2 * e.radius * fade_factor
+
+			rl.DrawLineEx(e.pos.trail[start], e.pos.trail[end], thickness, trail_col)
+
+			if i == POSITION_TRAIL_LENGTH - 2 {
+				rl.DrawLineEx(e.pos.trail[end], e.pos.current, e.radius * 2, e.renderable.color)
 			}
+		}
 
-			ordered_points[e.trail.count] = e.pos.current
+		ordered_points: [MAX_ORBIT_LENGTH + 1]rl.Vector2
+		for i in 0 ..< e.orbit.count {
+			// Find the oldest point and work forward
+			oldest_index :=
+				(e.orbit.head - e.orbit.count + i + MAX_ORBIT_LENGTH) % MAX_ORBIT_LENGTH
+			ordered_points[i] = e.orbit.points[oldest_index]
+		}
+
+		ordered_points[e.orbit.count] = e.pos.current
+
+		// TODO: Potentially move this to the loop above
+		if g.show_orbits {
 			rl.DrawLineStrip(
 				raw_data(ordered_points[:]),
-				i32(e.trail.count + 1),
-				rl.Fade(e.renderable.color, 0.5),
+				i32(e.orbit.count + 1),
+				rl.Fade(e.renderable.color, 0.1),
 			)
 		}
 	}

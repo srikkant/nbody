@@ -54,17 +54,22 @@ sys_physics :: proc(g: ^Game) {
 		e.velocity.current += e.velocity.acceleration * dt
 		e.pos.current += e.velocity.current * dt
 
-		if TRAIL_SIG <= e.sig {
+		if g.timers[.Trail].done {
+			e.pos.trail[e.pos.trail_head] = e.pos.current
+			e.pos.trail_head = (e.pos.trail_head + 1) % POSITION_TRAIL_LENGTH
+		}
+
+		if ORBIT_SIG <= e.sig {
 			angle := math.atan2(e.pos.current.y, e.pos.current.x)
-			diff := math.abs(angle - e.trail.angle)
+			diff := math.abs(angle - e.orbit.angle)
 			if diff > math.PI do diff = (2.0 * math.PI) - diff
 
-			if diff > TRAIL_MIN_ANGLE {
-				e.trail.points[e.trail.head] = e.pos.current
-				e.trail.head = (e.trail.head + 1) % MAX_TRAIL_LENGTH
-				e.trail.angle = angle
-				if e.trail.count < MAX_TRAIL_LENGTH {
-					e.trail.count += 1
+			if diff > ORBIT_POINTS_MIN_ANGLE {
+				e.orbit.points[e.orbit.head] = e.pos.current
+				e.orbit.head = (e.orbit.head + 1) % MAX_ORBIT_LENGTH
+				e.orbit.angle = angle
+				if e.orbit.count < MAX_ORBIT_LENGTH {
+					e.orbit.count += 1
 				}
 			}
 		}

@@ -11,8 +11,13 @@ input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
 
 sys_input :: proc(g: ^Game) {
 	// Update all timers in the input system
-	g.elapsed += frame_time()
+	dt := frame_time()
+	g.elapsed += dt
 	g.mouse_pos = input_mouse_pos(g)
+
+	for i in Game_TimerType {
+		utils_math_update_timer(&g.timers[i], dt)
+	}
 
 	if (rl.IsMouseButtonPressed(.LEFT)) {
 		g.slingshot.active = true
@@ -51,7 +56,7 @@ sys_input :: proc(g: ^Game) {
 			event.density = g.params.densities[out.celestial.type]
 			event.radius = g.params.radii[out.celestial.type]
 			event.velocity = vel
-			event.show_trail = true
+			event.show_orbit = true
 			event.renderable = RenderableComponent{color}
 			cost = f64(
 				g.params.launch_costs[out.celestial.type] +
@@ -100,7 +105,7 @@ sys_input :: proc(g: ^Game) {
 	}
 
 	if rl.IsKeyPressed(.T) {
-		g.show_trails = !g.show_trails
+		g.show_orbits = !g.show_orbits
 	}
 
 }
