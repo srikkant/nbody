@@ -287,19 +287,17 @@ sys_render_entities :: proc(g: ^Game) {
 }
 
 sys_render_score_panel :: proc(g: ^Game) {
-	draw_pos := rl.Vector2{20, 20}
 	size: rl.Vector2
+
+	icon_rect := rl.Rectangle{20, 20, 24, 24}
+	draw_pos := rl.Vector2{20, icon_rect.y + (icon_rect.height - g.fonts[.Body].size) / 2}
+	padding := f32(8)
 
 	cstr: cstring
 
-	str := fmt.bprintf(g.render_state.score_energy_buf[:], "energy = %.2f", g.energy)
-	cstr = cstring(raw_data(str))
-	size = rl_text_measure(g, .Body, cstr)
-	rl_text_draw(g, .Body, cstr, draw_pos)
-
-
-	draw_pos.y += size.y + g.fonts[.Body].size
-	str = fmt.bprintf(g.render_state.score_objects_count_buf[:], "objects = %d", g.total_objects)
+	rl_texture_draw(g, .UI_Energy, icon_rect)
+	draw_pos.x = icon_rect.width + icon_rect.x + padding
+	str := fmt.bprintf(g.render_state.score_energy_buf[:], "%.2f", g.energy)
 	cstr = cstring(raw_data(str))
 	size = rl_text_measure(g, .Body, cstr)
 	rl_text_draw(g, .Body, cstr, draw_pos)
@@ -309,12 +307,20 @@ sys_render_score_panel :: proc(g: ^Game) {
 		avg_energy += g.energy_gains[i] / RATE_CALC_TICKS
 	}
 
-	draw_pos.y += size.y + g.fonts[.Body].size
-	str = fmt.bprintf(
-		g.render_state.score_avg_energy_buf[:],
-		"energy gain per s = %.2f",
-		avg_energy,
-	)
+	draw_pos.x += size.x + padding * 2
+	icon_rect.x = draw_pos.x
+	rl_texture_draw(g, .UI_EnergyAverage, icon_rect)
+	draw_pos.x = icon_rect.width + icon_rect.x + padding
+	str = fmt.bprintf(g.render_state.score_avg_energy_buf[:], "%.2f/sec", avg_energy)
+	cstr = cstring(raw_data(str))
+	size = rl_text_measure(g, .Body, cstr)
+	rl_text_draw(g, .Body, cstr, draw_pos)
+
+	draw_pos.x += size.x + padding * 2
+	icon_rect.x = draw_pos.x
+	rl_texture_draw(g, .UI_ObjectCount, icon_rect)
+	draw_pos.x = icon_rect.width + icon_rect.x + padding
+	str = fmt.bprintf(g.render_state.score_objects_count_buf[:], "%d", g.total_objects)
 	cstr = cstring(raw_data(str))
 	rl_text_draw(g, .Body, cstr, draw_pos)
 }

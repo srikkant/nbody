@@ -61,6 +61,18 @@ assets_textures_load :: proc(g: ^Game) {
 		texture = .Blank,
 		rect    = rl.Rectangle{0, 0, 1, 1},
 	}
+	g.textures[.UI_Energy] = {
+		texture = .Atlas,
+		rect    = rl.Rectangle{0, 0, 96, 96},
+	}
+	g.textures[.UI_ObjectCount] = {
+		texture = .Atlas,
+		rect    = rl.Rectangle{96, 0, 96, 96},
+	}
+	g.textures[.UI_EnergyAverage] = {
+		texture = .Atlas,
+		rect    = rl.Rectangle{192, 0, 96, 96},
+	}
 }
 
 assets_shaders_load :: proc(g: ^Game) {

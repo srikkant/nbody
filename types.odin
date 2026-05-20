@@ -202,6 +202,9 @@ Game_TextureType :: enum {
 	Objects_Emitter,
 	Markers_OutOfBounds,
 	Collectibles_Energy,
+	UI_Energy,
+	UI_EnergyAverage,
+	UI_ObjectCount,
 }
 
 Game_FontType :: enum {
