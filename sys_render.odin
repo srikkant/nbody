@@ -23,6 +23,43 @@ sys_render_init :: proc(g: ^Game) {
 	}
 
 	rl.EndTextureMode()
+
+	// Generate 300 procedural parallax stars
+	for i in 0 ..< 300 {
+		// Layer distribution: 0 = background (slowest/faintest), 1 = midground, 2 = foreground (fastest/brightest)
+		layer := int(rl.GetRandomValue(0, 2))
+
+		// Random position across the RENDER width and height
+		x := f32(rl.GetRandomValue(0, RENDER_WIDTH))
+		y := f32(rl.GetRandomValue(0, RENDER_HEIGHT))
+
+		// Size based on depth: background is 0.8px, midground is 1.2px, foreground is 1.6px
+		size: f32 = 0.8
+		if layer == 1 {
+			size = 1.2
+		} else if layer == 2 {
+			size = 1.6
+		}
+
+		// Blink speed (frequency in rad/s) and random starting phase
+		blink_speed := f32(rl.GetRandomValue(10, 35)) / 10.0
+		blink_phase := f32(rl.GetRandomValue(0, 628)) / 100.0
+
+		// Stark white or faint cosmic cyan/blue
+		color := rl.WHITE
+		if rl.GetRandomValue(0, 3) == 0 {
+			color = rl.Color{185, 235, 255, 255} // dynamic cosmic cyan tint
+		}
+
+		g.bg_stars[i] = Game_BgStar {
+			pos         = rl.Vector2{x, y},
+			layer       = layer,
+			size        = size,
+			blink_speed = blink_speed,
+			blink_phase = blink_phase,
+			color       = color,
+		}
+	}
 }
 
 sys_render_free :: proc(g: ^Game) {
@@ -343,6 +380,29 @@ sys_render_bg :: proc(g: ^Game) {
 	rl.ClearBackground(rl.BLACK)
 	rl_texture_draw(g, .Blank, {0, 0, RENDER_WIDTH, RENDER_HEIGHT}, tint = g.theme.color_bg)
 	rl_end_shader(g)
+
+	for i in 0 ..< 300 {
+		star := g.bg_stars[i]
+
+		factor: f32 = 0.06 + 0.1 * f32(star.layer)
+		base_alpha: f32 = 0.1 + 0.1 * f32(star.layer)
+
+		shift_x := -g.camera.target.x * factor * g.camera.zoom
+		shift_y := -g.camera.target.y * factor * g.camera.zoom
+
+		draw_x := math.mod(star.pos.x + shift_x, RENDER_WIDTH)
+		if draw_x < 0 do draw_x += RENDER_WIDTH
+
+		draw_y := math.mod(star.pos.y + shift_y, RENDER_HEIGHT)
+		if draw_y < 0 do draw_y += RENDER_HEIGHT
+
+		blink := 0.8 + 0.2 * math.sin(g.elapsed * star.blink_speed + star.blink_phase)
+
+		color := star.color
+		color.a = u8(base_alpha * blink * 255.0)
+
+		rl.DrawRectangleV(rl.Vector2{draw_x, draw_y}, rl.Vector2{star.size, star.size}, color)
+	}
 
 	rl_begin_shader(g, .BgGrid_Shader)
 

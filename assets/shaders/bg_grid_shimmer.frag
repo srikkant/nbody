@@ -30,6 +30,6 @@ void main() {
     finalGrid.rgb *= shimmer;
 
     // Scale the final alpha to a visible range (master scale of 0.35)
-    finalGrid.a = finalGrid.a * shimmer * 0.35;
+    finalGrid.a = finalGrid.a * shimmer * 0.3;
     finalColor = finalGrid * fragColor;
 }

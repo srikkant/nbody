@@ -291,6 +291,15 @@ Game_TimerType :: enum {
 	Trail,
 }
 
+Game_BgStar :: struct {
+	pos:         rl.Vector2,
+	layer:       int,
+	size:        f32,
+	blink_speed: f32,
+	blink_phase: f32,
+	color:       rl.Color,
+}
+
 Game :: struct {
 	elapsed:             f32,
 	params:              Game_Parameters,
@@ -309,6 +318,7 @@ Game :: struct {
 	view_scale:          f32,
 	camera:              rl.Camera2D,
 	render_state:        Game_RenderState,
+	bg_stars:            [300]Game_BgStar,
 
 	// Assets
 	assets:              Assets_Map,
