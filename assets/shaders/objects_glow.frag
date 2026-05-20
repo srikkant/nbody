@@ -14,7 +14,7 @@ void main() {
     float core = 1.0 - smoothstep(0.24, 0.25, dist);
     float halo = 1.0 - smoothstep(0.20, 0.5, dist);
 
-    float pulse = 0.5 + 0.5 * sin(seconds * 2.5);
+    float pulse = 0.5 + 0.5 * sin(seconds * 1.5);
     float halo_mod = 0.2 + 0.4 * pulse;
 
     float alpha = max(core, halo * halo_mod) * fragColor.a;

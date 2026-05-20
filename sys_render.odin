@@ -6,6 +6,23 @@ import rl "vendor:raylib"
 
 sys_render_init :: proc(g: ^Game) {
 	g.render_target = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
+	g.bg_texture = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
+
+	rl.BeginTextureMode(g.bg_texture)
+	rl.ClearBackground(rl.Color{0, 0, 0, 0})
+
+	grid_color := rl.Color{0, 183, 255, 60}
+	for y_int := -9; y_int <= 9; y_int += 1 {
+		y := f32(RENDER_HEIGHT / 2 + y_int * 60)
+		rl.DrawLineEx(rl.Vector2{0, y}, rl.Vector2{RENDER_WIDTH, y}, 1.0, grid_color)
+	}
+
+	for x_int := -16; x_int <= 16; x_int += 1 {
+		x := f32(RENDER_WIDTH / 2 + x_int * 60)
+		rl.DrawLineEx(rl.Vector2{x, 0}, rl.Vector2{x, RENDER_HEIGHT}, 1.0, grid_color)
+	}
+
+	rl.EndTextureMode()
 }
 
 sys_render_free :: proc(g: ^Game) {
@@ -31,13 +48,9 @@ sys_render :: proc(g: ^Game) {
 	g.view_scale = scale
 
 	rl.BeginTextureMode(g.render_target)
-
-	rl_begin_shader(g, .Bg_Vignette)
-	rl.ClearBackground(rl.BLACK)
-	rl_texture_draw(g, .Blank, {0, 0, RENDER_WIDTH, RENDER_HEIGHT}, tint = g.theme.color_bg)
-	rl_end_shader(g)
-
 	rl.BeginBlendMode(.ADDITIVE)
+
+	sys_render_bg(g)
 
 	rl.BeginMode2D(g.camera)
 
@@ -323,4 +336,28 @@ sys_render_score_panel :: proc(g: ^Game) {
 	str = fmt.bprintf(g.render_state.score_objects_count_buf[:], "%d", g.total_objects)
 	cstr = cstring(raw_data(str))
 	rl_text_draw(g, .Body, cstr, draw_pos)
+}
+
+sys_render_bg :: proc(g: ^Game) {
+	rl_begin_shader(g, .Bg_Vignette)
+	rl.ClearBackground(rl.BLACK)
+	rl_texture_draw(g, .Blank, {0, 0, RENDER_WIDTH, RENDER_HEIGHT}, tint = g.theme.color_bg)
+	rl_end_shader(g)
+
+	rl_begin_shader(g, .BgGrid_Shader)
+
+	shader := g.assets.shaders[g.shaders[.BgGrid_Shader].shader]
+	loc := rl.GetShaderLocation(shader, "seconds")
+	rl.SetShaderValue(shader, loc, &g.elapsed, .FLOAT)
+
+	rl.DrawTexturePro(
+		g.bg_texture.texture,
+		rl.Rectangle{0, 0, f32(g.bg_texture.texture.width), -f32(g.bg_texture.texture.height)},
+		rl.Rectangle{0, 0, RENDER_WIDTH, RENDER_HEIGHT},
+		rl.Vector2{0, 0},
+		0,
+		rl.WHITE,
+	)
+
+	rl_end_shader(g)
 }

@@ -188,6 +188,7 @@ Assets_Shader :: enum {
 	Vignette,
 	Objects_Glow,
 	Objects_Base,
+	BgGrid_Shimmer,
 }
 
 Assets_Map :: struct {
@@ -216,6 +217,7 @@ Game_ShaderType :: enum {
 	Bg_Vignette,
 	Stars_Layer,
 	Objects_Layer,
+	BgGrid_Shader,
 }
 
 Game_Texture :: struct {

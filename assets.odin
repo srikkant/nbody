@@ -13,6 +13,7 @@ assets_map_load :: proc(g: ^Game) {
 	g.assets.shaders[.Objects_Base] = rl.LoadShader(nil, "./assets/shaders/objects_base.frag")
 	g.assets.shaders[.Vignette] = rl.LoadShader(nil, "./assets/shaders/vignette.frag")
 	g.assets.shaders[.Objects_Glow] = rl.LoadShader(nil, "./assets/shaders/objects_glow.frag")
+	g.assets.shaders[.BgGrid_Shimmer] = rl.LoadShader(nil, "./assets/shaders/bg_grid_shimmer.frag")
 
 	g.assets.fonts[.Heading] = rl.LoadFontEx("./assets/fonts/heading.ttf", 18, nil, 0)
 	g.assets.fonts[.Body] = rl.LoadFontEx("./assets/fonts/body.ttf", 14, nil, 0)
@@ -26,6 +27,8 @@ assets_map_free :: proc(g: ^Game) {
 	rl.UnloadTexture(g.assets.textures[.Blank])
 	rl.UnloadShader(g.assets.shaders[.Objects_Base])
 	rl.UnloadShader(g.assets.shaders[.Vignette])
+	rl.UnloadShader(g.assets.shaders[.Objects_Glow])
+	rl.UnloadShader(g.assets.shaders[.BgGrid_Shimmer])
 }
 
 assets_fonts_load :: proc(g: ^Game) {
@@ -84,5 +87,8 @@ assets_shaders_load :: proc(g: ^Game) {
 	}
 	g.shaders[.Stars_Layer] = {
 		shader = .Objects_Glow,
+	}
+	g.shaders[.BgGrid_Shader] = {
+		shader = .BgGrid_Shimmer,
 	}
 }
