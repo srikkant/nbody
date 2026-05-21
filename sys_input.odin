@@ -39,7 +39,6 @@ sys_input :: proc(g: ^Game) {
 		switch out in g.slingshot.output {
 		case Game_SlingshotOutput_Emitter:
 			obj_type = .Emitter
-			event.tags = {.Emitter}
 			event.radius = g.params.radii[out.emitter.emit_celestial.type]
 			event.emitter = out.emitter
 			event.emitter.emit_vel = vel
@@ -51,7 +50,6 @@ sys_input :: proc(g: ^Game) {
 				(event.density * event.radius * event.radius * rl.Vector2LengthSqr(vel)),
 			)
 		case Game_SlingshotOutput_Celestial:
-			event.tags = {.Celestial}
 			event.celestial = out.celestial
 			event.density = g.params.densities[out.celestial.type]
 			event.radius = g.params.radii[out.celestial.type]
@@ -98,6 +96,11 @@ sys_input :: proc(g: ^Game) {
 		}
 	}
 
+	if rl.IsKeyPressed(.M) {
+		g.render_state.show_upgrade_menu = !g.render_state.show_upgrade_menu
+	}
+
+
 	if rl.IsKeyPressed(.P) {
 		g.slingshot.output = Game_SlingshotOutput_Celestial {
 			celestial = {.DwarfPlanet},
@@ -107,5 +110,4 @@ sys_input :: proc(g: ^Game) {
 	if rl.IsKeyPressed(.T) {
 		g.show_orbits = !g.show_orbits
 	}
-
 }

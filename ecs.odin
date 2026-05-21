@@ -94,8 +94,14 @@ entity_add_collectible_energy :: proc(g: ^Game, id: Entity, ce: CollectibleEnerg
 	g.entities[id].sig += {.CollectibleEnergy}
 }
 
-entity_add_tags :: proc(g: ^Game, id: Entity, tags: Signature) {
-	g.entities[id].sig += tags
+entity_add_shockwave :: proc(g: ^Game, id: Entity, es: ShockwaveComponent) {
+	g.entities[id].shockwave = es
+	g.entities[id].sig += {.Shockwave}
+}
+
+entity_add_particle_burst :: proc(g: ^Game, id: Entity, p: ParticleBurstComponent) {
+	g.entities[id].particle_burst = p
+	g.entities[id].sig += {.ParticleBurst}
 }
 
 push_event :: proc(g: ^Game, event: Game_Event) {

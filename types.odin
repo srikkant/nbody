@@ -24,6 +24,8 @@ ComponentType :: enum {
 	EnergySource,
 	Renderable,
 	CollectibleEnergy,
+	Shockwave,
+	ParticleBurst,
 }
 
 Signature :: bit_set[ComponentType]
@@ -52,6 +54,7 @@ RadiusComponent :: f32
 
 LifeComponent :: struct {
 	created_at: f32,
+	remaining:  Timer,
 }
 
 EnergySourceComponent :: struct {
@@ -100,6 +103,23 @@ CollectibleEnergyComponent :: struct {
 	energy: f64,
 }
 
+ShockwaveComponent :: struct {
+	growth_rate: f32,
+}
+
+ParticleBurst_Particle :: struct {
+	pos:          rl.Vector2,
+	size:         f32,
+	color:        rl.Color,
+	velocity:     rl.Vector2,
+	accelaration: rl.Vector2,
+}
+
+ParticleBurstComponent :: struct {
+	active_count: int,
+	particles:    #soa[MAX_PARTICLE_BURST_COUNT]ParticleBurst_Particle,
+}
+
 Game_SlingshotOutput_Emitter :: struct {
 	emitter: EmitterComponent,
 }
@@ -133,7 +153,6 @@ Game_Event_ObjectSpawn :: struct {
 	energy_source: EnergySourceComponent,
 	emitter:       EmitterComponent,
 	celestial:     CelestialComponent,
-	tags:          Signature,
 }
 
 Game_Event_ObjectOutOfBounds :: struct {
@@ -171,6 +190,8 @@ Game_Entity :: struct {
 	celestial:          CelestialComponent,
 	renderable:         RenderableComponent,
 	collectible_energy: CollectibleEnergyComponent,
+	shockwave:          ShockwaveComponent,
+	particle_burst:     ParticleBurstComponent,
 }
 
 Assets_Font :: enum {
@@ -268,18 +289,32 @@ Game_Parameters :: struct {
 	k_collect_dist_sq:      f32,
 }
 
+Game_RenderLayerType :: enum {
+	Stars,
+	OrbitPoints,
+	Objects,
+	Collectibles,
+	Effects,
+}
+
+Game_RenderLayer :: struct {
+	entities: [MAX_ENTITIES]Entity,
+	count:    int,
+}
+
 Game_RenderState :: struct {
-	stars:                   [MAX_ENTITIES]Entity,
-	stars_count:             int,
-	objects:                 [MAX_ENTITIES]Entity,
-	objects_count:           int,
-	collectibles:            [MAX_ENTITIES]Entity,
-	collectibles_count:      int,
-	orbit_points:            [MAX_ENTITIES]Entity,
-	orbit_points_count:      int,
-	score_energy_buf:        [128]byte,
-	score_objects_count_buf: [128]byte,
-	score_avg_energy_buf:    [128]byte,
+	// Entity layers
+	layers:              [Game_RenderLayerType]Game_RenderLayer,
+
+	// Buffers for all text
+	score_energy:        [128]byte,
+	score_objects_count: [128]byte,
+	score_avg_energy:    [128]byte,
+
+	// Menus & overlays
+	show_upgrade_menu:   bool,
+	upgrade_menu_rect:   rl.Rectangle,
+	score_rect:          rl.Rectangle,
 }
 
 Game_Theme :: struct {
@@ -318,7 +353,7 @@ Game :: struct {
 	view_scale:          f32,
 	camera:              rl.Camera2D,
 	render_state:        Game_RenderState,
-	bg_stars:            [300]Game_BgStar,
+	bg_stars:            [BG_STAR_COUNT]Game_BgStar,
 
 	// Assets
 	assets:              Assets_Map,

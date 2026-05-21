@@ -6,9 +6,12 @@ import "core:math"
 RENDER_WIDTH :: 1920
 RENDER_HEIGHT :: 1080
 
+BG_STAR_COUNT :: 300
+
 MAX_ENTITIES :: 4096
 MAX_MODIFIERS :: 10
 MAX_ORBIT_LENGTH :: 100
+MAX_PARTICLE_BURST_COUNT :: 120
 
 POSITION_TRAIL_LENGTH :: 5
 RATE_CALC_TICKS :: 10
@@ -29,3 +32,5 @@ PHYSICS_SIG: Signature : {.Position, .Velocity, .Mass, .Radius, .Celestial}
 ORBIT_SIG: Signature : {.Orbit}
 KE_SCORE_SIG: Signature : {.Position, .Velocity, .Radius, .Mass, .Life}
 ENERGY_SOURCE_SIG: Signature : {.EnergySource, .Radius}
+SHOCKWAVE_SIG: Signature : {.Position, .Radius, .Life, .Shockwave}
+PARTICLE_BURST_SIG: Signature : {.Position, .Life, .ParticleBurst}

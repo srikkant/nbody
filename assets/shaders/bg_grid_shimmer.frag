@@ -10,7 +10,7 @@ uniform float seconds;
 
 void main() {
     vec2 texelSize = vec2(1.0 / 1920.0, 1.0 / 1080.0);
-    float glowSize = 4.0; // Controls the width of the glow halo
+    float glowSize = 4.0;
 
     vec4 sum = vec4(0.0);
     sum += texture(texture0, fragTexCoord) * 0.36;
@@ -29,7 +29,6 @@ void main() {
 
     finalGrid.rgb *= shimmer;
 
-    // Scale the final alpha to a visible range (master scale of 0.35)
-    finalGrid.a = finalGrid.a * shimmer * 0.3;
+    finalGrid.a = finalGrid.a * shimmer * 0.4;
     finalColor = finalGrid * fragColor;
 }

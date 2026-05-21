@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
@@ -24,31 +23,19 @@ sys_render_init :: proc(g: ^Game) {
 
 	rl.EndTextureMode()
 
-	// Generate 300 procedural parallax stars
-	for i in 0 ..< 300 {
-		// Layer distribution: 0 = background (slowest/faintest), 1 = midground, 2 = foreground (fastest/brightest)
+	for i in 0 ..< BG_STAR_COUNT {
 		layer := int(rl.GetRandomValue(0, 2))
-
-		// Random position across the RENDER width and height
 		x := f32(rl.GetRandomValue(0, RENDER_WIDTH))
 		y := f32(rl.GetRandomValue(0, RENDER_HEIGHT))
 
-		// Size based on depth: background is 0.8px, midground is 1.2px, foreground is 1.6px
-		size: f32 = 0.8
-		if layer == 1 {
-			size = 1.2
-		} else if layer == 2 {
-			size = 1.6
-		}
+		size: f32 = 0.8 + 0.4 * f32(layer)
 
-		// Blink speed (frequency in rad/s) and random starting phase
 		blink_speed := f32(rl.GetRandomValue(10, 35)) / 10.0
 		blink_phase := f32(rl.GetRandomValue(0, 628)) / 100.0
 
-		// Stark white or faint cosmic cyan/blue
 		color := rl.WHITE
 		if rl.GetRandomValue(0, 3) == 0 {
-			color = rl.Color{185, 235, 255, 255} // dynamic cosmic cyan tint
+			color = rl.Color{185, 235, 255, 255}
 		}
 
 		g.bg_stars[i] = Game_BgStar {
@@ -91,10 +78,9 @@ sys_render :: proc(g: ^Game) {
 
 	rl.BeginMode2D(g.camera)
 
-	g.render_state.orbit_points_count = 0
-	g.render_state.objects_count = 0
-	g.render_state.collectibles_count = 0
-	g.render_state.stars_count = 0
+	for i in Game_RenderLayerType {
+		g.render_state.layers[i].count = 0
+	}
 
 	sys_render_cursor(g)
 	sys_render_slingshot(g)
@@ -102,7 +88,7 @@ sys_render :: proc(g: ^Game) {
 
 	rl.EndMode2D()
 
-	sys_render_score_panel(g)
+	sys_render_ui(g)
 
 	rl.EndTextureMode()
 
@@ -200,31 +186,37 @@ sys_render_slingshot :: proc(g: ^Game) {
 	rl.DrawLineStrip(raw_ptr, frames, rl.Color{255, 255, 255, 200})
 }
 
+sys_add_entity_to_layer :: proc(g: ^Game, id: Entity, layer: Game_RenderLayerType) {
+	g.render_state.layers[layer].entities[g.render_state.layers[layer].count] = Entity(id)
+	g.render_state.layers[layer].count += 1
+}
+
 sys_render_entities :: proc(g: ^Game) {
 	for id in 0 ..< g.entities_count {
+		id := Entity(id)
 		e := g.entities[id]
 
 		if RENDER_SIG <= e.sig {
 			if .Celestial in e.sig {
 				// Celestials will be further classified.
 				if e.celestial.type == .Star {
-					g.render_state.stars[g.render_state.stars_count] = Entity(id)
-					g.render_state.stars_count += 1
+					sys_add_entity_to_layer(g, id, .Stars)
 				} else {
-					g.render_state.objects[g.render_state.objects_count] = Entity(id)
-					g.render_state.objects_count += 1
+					sys_add_entity_to_layer(g, id, .Objects)
 				}
 			}
 
 			if .Orbit in e.sig {
-				g.render_state.orbit_points[g.render_state.orbit_points_count] = Entity(id)
-				g.render_state.orbit_points_count += 1
+				sys_add_entity_to_layer(g, id, .OrbitPoints)
 			}
 
 			if .CollectibleEnergy in e.sig {
-				g.render_state.collectibles[g.render_state.collectibles_count] = Entity(id)
-				g.render_state.collectibles_count += 1
+				sys_add_entity_to_layer(g, id, .Collectibles)
 			}
+		}
+
+		if SHOCKWAVE_SIG <= e.sig || PARTICLE_BURST_SIG <= e.sig {
+			sys_add_entity_to_layer(g, id, .Effects)
 		}
 	}
 
@@ -234,8 +226,8 @@ sys_render_entities :: proc(g: ^Game) {
 	loc := rl.GetShaderLocation(shader, "seconds")
 	rl.SetShaderValue(shader, loc, &g.elapsed, .FLOAT)
 
-	for i in 0 ..< g.render_state.stars_count {
-		e := &g.entities[g.render_state.stars[i]]
+	for i in 0 ..< g.render_state.layers[.Stars].count {
+		e := &g.entities[g.render_state.layers[.Stars].entities[i]]
 		r := e.radius
 		tint := e.renderable.color
 
@@ -247,10 +239,10 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Objects_Layer)
 
-	for i in 0 ..< g.render_state.objects_count {
+	for i in 0 ..< g.render_state.layers[.Objects].count {
 		texture: Game_TextureType = .Objects_Celestial
 
-		e := &g.entities[g.render_state.objects[i]]
+		e := &g.entities[g.render_state.layers[.Objects].entities[i]]
 		r := e.radius
 		tint := e.renderable.color
 
@@ -279,8 +271,8 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Objects_Layer)
 
-	for i in 0 ..< g.render_state.collectibles_count {
-		e := &g.entities[g.render_state.collectibles[i]]
+	for i in 0 ..< g.render_state.layers[.Collectibles].count {
+		e := &g.entities[g.render_state.layers[.Collectibles].entities[i]]
 
 		rl_texture_draw(
 			g,
@@ -293,8 +285,8 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_end_shader(g)
 
-	for i in 0 ..< g.render_state.orbit_points_count {
-		e := &g.entities[g.render_state.orbit_points[i]]
+	for i in 0 ..< g.render_state.layers[.OrbitPoints].count {
+		e := &g.entities[g.render_state.layers[.OrbitPoints].entities[i]]
 
 		zero: rl.Vector2
 
@@ -334,45 +326,43 @@ sys_render_entities :: proc(g: ^Game) {
 			)
 		}
 	}
-}
 
-sys_render_score_panel :: proc(g: ^Game) {
-	size: rl.Vector2
+	for i in 0 ..< g.render_state.layers[.Effects].count {
+		id := g.render_state.layers[.Effects].entities[i]
+		e := &g.entities[id]
 
-	icon_rect := rl.Rectangle{20, 20, 24, 24}
-	draw_pos := rl.Vector2{20, icon_rect.y + (icon_rect.height - g.fonts[.Body].size) / 2}
-	padding := f32(8)
+		if .Shockwave in e.sig {
+			t := e.life.remaining.curr
+			dur := e.life.remaining.interval
+			fade := dur > 0 ? (1.0 - (t / dur)) : 1.0
+			fade = math.clamp(fade, 0.0, 1.0)
+			alpha := u8(fade * 255.0)
+			col := rl.Color{0, 200, 255, alpha}
 
-	cstr: cstring
+			rl.DrawCircleLines(i32(e.pos.current.x), i32(e.pos.current.y), e.radius, col)
+			if e.radius > 1 {
+				rl.DrawCircleLines(i32(e.pos.current.x), i32(e.pos.current.y), e.radius - 1, col)
+			}
+			if e.radius > 2 {
+				rl.DrawCircleLines(i32(e.pos.current.x), i32(e.pos.current.y), e.radius - 2, col)
+			}
+		}
 
-	rl_texture_draw(g, .UI_Energy, icon_rect)
-	draw_pos.x = icon_rect.width + icon_rect.x + padding
-	str := fmt.bprintf(g.render_state.score_energy_buf[:], "%.2f", g.energy)
-	cstr = cstring(raw_data(str))
-	size = rl_text_measure(g, .Body, cstr)
-	rl_text_draw(g, .Body, cstr, draw_pos)
+		if .ParticleBurst in e.sig {
+			t := e.life.remaining.curr
+			dur := e.life.remaining.interval
+			fade := dur > 0 ? (1.0 - (t / dur)) : 1.0
+			fade = math.clamp(fade, 0.0, 1.0)
 
-	avg_energy: f64
-	for i in 0 ..< RATE_CALC_TICKS {
-		avg_energy += g.energy_gains[i] / RATE_CALC_TICKS
+			for j in 0 ..< e.particle_burst.active_count {
+				p := &e.particle_burst.particles[j]
+				col := p.color
+				col.a = u8(f32(p.color.a) * fade)
+
+				rl.DrawCircle(i32(p.pos.x), i32(p.pos.y), p.size, col)
+			}
+		}
 	}
-
-	draw_pos.x += size.x + padding * 2
-	icon_rect.x = draw_pos.x
-	rl_texture_draw(g, .UI_EnergyAverage, icon_rect)
-	draw_pos.x = icon_rect.width + icon_rect.x + padding
-	str = fmt.bprintf(g.render_state.score_avg_energy_buf[:], "%.2f/sec", avg_energy)
-	cstr = cstring(raw_data(str))
-	size = rl_text_measure(g, .Body, cstr)
-	rl_text_draw(g, .Body, cstr, draw_pos)
-
-	draw_pos.x += size.x + padding * 2
-	icon_rect.x = draw_pos.x
-	rl_texture_draw(g, .UI_ObjectCount, icon_rect)
-	draw_pos.x = icon_rect.width + icon_rect.x + padding
-	str = fmt.bprintf(g.render_state.score_objects_count_buf[:], "%d", g.total_objects)
-	cstr = cstring(raw_data(str))
-	rl_text_draw(g, .Body, cstr, draw_pos)
 }
 
 sys_render_bg :: proc(g: ^Game) {
@@ -381,7 +371,7 @@ sys_render_bg :: proc(g: ^Game) {
 	rl_texture_draw(g, .Blank, {0, 0, RENDER_WIDTH, RENDER_HEIGHT}, tint = g.theme.color_bg)
 	rl_end_shader(g)
 
-	for i in 0 ..< 300 {
+	for i in 0 ..< BG_STAR_COUNT {
 		star := g.bg_stars[i]
 
 		factor: f32 = 0.06 + 0.1 * f32(star.layer)
@@ -396,7 +386,7 @@ sys_render_bg :: proc(g: ^Game) {
 		draw_y := math.mod(star.pos.y + shift_y, RENDER_HEIGHT)
 		if draw_y < 0 do draw_y += RENDER_HEIGHT
 
-		blink := 0.8 + 0.2 * math.sin(g.elapsed * star.blink_speed + star.blink_phase)
+		blink := 0.4 + 0.4 * math.sin(g.elapsed * star.blink_speed + star.blink_phase)
 
 		color := star.color
 		color.a = u8(base_alpha * blink * 255.0)

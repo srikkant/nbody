@@ -10,4 +10,6 @@ nbody.dSYM/
 *.dSYM
 *.rdi
 
+debug_build
+
 .DS_Store

@@ -7,8 +7,7 @@ uniform sampler2D texture0;
 
 out vec4 finalColor;
 
-void main()
-{
+void main() {
     vec4 texelColor = texture(texture0, fragTexCoord);
     vec2 uv = fragTexCoord - vec2(0.5);
     float dist = length(uv);
