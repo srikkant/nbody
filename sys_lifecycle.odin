@@ -21,7 +21,7 @@ sys_lifecycle_spawn_fragments :: proc(g: ^Game, energy: f64, rel_speed: f32, pos
 	frag_count := math.max(6, 3 + int(math.mod_f32(rel_speed * 0.7, 4.0)))
 	frag_energy_each := energy / f64(frag_count)
 
-	frag_radius := ENERGY_FRAGMENT_SIZE + f32(math.min(energy / 100, 10))
+	frag_radius := ENERGY_FRAGMENT_SIZE + f32(math.min(energy / 100, 5))
 
 	for f in 0 ..< frag_count {
 		angle := (math.PI * 2.0 * f32(f)) / f32(frag_count) + math.PI / f32(frag_count)

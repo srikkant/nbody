@@ -9,7 +9,7 @@ uniform sampler2D texture0;
 uniform float seconds;
 
 void main() {
-    vec2 texelSize = vec2(1.0 / 1920.0, 1.0 / 1080.0);
+    vec2 texelSize = vec2(1.0) / vec2(textureSize(texture0, 0));
     float glowSize = 4.0;
 
     vec4 sum = vec4(0.0);

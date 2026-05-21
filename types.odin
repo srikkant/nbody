@@ -305,6 +305,9 @@ Game_RenderLayer :: struct {
 }
 
 Game_RenderState :: struct {
+	rect:                rl.Rectangle,
+	scale:               f32,
+
 	// Entity layers
 	layers:              [Game_RenderLayerType]Game_RenderLayer,
 
@@ -351,8 +354,6 @@ Game :: struct {
 
 	// Render
 	theme:               Game_Theme,
-	view:                rl.Rectangle,
-	view_scale:          f32,
 	camera:              rl.Camera2D,
 	render_state:        Game_RenderState,
 	bg_stars:            [BG_STAR_COUNT]Game_BgStar,
@@ -364,7 +365,6 @@ Game :: struct {
 	fonts:               [Game_FontType]Game_Font,
 
 	// Special render textures
-	render_target:       rl.RenderTexture2D,
 	bg_texture:          rl.RenderTexture2D,
 
 	// View options

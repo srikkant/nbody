@@ -130,5 +130,6 @@ game_run :: proc(g: ^Game) {
 	sys_physics(g)
 	sys_score(g)
 	sys_lifecycle(g)
+	sys_camera(g)
 	sys_render(g)
 }

@@ -3,30 +3,46 @@ package main
 import "core:math"
 import rl "vendor:raylib"
 
-sys_render_init :: proc(g: ^Game) {
-	g.render_target = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
-	g.bg_texture = rl.LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT)
-
+redraw_bg_grid :: proc(g: ^Game, ww, wh: f32) {
 	rl.BeginTextureMode(g.bg_texture)
 	rl.ClearBackground(rl.Color{0, 0, 0, 0})
 
 	grid_color := rl.Color{0, 183, 255, 60}
-	for y_int := -9; y_int <= 9; y_int += 1 {
-		y := f32(RENDER_HEIGHT / 2 + y_int * 60)
-		rl.DrawLineEx(rl.Vector2{0, y}, rl.Vector2{RENDER_WIDTH, y}, 1.0, grid_color)
+
+	cx := ww / 2
+	cy := wh / 2
+	spacing: f32 = 60.0
+
+	// Draw vertical lines from center outwards
+	x_count := int(ww / spacing) / 2 + 1
+	for x_int := -x_count; x_int <= x_count; x_int += 1 {
+		x := cx + f32(x_int) * spacing
+		rl.DrawLineEx(rl.Vector2{x, 0}, rl.Vector2{x, wh}, 1.0, grid_color)
 	}
 
-	for x_int := -16; x_int <= 16; x_int += 1 {
-		x := f32(RENDER_WIDTH / 2 + x_int * 60)
-		rl.DrawLineEx(rl.Vector2{x, 0}, rl.Vector2{x, RENDER_HEIGHT}, 1.0, grid_color)
+	// Draw horizontal lines from center outwards
+	y_count := int(wh / spacing) / 2 + 1
+	for y_int := -y_count; y_int <= y_count; y_int += 1 {
+		y := cy + f32(y_int) * spacing
+		rl.DrawLineEx(rl.Vector2{0, y}, rl.Vector2{ww, y}, 1.0, grid_color)
 	}
 
 	rl.EndTextureMode()
+}
+
+sys_render_init :: proc(g: ^Game) {
+	ww := f32(rl.GetScreenWidth())
+	wh := f32(rl.GetScreenHeight())
+
+	g.render_state.rect = rl.Rectangle{0, 0, ww, wh}
+	g.render_state.scale = 1.0
+	g.bg_texture = rl.LoadRenderTexture(i32(ww), i32(wh))
+	redraw_bg_grid(g, ww, wh)
 
 	for i in 0 ..< BG_STAR_COUNT {
 		layer := int(rl.GetRandomValue(0, 2))
-		x := f32(rl.GetRandomValue(0, RENDER_WIDTH))
-		y := f32(rl.GetRandomValue(0, RENDER_HEIGHT))
+		x := f32(rl.GetRandomValue(0, 10000)) / 10000.0 // normalized 0..1
+		y := f32(rl.GetRandomValue(0, 10000)) / 10000.0 // normalized 0..1
 
 		size: f32 = 0.8 + 0.4 * f32(layer)
 
@@ -50,29 +66,24 @@ sys_render_init :: proc(g: ^Game) {
 }
 
 sys_render_free :: proc(g: ^Game) {
-	rl.UnloadRenderTexture(g.render_target)
 	rl.UnloadRenderTexture(g.bg_texture)
 }
 
 sys_render :: proc(g: ^Game) {
 	ww := f32(rl.GetScreenWidth())
-	sw := f32(ww) / RENDER_WIDTH
-
 	wh := f32(rl.GetScreenHeight())
-	sh := f32(wh) / RENDER_HEIGHT
 
-	scale := math.min(sw, sh)
-	fw := RENDER_WIDTH * scale
-	fh := RENDER_HEIGHT * scale
+	g.render_state.rect = rl.Rectangle{0, 0, ww, wh}
+	g.render_state.scale = 1.0
 
-	off_x := (ww - fw) / 2
-	off_y := (wh - fh) / 2
+	if g.bg_texture.texture.width != i32(ww) || g.bg_texture.texture.height != i32(wh) {
+		rl.UnloadRenderTexture(g.bg_texture)
+		g.bg_texture = rl.LoadRenderTexture(i32(ww), i32(wh))
+		redraw_bg_grid(g, ww, wh)
+	}
 
-	g.view = rl.Rectangle{off_x, off_y, fw, fh}
-	g.view_scale = scale
-
-	rl.BeginTextureMode(g.render_target)
-	rl.BeginBlendMode(.ADDITIVE)
+	rl.BeginDrawing()
+	rl.ClearBackground(rl.BLACK)
 
 	sys_render_bg(g)
 
@@ -90,26 +101,7 @@ sys_render :: proc(g: ^Game) {
 
 	sys_render_ui(g)
 
-	rl.EndTextureMode()
-
-	rl.BeginDrawing()
-	rl.ClearBackground(rl.BLACK)
-
-	rl.DrawTexturePro(
-		g.render_target.texture,
-		rl.Rectangle {
-			0,
-			0,
-			f32(g.render_target.texture.width),
-			f32(-g.render_target.texture.height),
-		},
-		g.view,
-		rl.Vector2(0),
-		0,
-		rl.WHITE,
-	)
-
-	if (g.draw_debug_panel) {
+	if g.draw_debug_panel {
 		rl.DrawFPS(rl.GetScreenWidth() - 80, rl.GetScreenHeight() - 30)
 	}
 
@@ -246,9 +238,18 @@ sys_render_entities :: proc(g: ^Game) {
 		r := e.radius
 		tint := e.renderable.color
 
+		ww := f32(rl.GetScreenWidth())
+		wh := f32(rl.GetScreenHeight())
+		world_screen_rect := rl.Rectangle {
+			g.camera.target.x - (ww / 2) / g.camera.zoom,
+			g.camera.target.y - (wh / 2) / g.camera.zoom,
+			ww / g.camera.zoom,
+			wh / g.camera.zoom,
+		}
+
 		dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 4, r * 4}
 		hit_pos, out_of_bounds := geometry_get_rectangle_intersection_point(
-			rl.Rectangle{-g.camera.offset.x, -g.camera.offset.y, RENDER_WIDTH, RENDER_HEIGHT},
+			world_screen_rect,
 			e.pos.current,
 			40.0,
 		)
@@ -341,7 +342,7 @@ sys_render_entities :: proc(g: ^Game) {
 			fade := dur > 0 ? (1.0 - (t / dur)) : 1.0
 			fade = math.clamp(fade, 0.0, 1.0)
 			alpha := u8(fade * 255.0)
-			col := rl.Color{0, 200, 255, alpha}
+			col := rl.Color{255, 255, 255, alpha}
 
 			rl.DrawCircleLines(i32(e.pos.current.x), i32(e.pos.current.y), e.radius, col)
 			if e.radius > 1 {
@@ -370,9 +371,12 @@ sys_render_entities :: proc(g: ^Game) {
 }
 
 sys_render_bg :: proc(g: ^Game) {
+	ww := f32(rl.GetScreenWidth())
+	wh := f32(rl.GetScreenHeight())
+
 	rl_begin_shader(g, .Bg_Vignette)
 	rl.ClearBackground(rl.BLACK)
-	rl_texture_draw(g, .Blank, {0, 0, RENDER_WIDTH, RENDER_HEIGHT}, tint = g.theme.color_bg)
+	rl_texture_draw(g, .Blank, {0, 0, ww, wh}, tint = g.theme.color_bg)
 	rl_end_shader(g)
 
 	for i in 0 ..< BG_STAR_COUNT {
@@ -384,11 +388,11 @@ sys_render_bg :: proc(g: ^Game) {
 		shift_x := -g.camera.target.x * factor * g.camera.zoom
 		shift_y := -g.camera.target.y * factor * g.camera.zoom
 
-		draw_x := math.mod(star.pos.x + shift_x, RENDER_WIDTH)
-		if draw_x < 0 do draw_x += RENDER_WIDTH
+		draw_x := math.mod(star.pos.x * ww + shift_x, ww)
+		if draw_x < 0 do draw_x += ww
 
-		draw_y := math.mod(star.pos.y + shift_y, RENDER_HEIGHT)
-		if draw_y < 0 do draw_y += RENDER_HEIGHT
+		draw_y := math.mod(star.pos.y * wh + shift_y, wh)
+		if draw_y < 0 do draw_y += wh
 
 		blink := 0.4 + 0.4 * math.sin(g.elapsed * star.blink_speed + star.blink_phase)
 
@@ -407,7 +411,7 @@ sys_render_bg :: proc(g: ^Game) {
 	rl.DrawTexturePro(
 		g.bg_texture.texture,
 		rl.Rectangle{0, 0, f32(g.bg_texture.texture.width), -f32(g.bg_texture.texture.height)},
-		rl.Rectangle{0, 0, RENDER_WIDTH, RENDER_HEIGHT},
+		rl.Rectangle{0, 0, ww, wh},
 		rl.Vector2{0, 0},
 		0,
 		rl.WHITE,

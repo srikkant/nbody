@@ -1,12 +1,8 @@
 package main
-
-import "core:math"
 import rl "vendor:raylib"
 
 input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
-	relx := math.min(f32(rl.GetMouseX()) - g.view.x, f32(g.view.width))
-	rely := math.min(f32(rl.GetMouseY()) - g.view.y, f32(g.view.height))
-	return rl.GetScreenToWorld2D({relx / g.view_scale, rely / g.view_scale}, g.camera)
+	return rl.GetScreenToWorld2D(rl.GetMousePosition(), g.camera)
 }
 
 sys_input :: proc(g: ^Game) {

@@ -6,10 +6,12 @@ import rl "vendor:raylib"
 UI_PADDING: f32 = 10
 
 sys_render_ui :: proc(g: ^Game) {
+	wh := f32(rl.GetScreenHeight())
+
 	sx, sy: f32 = 20, 20
 
 	score_width := sys_render_ui_score(g, sx, sy)
-	sys_render_ui_menu(g, rl.Rectangle{sx, sy, score_width, RENDER_HEIGHT - (2 * sy)})
+	sys_render_ui_menu(g, rl.Rectangle{sx, sy, score_width, wh - (2 * sy)})
 }
 
 sys_render_ui_score :: proc(g: ^Game, sx: f32, sy: f32) -> f32 {
@@ -25,6 +27,7 @@ sys_render_ui_score :: proc(g: ^Game, sx: f32, sy: f32) -> f32 {
 
 	rl_texture_draw(g, .UI_Energy, {x, icon_y, icon_size, icon_size})
 	str := fmt.bprintf(g.render_state.score_energy[:], "%.2f", g.energy)
+	g.render_state.score_energy[len(str)] = 0
 	cstr = cstring(raw_data(str))
 
 	x += icon_size + UI_PADDING
@@ -34,6 +37,7 @@ sys_render_ui_score :: proc(g: ^Game, sx: f32, sy: f32) -> f32 {
 	x += text_size.x + UI_PADDING * 2
 	rl_texture_draw(g, .UI_EnergyAverage, {x, icon_y, icon_size, icon_size})
 	str = fmt.bprintf(g.render_state.score_avg_energy[:], "%.2f/sec", avg_energy)
+	g.render_state.score_avg_energy[len(str)] = 0
 	cstr = cstring(raw_data(str))
 
 	x += icon_size + UI_PADDING
@@ -43,6 +47,7 @@ sys_render_ui_score :: proc(g: ^Game, sx: f32, sy: f32) -> f32 {
 	x += text_size.x + UI_PADDING * 2
 	rl_texture_draw(g, .UI_ObjectCount, {x, icon_y, icon_size, icon_size})
 	str = fmt.bprintf(g.render_state.score_objects_count[:], "%d", g.total_objects)
+	g.render_state.score_objects_count[len(str)] = 0
 	cstr = cstring(raw_data(str))
 
 	x += icon_size + UI_PADDING

@@ -2,10 +2,6 @@ package main
 
 import "core:math"
 
-// TODO: Make these configurable
-RENDER_WIDTH :: 1920
-RENDER_HEIGHT :: 1080
-
 BG_STAR_COUNT :: 300
 
 MAX_ENTITIES :: 4096
@@ -17,7 +13,7 @@ POSITION_TRAIL_LENGTH :: 5
 RATE_CALC_TICKS :: 10
 SPAWN_INVINCIBLE_DURATION :: 1 // seconds
 
-ENERGY_FRAGMENT_SIZE :: 4
+ENERGY_FRAGMENT_SIZE :: 2
 ORBIT_POINTS_MIN_ANGLE :: (2 * math.PI) / (MAX_ORBIT_LENGTH - 1) // do a -1 so the orbit always closes
 
 // Game physics and system constants
