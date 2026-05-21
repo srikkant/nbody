@@ -210,6 +210,7 @@ Assets_Shader :: enum {
 	Objects_Glow,
 	Objects_Base,
 	BgGrid_Shimmer,
+	Energy_Shader,
 }
 
 Assets_Map :: struct {
@@ -239,6 +240,7 @@ Game_ShaderType :: enum {
 	Stars_Layer,
 	Objects_Layer,
 	BgGrid_Shader,
+	Energy_Shader,
 }
 
 Game_Texture :: struct {

@@ -120,7 +120,7 @@ sys_lifecycle_spawn_debris_particle_burst :: proc(g: ^Game, pos: rl.Vector2, ene
 		size = clamp(size, 0.4, 1.2)
 
 		// Populate SOA array using indexing
-		burst.particles[j] = ParticleBurst_Particle{
+		burst.particles[j] = ParticleBurst_Particle {
 			pos          = pos,
 			size         = size,
 			color        = color,
@@ -325,6 +325,7 @@ sys_lifecycle_handle_destroyed :: proc(g: ^Game, event: ^Game_Event_ObjectDestro
 
 sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 	cursor := &g.mouse_pos
+	dt := frame_time()
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
@@ -334,6 +335,21 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 		dx := cursor.x - e.pos.current.x
 		dy := cursor.y - e.pos.current.y
 		dist_sq := dx * dx + dy * dy
+
+		pull_dist := g.params.k_collect_dist * 3.0
+		if dist_sq < pull_dist * pull_dist {
+			dist := math.sqrt(dist_sq)
+			if dist > 0.1 {
+				speed := f32(240.0) * (1.0 - (dist / pull_dist))
+				e.pos.current.x += (dx / dist) * speed * dt
+				e.pos.current.y += (dy / dist) * speed * dt
+			}
+		} else {
+			// Gentle zero-g idle floating drift when not being pulled
+			t := g.elapsed + f32(i) * 0.73
+			e.pos.current.x += math.cos(t * 1.5) * 0.15
+			e.pos.current.y += math.sin(t * 1.8) * 0.15
+		}
 
 		if dist_sq < g.params.k_collect_dist_sq {
 			g.energy += e.collectible_energy.energy
@@ -369,7 +385,8 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 		if .ParticleBurst in e.sig {
 			for j in 0 ..< e.particle_burst.active_count {
 				e.particle_burst.particles[j].pos += e.particle_burst.particles[j].velocity * dt
-				e.particle_burst.particles[j].velocity += e.particle_burst.particles[j].accelaration * dt
+				e.particle_burst.particles[j].velocity +=
+					e.particle_burst.particles[j].accelaration * dt
 			}
 		}
 

@@ -269,7 +269,11 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_end_shader(g)
 
-	rl_begin_shader(g, .Objects_Layer)
+	rl_begin_shader(g, .Energy_Shader)
+
+	energy_shader := g.assets.shaders[g.shaders[.Energy_Shader].shader]
+	energy_loc := rl.GetShaderLocation(energy_shader, "seconds")
+	rl.SetShaderValue(energy_shader, energy_loc, &g.elapsed, .FLOAT)
 
 	for i in 0 ..< g.render_state.layers[.Collectibles].count {
 		e := &g.entities[g.render_state.layers[.Collectibles].entities[i]]
@@ -279,7 +283,7 @@ sys_render_entities :: proc(g: ^Game) {
 			.Collectibles_Energy,
 			rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius * 4, e.radius * 4},
 			rl.Vector2(e.radius * 2),
-			tint = rl.BLUE, // TODO: Change to some collectible energy color
+			tint = rl.WHITE,
 		)
 	}
 
