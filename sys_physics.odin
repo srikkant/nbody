@@ -72,6 +72,11 @@ sys_physics :: proc(g: ^Game) {
 					e.orbit.count += 1
 				}
 			}
+
+			curr_dist_sq := rl.Vector2LengthSqr(e.pos.current)
+			if curr_dist_sq > e.orbit.max_distance_sq {
+				e.orbit.max_distance_sq = curr_dist_sq
+			}
 		}
 
 		dist_sq := rl.Vector2LengthSqr(e.pos.current)

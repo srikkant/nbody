@@ -37,10 +37,11 @@ PositionComponent :: struct {
 }
 
 OrbitComponent :: struct {
-	points: [MAX_ORBIT_LENGTH]rl.Vector2,
-	head:   int,
-	angle:  f32,
-	count:  int,
+	points:          [MAX_ORBIT_LENGTH]rl.Vector2,
+	head:            int,
+	angle:           f32,
+	count:           int,
+	max_distance_sq: f32,
 }
 
 VelocityComponent :: struct {

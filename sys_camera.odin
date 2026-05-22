@@ -17,6 +17,8 @@ sys_camera :: proc(g: ^Game) {
 
 	g.camera.offset = rl.Vector2{ww / 2, wh / 2}
 
+	if g.slingshot.active do return // Lock camera zoom while slingshot is active to prevent input breaking
+
 	max_x: f32 = 0
 	max_y: f32 = 0
 
@@ -24,8 +26,14 @@ sys_camera :: proc(g: ^Game) {
 		e := &g.entities[id]
 		if !(CAMERA_SIG <= e.sig) do continue
 
-		max_x = math.max(max_x, math.abs(e.pos.current.x))
-		max_y = math.max(max_y, math.abs(e.pos.current.y))
+		if ORBIT_SIG <= e.sig && e.orbit.max_distance_sq > 0 {
+			r := math.sqrt(e.orbit.max_distance_sq)
+			max_x = math.max(max_x, r)
+			max_y = math.max(max_y, r)
+		} else {
+			max_x = math.max(max_x, math.abs(e.pos.current.x))
+			max_y = math.max(max_y, math.abs(e.pos.current.y))
+		}
 	}
 
 	padding :: 200.0
@@ -37,5 +45,10 @@ sys_camera :: proc(g: ^Game) {
 	target_zoom := min(zoom_x, zoom_y)
 	target_zoom = clamp(target_zoom, 0.01, 2)
 
-	g.camera.zoom = math.lerp(g.camera.zoom, target_zoom, f32(0.8))
+	dt := frame_time()
+	decay: f32 = 0.6 // zoom in
+	if target_zoom < g.camera.zoom do decay = 8.0 // zoom out
+
+	t := 1.0 - math.exp(-decay * dt)
+	g.camera.zoom = math.lerp(g.camera.zoom, target_zoom, t)
 }
