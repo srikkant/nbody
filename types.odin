@@ -237,6 +237,7 @@ Assets_Shader :: enum {
 	Celestial_Star,
 	BgGrid_Shimmer,
 	Energy_Shader,
+	Vfx_Effects,
 }
 
 Assets_Map :: struct {
@@ -271,6 +272,7 @@ Game_ShaderType :: enum {
 	Celestial_Star_Layer,
 	BgGrid_Shader,
 	Energy_Shader,
+	Vfx_Shader,
 }
 
 Game_Texture :: struct {
@@ -383,6 +385,11 @@ Game_Parameters_VFX :: struct {
 	shockwave_duration_ln_coefficient:      f32,
 	shockwave_growth_base:                  f32,
 	shockwave_growth_sqrt_coefficient:      f32,
+	shockwave_decel_start:                  f32,
+	shockwave_decel_decay:                  f32,
+	shockwave_quad_multiplier:              f32,
+	particle_quad_multiplier:               f32,
+	energy_quad_multiplier:                 f32,
 	particle_burst_duration_base_sec:       f32,
 	particle_burst_duration_ln_coefficient: f32,
 	particle_burst_count_sqrt_coefficient:  f32,

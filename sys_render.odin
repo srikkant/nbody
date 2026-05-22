@@ -467,8 +467,13 @@ sys_render_entities :: proc(g: ^Game) {
 		rl_texture_draw(
 			g,
 			.Collectibles_Energy,
-			rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius * 4, e.radius * 4},
-			rl.Vector2(e.radius * 2),
+			rl.Rectangle {
+				e.pos.current.x,
+				e.pos.current.y,
+				e.radius * g.params.vfx.energy_quad_multiplier,
+				e.radius * g.params.vfx.energy_quad_multiplier,
+			},
+			rl.Vector2(e.radius * g.params.vfx.energy_quad_multiplier / 2.0),
 			tint = rl.WHITE,
 		)
 	}
@@ -565,6 +570,15 @@ sys_render_entities :: proc(g: ^Game) {
 		}
 	}
 
+	rl_begin_shader(g, .Vfx_Shader)
+	vfx_shader := g.assets.shaders[g.shaders[.Vfx_Shader].shader]
+	loc_vfx_type := rl.GetShaderLocation(vfx_shader, "u_vfx_type")
+	loc_vfx_sec := rl.GetShaderLocation(vfx_shader, "seconds")
+	rl.SetShaderValue(vfx_shader, loc_vfx_sec, &g.elapsed, .FLOAT)
+
+	type_shockwave: f32 = 1.0
+	rl.SetShaderValue(vfx_shader, loc_vfx_type, &type_shockwave, .FLOAT)
+
 	for i in 0 ..< g.render.layers[.Effects].count {
 		id := g.render.layers[.Effects].entities[i]
 		e := &g.entities[id]
@@ -577,14 +591,23 @@ sys_render_entities :: proc(g: ^Game) {
 			alpha := u8(fade * 255.0)
 			col := rl.Color{255, 255, 255, alpha}
 
-			rl.DrawCircleLines(i32(e.pos.current.x), i32(e.pos.current.y), e.radius, col)
-			if e.radius > 1 {
-				rl.DrawCircleLines(i32(e.pos.current.x), i32(e.pos.current.y), e.radius - 1, col)
-			}
-			if e.radius > 2 {
-				rl.DrawCircleLines(i32(e.pos.current.x), i32(e.pos.current.y), e.radius - 2, col)
-			}
+			size := e.radius * g.params.vfx.shockwave_quad_multiplier
+			rl_texture_draw(
+				g,
+				.Blank,
+				rl.Rectangle{e.pos.current.x, e.pos.current.y, size, size},
+				rl.Vector2(size / 2.0),
+				tint = col,
+			)
 		}
+	}
+
+	type_particle: f32 = 0.0
+	rl.SetShaderValue(vfx_shader, loc_vfx_type, &type_particle, .FLOAT)
+
+	for i in 0 ..< g.render.layers[.Effects].count {
+		id := g.render.layers[.Effects].entities[i]
+		e := &g.entities[id]
 
 		if .ParticleBurst in e.sig {
 			t := e.life.remaining.curr
@@ -597,10 +620,19 @@ sys_render_entities :: proc(g: ^Game) {
 				col := p.color
 				col.a = u8(f32(p.color.a) * fade)
 
-				rl.DrawCircle(i32(p.pos.x), i32(p.pos.y), p.size, col)
+				size := p.size * g.params.vfx.particle_quad_multiplier
+				rl_texture_draw(
+					g,
+					.Blank,
+					rl.Rectangle{p.pos.x, p.pos.y, size, size},
+					rl.Vector2(size / 2.0),
+					tint = col,
+				)
 			}
 		}
 	}
+
+	rl_end_shader(g)
 }
 
 sys_render_bg :: proc(g: ^Game) {

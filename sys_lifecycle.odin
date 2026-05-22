@@ -415,7 +415,9 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 		dy := cursor.y - e.pos.current.y
 		dist_sq := dx * dx + dy * dy
 
-		pull_dist := g.params.physics.energy_collect_distance * g.params.vfx.fragments_pull_distance_multiplier
+		pull_dist :=
+			g.params.physics.energy_collect_distance *
+			g.params.vfx.fragments_pull_distance_multiplier
 		if dist_sq < pull_dist * pull_dist {
 			dist := math.sqrt(dist_sq)
 			if dist > g.params.vfx.fragments_pull_minimum_distance {
@@ -462,7 +464,16 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 		}
 
 		if .Shockwave in e.sig {
-			e.radius += e.shockwave.growth_rate * dt
+			if e.life.remaining.interval > 0 {
+				age := e.life.remaining.interval - e.life.remaining.curr
+				progress := age / e.life.remaining.interval
+				scale_factor :=
+					g.params.vfx.shockwave_decel_start -
+					g.params.vfx.shockwave_decel_decay * progress // Starts at decel_start, decays by decel_decay * progress
+				e.radius += e.shockwave.growth_rate * scale_factor * dt
+			} else {
+				e.radius += e.shockwave.growth_rate * dt
+			}
 		}
 
 		if .ParticleBurst in e.sig {

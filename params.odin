@@ -256,10 +256,15 @@ params_init_defaults :: proc(p: ^Game_Parameters) {
 	// VFX PARAMETERS
 	// ==========================================
 	p.vfx.shockwave_radius_start = 1.0
-	p.vfx.shockwave_duration_base_sec = 0.4
-	p.vfx.shockwave_duration_ln_coefficient = 0.03
-	p.vfx.shockwave_growth_base = 60.0
-	p.vfx.shockwave_growth_sqrt_coefficient = 0.15
+	p.vfx.shockwave_duration_base_sec = 0.48
+	p.vfx.shockwave_duration_ln_coefficient = 0.036
+	p.vfx.shockwave_growth_base = 72.0
+	p.vfx.shockwave_growth_sqrt_coefficient = 0.18
+	p.vfx.shockwave_decel_start = 2.2
+	p.vfx.shockwave_decel_decay = 1.95
+	p.vfx.shockwave_quad_multiplier = 2.4
+	p.vfx.particle_quad_multiplier = 2.4
+	p.vfx.energy_quad_multiplier = 8.0
 
 	p.vfx.particle_burst_duration_base_sec = 0.4
 	p.vfx.particle_burst_duration_ln_coefficient = 0.03

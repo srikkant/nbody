@@ -27,6 +27,7 @@ assets_map_load :: proc(g: ^Game) {
 	g.assets.shaders[.Celestial_Star] = rl.LoadShader(nil, "./assets/shaders/celestial_star.frag")
 	g.assets.shaders[.BgGrid_Shimmer] = rl.LoadShader(nil, "./assets/shaders/bg_grid_shimmer.frag")
 	g.assets.shaders[.Energy_Shader] = rl.LoadShader(nil, "./assets/shaders/energy_glow.frag")
+	g.assets.shaders[.Vfx_Effects] = rl.LoadShader(nil, "./assets/shaders/vfx_effects.frag")
 
 	g.assets.fonts[.Heading] = rl.LoadFontEx("./assets/fonts/heading.ttf", 18, nil, 0)
 	g.assets.fonts[.Body] = rl.LoadFontEx("./assets/fonts/body.ttf", 14, nil, 0)
@@ -123,6 +124,7 @@ assets_map_free :: proc(g: ^Game) {
 	rl.UnloadShader(g.assets.shaders[.Celestial_Star])
 	rl.UnloadShader(g.assets.shaders[.BgGrid_Shimmer])
 	rl.UnloadShader(g.assets.shaders[.Energy_Shader])
+	rl.UnloadShader(g.assets.shaders[.Vfx_Effects])
 
 	rl.UnloadTexture(g.assets.textures[.BgStarGlow])
 	rl.UnloadTexture(g.assets.textures[.BgStarFlare])
@@ -204,5 +206,8 @@ assets_shaders_load :: proc(g: ^Game) {
 	}
 	g.shaders[.Energy_Shader] = {
 		shader = .Energy_Shader,
+	}
+	g.shaders[.Vfx_Shader] = {
+		shader = .Vfx_Effects,
 	}
 }
