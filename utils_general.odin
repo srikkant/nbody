@@ -41,3 +41,29 @@ get_celestial_display_name :: proc(ctype: CelestialType) -> cstring {
 	}
 	return "Unknown"
 }
+
+get_inspected_entity :: proc(g: ^Game) -> (Entity, bool) {
+	closest_id: Entity = 0
+	closest_dist: f32 = 120.0 // screen-space lock threshold in pixels
+	found := false
+
+	mouse_screen := rl.GetMousePosition()
+
+	for idx in 0 ..< g.entities_count {
+		e := &g.entities[idx]
+		if e.sig == {} do continue
+		if !(.Celestial in e.sig) do continue
+		if e.celestial.type == .Star do continue // skip star
+
+		screen_pos := rl.GetWorldToScreen2D(e.pos.current, g.camera)
+		dist := rl.Vector2Distance(mouse_screen, screen_pos)
+
+		if dist < closest_dist {
+			closest_dist = dist
+			closest_id = Entity(idx)
+			found = true
+		}
+	}
+
+	return closest_id, found
+}

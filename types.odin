@@ -494,6 +494,8 @@ Game_RenderState :: struct {
 	menu:                Game_MenuState,
 	upgrade_menu_rect:   rl.Rectangle,
 	score_rect:          rl.Rectangle,
+	show_stats_panel:    bool,
+	stats_panel_rect:    rl.Rectangle,
 }
 
 Game_Theme :: struct {

@@ -164,6 +164,7 @@ sys_render :: proc(g: ^Game) {
 	sys_render_cursor(g)
 	sys_render_slingshot(g)
 	sys_render_entities(g)
+	sys_render_stats_reticle(g)
 
 	rl.EndMode2D()
 
@@ -818,4 +819,40 @@ sys_render_bg :: proc(g: ^Game) {
 	)
 
 	rl_end_shader(g)
+}
+
+sys_render_stats_reticle :: proc(g: ^Game) {
+	if !g.render.show_stats_panel do return
+
+	closest_id, found := get_inspected_entity(g)
+	if !found do return
+
+	e := &g.entities[closest_id]
+	pos := e.pos.current
+	radius := e.radius
+
+	pulse := 1.0 + 0.12 * math.sin(g.elapsed * 5.0)
+	reticle_radius := radius * 2.2 * pulse
+
+	col := g.theme.ui_menu_item_selected_color
+	col.a = 180
+
+	rl.DrawCircleLines(i32(pos.x), i32(pos.y), reticle_radius, col)
+
+	notch_len := clamp(radius * 0.8, 4.0, 30.0)
+	// Top Left
+	rl.DrawLineEx({pos.x - reticle_radius, pos.y - reticle_radius}, {pos.x - reticle_radius + notch_len, pos.y - reticle_radius}, 1.2, col)
+	rl.DrawLineEx({pos.x - reticle_radius, pos.y - reticle_radius}, {pos.x - reticle_radius, pos.y - reticle_radius + notch_len}, 1.2, col)
+	// Top Right
+	rl.DrawLineEx({pos.x + reticle_radius, pos.y - reticle_radius}, {pos.x + reticle_radius - notch_len, pos.y - reticle_radius}, 1.2, col)
+	rl.DrawLineEx({pos.x + reticle_radius, pos.y - reticle_radius}, {pos.x + reticle_radius, pos.y - reticle_radius + notch_len}, 1.2, col)
+	// Bottom Left
+	rl.DrawLineEx({pos.x - reticle_radius, pos.y + reticle_radius}, {pos.x - reticle_radius + notch_len, pos.y + reticle_radius}, 1.2, col)
+	rl.DrawLineEx({pos.x - reticle_radius, pos.y + reticle_radius}, {pos.x - reticle_radius, pos.y + reticle_radius - notch_len}, 1.2, col)
+	// Bottom Right
+	rl.DrawLineEx({pos.x + reticle_radius, pos.y + reticle_radius}, {pos.x + reticle_radius - notch_len, pos.y + reticle_radius}, 1.2, col)
+	rl.DrawLineEx({pos.x + reticle_radius, pos.y + reticle_radius}, {pos.x + reticle_radius, pos.y + reticle_radius - notch_len}, 1.2, col)
+
+	// Draw target indicator line and crosshair
+	rl.DrawCircle(i32(pos.x), i32(pos.y), 1.5, col)
 }

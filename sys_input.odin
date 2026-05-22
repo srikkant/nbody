@@ -16,8 +16,11 @@ sys_input :: proc(g: ^Game) {
 		utils_math_update_timer(&g.timers[i], dt)
 	}
 
-	menu_hovered := g.render.show_upgrade_menu &&
-		rl.CheckCollisionPointRec(rl.GetMousePosition(), g.render.upgrade_menu_rect)
+	stats_hovered := g.render.show_stats_panel &&
+		rl.CheckCollisionPointRec(rl.GetMousePosition(), g.render.stats_panel_rect)
+
+	menu_hovered := (g.render.show_upgrade_menu &&
+		rl.CheckCollisionPointRec(rl.GetMousePosition(), g.render.upgrade_menu_rect)) || stats_hovered
 
 	if (rl.IsMouseButtonPressed(.LEFT)) {
 		if !menu_hovered {
@@ -95,6 +98,10 @@ sys_input :: proc(g: ^Game) {
 
 	if rl.IsKeyPressed(.M) {
 		g.render.show_upgrade_menu = !g.render.show_upgrade_menu
+	}
+
+	if rl.IsKeyPressed(.S) {
+		g.render.show_stats_panel = !g.render.show_stats_panel
 	}
 
 	if rl.IsKeyPressed(.T) {
