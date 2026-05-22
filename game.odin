@@ -35,10 +35,29 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	*/
 
 	g.slingshot.output = Game_SlingshotOutput_Celestial {
-		celestial = {.DwarfPlanet},
+		celestial = {type = .DwarfPlanet},
 	}
 
-	g.available_objects += {.DwarfPlanet}
+	g.render.menu = Game_MenuState {
+		selected_mode      = .Normal,
+		selected_celestial = .DwarfPlanet,
+		hover_mode         = -1,
+		hover_celestial    = -1,
+	}
+
+	g.available_objects = {
+		.Asteroid,
+		.Moonlet,
+		.DwarfPlanet,
+		.SubEarth,
+		.SuperEarth,
+		.MegaEarth,
+		.MiniNeptune,
+		.SubNeptune,
+		.SuperNeptune,
+		.GiantPlanet,
+		.SuperJupiter,
+	}
 
 	g.timers[.Score] = Timer {
 		interval = 1,

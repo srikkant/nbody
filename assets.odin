@@ -140,6 +140,11 @@ assets_fonts_load :: proc(g: ^Game) {
 		font = .Body,
 		size = 14,
 	}
+
+	g.fonts[.Menu_Label] = {
+		font = .Body,
+		size = 11,
+	}
 }
 
 assets_textures_load :: proc(g: ^Game) {

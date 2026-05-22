@@ -16,9 +16,14 @@ sys_input :: proc(g: ^Game) {
 		utils_math_update_timer(&g.timers[i], dt)
 	}
 
+	menu_hovered := g.render.show_upgrade_menu &&
+		rl.CheckCollisionPointRec(rl.GetMousePosition(), g.render.upgrade_menu_rect)
+
 	if (rl.IsMouseButtonPressed(.LEFT)) {
-		g.slingshot.active = true
-		g.slingshot.start_pos = input_mouse_pos(g)
+		if !menu_hovered {
+			g.slingshot.active = true
+			g.slingshot.start_pos = input_mouse_pos(g)
+		}
 	}
 
 	if (rl.IsMouseButtonReleased(.RIGHT) || rl.IsKeyPressed(.C)) {
@@ -88,27 +93,8 @@ sys_input :: proc(g: ^Game) {
 		g.draw_debug_panel = !g.draw_debug_panel
 	}
 
-	if rl.IsKeyPressed(.E) {
-		g.slingshot.output = Game_SlingshotOutput_Emitter {
-			emitter = {
-				emit_celestial = {.DwarfPlanet},
-				emit_density = g.params.celestials[.DwarfPlanet].density,
-				emit_radius = g.params.celestials[.DwarfPlanet].radius,
-				base_cost = f64(g.params.celestials[.DwarfPlanet].launch_cost),
-				timer = Timer{interval = 2},
-				destroy_timer = Timer{interval = 10},
-			},
-		}
-	}
-
 	if rl.IsKeyPressed(.M) {
 		g.render.show_upgrade_menu = !g.render.show_upgrade_menu
-	}
-
-	if rl.IsKeyPressed(.P) {
-		g.slingshot.output = Game_SlingshotOutput_Celestial {
-			celestial = {.DwarfPlanet},
-		}
 	}
 
 	if rl.IsKeyPressed(.T) {

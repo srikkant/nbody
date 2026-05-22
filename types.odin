@@ -262,6 +262,7 @@ Game_TextureType :: enum {
 Game_FontType :: enum {
 	Heading,
 	Body,
+	Menu_Label,
 }
 
 Game_ShaderType :: enum {
@@ -369,6 +370,10 @@ Game_Parameters_UI :: struct {
 	cursor_indicator_radius: f32,
 	menu_border_rounding:    f32,
 	menu_segments:           i32,
+	menu_width:              f32,
+	menu_item_height:        f32,
+	menu_section_gap:        f32,
+	menu_inner_padding:      f32,
 }
 
 Game_Parameters_Camera :: struct {
@@ -459,6 +464,19 @@ Game_RenderLayer :: struct {
 	count:    int,
 }
 
+Game_SlingshotMode :: enum {
+	Normal,
+	Emitter,
+}
+
+Game_MenuState :: struct {
+	selected_mode:      Game_SlingshotMode,
+	selected_celestial: CelestialType,
+	hover_mode:         int,  // -1 = none, 0 = Normal, 1 = Emitter
+	hover_celestial:    int,  // -1 = none, or index into rendered list
+	scroll_offset:      f32,
+}
+
 Game_RenderState :: struct {
 	rect:                rl.Rectangle,
 	scale:               f32,
@@ -473,6 +491,7 @@ Game_RenderState :: struct {
 
 	// Menus & overlays
 	show_upgrade_menu:   bool,
+	menu:                Game_MenuState,
 	upgrade_menu_rect:   rl.Rectangle,
 	score_rect:          rl.Rectangle,
 }
@@ -488,6 +507,13 @@ Game_Theme :: struct {
 	ui_slingshot_launch_ok_color:  rl.Color,
 	ui_slingshot_launch_err_color: rl.Color,
 	ui_menu_bg_color:              rl.Color,
+	ui_menu_header_color:          rl.Color,   // section header text
+	ui_menu_item_color:            rl.Color,   // normal item text
+	ui_menu_item_hover_color:      rl.Color,   // hovered item bg
+	ui_menu_item_selected_color:   rl.Color,   // selected item accent
+	ui_menu_item_locked_color:     rl.Color,   // locked/grayed out
+	ui_menu_accent_color:          rl.Color,   // accent glow line
+	ui_menu_divider_color:         rl.Color,   // section divider line
 	ui_out_of_bounds_margin:       f32,
 	bg_star_render_padding:        f32,
 	camera_padding:                f32,

@@ -167,7 +167,7 @@ params_init_defaults :: proc(p: ^Game_Parameters) {
 	p.physics.collision_debris_speed_coefficient = 0.01
 
 	p.physics.spawn_invincibility_duration_sec = 1.0
-	p.physics.world_radius = 1000.0
+	p.physics.world_radius = 10000.0
 	p.physics.world_radius_squared = p.physics.world_radius * p.physics.world_radius
 	p.physics.gravity_softening_factor = 2.0
 	p.physics.max_delta_time_sec = 0.05
@@ -243,6 +243,10 @@ params_init_defaults :: proc(p: ^Game_Parameters) {
 	p.ui.cursor_indicator_radius = 4.0
 	p.ui.menu_border_rounding = 0.2
 	p.ui.menu_segments = 1
+	p.ui.menu_width = 220.0
+	p.ui.menu_item_height = 28.0
+	p.ui.menu_section_gap = 12.0
+	p.ui.menu_inner_padding = 12.0
 
 	// ==========================================
 	// CAMERA PARAMETERS
@@ -331,7 +335,14 @@ theme_init_default :: proc(t: ^Game_Theme) {
 	t.ui_slingshot_preview_color = rl.Color{255, 255, 255, 200}
 	t.ui_slingshot_launch_ok_color = rl.GRAY
 	t.ui_slingshot_launch_err_color = rl.RED
-	t.ui_menu_bg_color = rl.Color{100, 100, 100, 128}
+	t.ui_menu_bg_color = rl.Color{12, 16, 28, 220} // Sleek dark translucent panel background
+	t.ui_menu_header_color = rl.Color{0, 200, 255, 220} // Cyan header text
+	t.ui_menu_item_color = rl.Color{200, 210, 220, 200} // Cool gray text
+	t.ui_menu_item_hover_color = rl.Color{0, 200, 255, 30} // Subtle cyan glow bg
+	t.ui_menu_item_selected_color = rl.Color{0, 230, 255, 255} // Bright cyan accent
+	t.ui_menu_item_locked_color = rl.Color{80, 80, 100, 100} // Dim grayed out
+	t.ui_menu_accent_color = rl.Color{0, 200, 255, 80} // Thin accent lines
+	t.ui_menu_divider_color = rl.Color{60, 70, 90, 120} // Subtle dividers
 	t.ui_out_of_bounds_margin = 40.0
 	t.bg_star_render_padding = 40.0
 	t.camera_padding = 200.0
