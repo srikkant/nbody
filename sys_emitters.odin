@@ -1,7 +1,7 @@
 package main
 
 sys_emitters :: proc(g: ^Game) {
-	dt := frame_time()
+	dt := frame_time(g)
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]

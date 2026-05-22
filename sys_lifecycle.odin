@@ -18,10 +18,28 @@ sys_lifecycle_init :: proc(g: ^Game) {
 }
 
 sys_lifecycle_spawn_fragments :: proc(g: ^Game, energy: f64, rel_speed: f32, pos: rl.Vector2) {
-	frag_count := math.max(6, 3 + int(math.mod_f32(rel_speed * 0.7, 4.0)))
+	frag_count := int(
+		math.max(
+			g.params.vfx.fragments_count_min,
+			g.params.vfx.fragments_count_base +
+			i32(
+				math.mod_f32(
+					rel_speed * g.params.vfx.fragments_count_speed_multiplier,
+					g.params.vfx.fragments_count_mod,
+				),
+			),
+		),
+	)
 	frag_energy_each := energy / f64(frag_count)
 
-	frag_radius := ENERGY_FRAGMENT_SIZE + f32(math.min(energy / 100, 5))
+	frag_radius :=
+		g.params.vfx.energy_fragment_size +
+		f32(
+			math.min(
+				energy / f64(g.params.vfx.fragments_radius_mass_divisor),
+				f64(g.params.vfx.fragments_radius_mass_max),
+			),
+		)
 
 	for f in 0 ..< frag_count {
 		angle := (math.PI * 2.0 * f32(f)) / f32(frag_count) + math.PI / f32(frag_count)
@@ -42,17 +60,24 @@ sys_lifecycle_spawn_shockwave :: proc(g: ^Game, pos: rl.Vector2, energy: f64) {
 
 	id := entity_create(g)
 	entity_add_position(g, id, {current = pos})
-	entity_add_radius(g, id, 1.0)
+	entity_add_radius(g, id, g.params.vfx.shockwave_radius_start)
 
-	// Clean up after duration seconds using Life component (increased visibility duration)
-	duration := f32(0.4)
+	duration := g.params.vfx.shockwave_duration_base_sec
 	if energy > 0 {
-		duration = f32(math.max(0.4, 0.4 + math.ln(energy + 1.0) * 0.03))
+		duration = f32(
+			math.max(
+				f64(g.params.vfx.shockwave_duration_base_sec),
+				f64(g.params.vfx.shockwave_duration_base_sec) +
+				math.ln(energy + 1.0) * f64(g.params.vfx.shockwave_duration_ln_coefficient),
+			),
+		)
 	}
 	entity_add_life(g, id, {created_at = g.elapsed, remaining = Timer{interval = duration}})
 
-	// Growth rate increased significantly, range between min and max reduced
-	growth_rate := f32(60.0 + math.sqrt(energy) * 0.15)
+	growth_rate := f32(
+		f64(g.params.vfx.shockwave_growth_base) +
+		math.sqrt(energy) * f64(g.params.vfx.shockwave_growth_sqrt_coefficient),
+	)
 	entity_add_shockwave(g, id, {growth_rate = growth_rate})
 }
 
@@ -62,15 +87,26 @@ sys_lifecycle_spawn_debris_particle_burst :: proc(g: ^Game, pos: rl.Vector2, ene
 	id := entity_create(g)
 	entity_add_position(g, id, {current = pos})
 
-	// Clean up after duration seconds using Life component (increased visibility duration)
-	duration := f32(0.4)
+	duration := g.params.vfx.particle_burst_duration_base_sec
 	if energy > 0 {
-		duration = f32(math.max(0.4, 0.4 + math.ln(energy + 1.0) * 0.03))
+		duration = f32(
+			math.max(
+				f64(g.params.vfx.particle_burst_duration_base_sec),
+				f64(g.params.vfx.particle_burst_duration_base_sec) +
+				math.ln(energy + 1.0) * f64(g.params.vfx.particle_burst_duration_ln_coefficient),
+			),
+		)
 	}
 	entity_add_life(g, id, {created_at = g.elapsed, remaining = Timer{interval = duration}})
 
-	// Determine active particles count based on energy (increased for denser explosions)
-	active_count := clamp(int(math.sqrt(energy) * 0.6 + 25), 25, MAX_PARTICLE_BURST_COUNT)
+	active_count := clamp(
+		int(
+			math.sqrt(energy) * f64(g.params.vfx.particle_burst_count_sqrt_coefficient) +
+			f64(g.params.vfx.particle_burst_count_base),
+		),
+		int(g.params.vfx.particle_burst_count_base),
+		MAX_PARTICLE_BURST_COUNT,
+	)
 
 	burst: ParticleBurstComponent
 	burst.active_count = active_count
@@ -80,46 +116,79 @@ sys_lifecycle_spawn_debris_particle_burst :: proc(g: ^Game, pos: rl.Vector2, ene
 		angle := f32(rl.GetRandomValue(0, 360)) * (math.PI / 180.0)
 		dir := rl.Vector2{math.cos(angle), math.sin(angle)}
 
-		// Speed scales with energy with random variation (larger base, tighter range)
-		base_speed := f32(30.0 + math.sqrt(energy) * 0.15)
-		speed := base_speed * (f32(rl.GetRandomValue(50, 150)) / 100.0)
+		base_speed := f32(
+			f64(g.params.vfx.particle_burst_speed_base) +
+			math.sqrt(energy) * f64(g.params.vfx.particle_burst_speed_sqrt_coefficient),
+		)
+		speed :=
+			base_speed *
+			(f32(
+						rl.GetRandomValue(
+							i32(g.params.vfx.particle_burst_speed_variance_min),
+							i32(g.params.vfx.particle_burst_speed_variance_max),
+						),
+					) /
+					100.0)
 		vel := dir * speed
-
 		// Acceleration (drag: opposite to velocity, e.g. -vel * drag_factor)
-		accel := -vel * 2.5
-
-		// Fiery explosion gradient: smooth interpolation from Red -> Orange -> Yellow -> Glowing White
+		accel := -vel * g.params.vfx.particle_burst_drag_coefficient
 		t := f32(rl.GetRandomValue(0, 100)) / 100.0
 		color := rl.Color{255, 255, 255, 255}
-		if t < 0.3 {
+
+		t1 := g.params.vfx.particle_burst_color_t1
+		t2 := g.params.vfx.particle_burst_color_t2
+
+		if t < t1 {
 			// Red to Orange
-			factor := t / 0.3
+			factor := t / t1
 			color.r = 255
-			color.g = u8(30.0 + factor * 90.0)
+			color.g = u8(
+				g.params.vfx.particle_burst_color_g1_base +
+				factor * g.params.vfx.particle_burst_color_g1_range,
+			)
 			color.b = 0
 			color.a = 255
-		} else if t < 0.7 {
+		} else if t < t2 {
 			// Orange to Yellow
-			factor := (t - 0.3) / 0.4
+			factor := (t - t1) / (t2 - t1)
 			color.r = 255
-			color.g = u8(120.0 + factor * 90.0)
+			color.g = u8(
+				g.params.vfx.particle_burst_color_g2_base +
+				factor * g.params.vfx.particle_burst_color_g2_range,
+			)
 			color.b = 0
 			color.a = 255
 		} else {
 			// Yellow to Glowing White
-			factor := (t - 0.7) / 0.3
+			factor := (t - t2) / (1.0 - t2)
 			color.r = 255
-			color.g = u8(210.0 + factor * 45.0)
-			color.b = u8(factor * 230.0)
+			color.g = u8(
+				g.params.vfx.particle_burst_color_g3_base +
+				factor * g.params.vfx.particle_burst_color_g3_range,
+			)
+			color.b = u8(factor * g.params.vfx.particle_burst_color_b3_range)
 			color.a = 255
 		}
 
-		// Random particle size scaling with energy (increased base, tighter range to keep pixel-sized but visible)
-		base_size := f32(0.5 + math.ln(energy + 1.0) * 0.03)
-		size := base_size * (f32(rl.GetRandomValue(50, 150)) / 100.0)
-		size = clamp(size, 0.4, 1.2)
+		base_size := f32(
+			f64(g.params.vfx.particle_burst_size_base) +
+			math.ln(energy + 1.0) * f64(g.params.vfx.particle_burst_size_ln_coefficient),
+		)
+		size :=
+			base_size *
+			(f32(
+						rl.GetRandomValue(
+							i32(g.params.vfx.particle_burst_size_variance_min),
+							i32(g.params.vfx.particle_burst_size_variance_max),
+						),
+					) /
+					100.0)
+		size = clamp(
+			size,
+			g.params.vfx.particle_burst_size_min,
+			g.params.vfx.particle_burst_size_max,
+		)
 
-		// Populate SOA array using indexing
 		burst.particles[j] = ParticleBurst_Particle {
 			pos          = pos,
 			size         = size,
@@ -164,10 +233,11 @@ sys_lifecycle_collision_classify :: proc(
 	if e1.celestial.type != e2.celestial.type do return .Debris
 
 	mass_ratio := math.max(e1.mass, e2.mass) / math.min(e2.mass, e1.mass)
-	if mass_ratio > g.params.k_collision_mass_scale do return .Debris
+	if mass_ratio > g.params.physics.collision_mass_scaling_factor do return .Debris
 
 	shatter_threshold_sq :=
-		g.params.k_shatter_base * ((e1.mass + e2.mass) / math.max(e1.radius + e2.radius, 1.0))
+		g.params.physics.shatter_base_energy *
+		((e1.mass + e2.mass) / math.max(e1.radius + e2.radius, 1.0))
 
 	rel_speed_sq := rl.Vector2LengthSqr(e1.velocity.current - e2.velocity.current)
 	if rel_speed_sq > shatter_threshold_sq do return .Shatter
@@ -185,7 +255,7 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	// TODO: If the new type is a star, we should rethink this.
 	new_type := entity_celestial_next_type(e1.celestial.type)
 	new_mass := e1.mass + e2.mass
-	new_density := g.params.densities[new_type]
+	new_density := g.params.physics.densities[new_type]
 	new_radius := physics_radius_from_mass_density(new_mass, new_density)
 
 	vel_x := (e1.mass * e1.velocity.current.x + e2.mass * e2.velocity.current.x) / new_mass
@@ -258,14 +328,19 @@ sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	delete_entities[small_id] = true
 
 	rel_speed := rl.Vector2Length(e1.velocity.current - e2.velocity.current)
-	loss := math.min(big_mass * 0.4, small_mass * (g.params.k_debris_mass_loss + rel_speed * 0.01))
+	loss := math.min(
+		big_mass * g.params.physics.collision_debris_max_loss_fraction,
+		small_mass *
+		(g.params.physics.debris_mass_loss_fraction +
+				rel_speed * g.params.physics.collision_debris_speed_coefficient),
+	)
 	remaining_mass := big_mass - loss
 
 	e_big := &g.entities[big_id]
 	e_big.celestial.type = entity_celestial_prev_type(big_type)
 	e_big.mass = remaining_mass
 
-	new_density := g.params.densities[e_big.celestial.type]
+	new_density := g.params.physics.densities[e_big.celestial.type]
 	e_big.radius = physics_radius_from_mass_density(remaining_mass, new_density)
 
 	energy_loss := f64(loss) * f64(rel_speed * rel_speed)
@@ -287,7 +362,7 @@ sys_lifecycle_handle_star_absorb :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	}
 
 	delete_entities[other_id] = true
-	absorbed := other_mass * g.params.k_mass_loss
+	absorbed := other_mass * g.params.physics.mass_loss_rate
 	mass_delta[star_id] += absorbed
 }
 
@@ -313,7 +388,7 @@ sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^Game_Event_Collision) {
 sys_lifecycle_handle_out_of_bounds :: proc(g: ^Game, event: ^Game_Event_ObjectOutOfBounds) {
 	e := &g.entities[event.id]
 	if e.celestial.type != .Star && e.mass > 0 {
-		refund := f64(g.params.k_out_of_bounds_refund * e.mass * e.radius)
+		refund := f64(g.params.physics.out_of_bounds_refund_fraction * e.mass * e.radius)
 		g.energy += refund
 	}
 	delete_entities[event.id] = true
@@ -325,7 +400,7 @@ sys_lifecycle_handle_destroyed :: proc(g: ^Game, event: ^Game_Event_ObjectDestro
 
 sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 	cursor := &g.mouse_pos
-	dt := frame_time()
+	dt := frame_time(g)
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
@@ -336,22 +411,26 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 		dy := cursor.y - e.pos.current.y
 		dist_sq := dx * dx + dy * dy
 
-		pull_dist := g.params.k_collect_dist * 3.0
+		pull_dist := g.params.physics.energy_collect_distance * g.params.vfx.fragments_pull_distance_multiplier
 		if dist_sq < pull_dist * pull_dist {
 			dist := math.sqrt(dist_sq)
-			if dist > 0.1 {
-				speed := f32(240.0) * (1.0 - (dist / pull_dist))
+			if dist > g.params.vfx.fragments_pull_minimum_distance {
+				speed := g.params.vfx.fragments_pull_speed_base * (1.0 - (dist / pull_dist))
 				e.pos.current.x += (dx / dist) * speed * dt
 				e.pos.current.y += (dy / dist) * speed * dt
 			}
 		} else {
-			// Gentle zero-g idle floating drift when not being pulled
-			t := g.elapsed + f32(i) * 0.73
-			e.pos.current.x += math.cos(t * 1.5) * 0.15
-			e.pos.current.y += math.sin(t * 1.8) * 0.15
+			// Gentle drift if not being pulled
+			t := g.elapsed + f32(i) * g.params.vfx.fragments_drift_phase_multiplier
+			e.pos.current.x +=
+				math.cos(t * g.params.vfx.fragments_drift_frequency_x) *
+				g.params.vfx.fragments_drift_amplitude_x
+			e.pos.current.y +=
+				math.sin(t * g.params.vfx.fragments_drift_frequency_y) *
+				g.params.vfx.fragments_drift_amplitude_y
 		}
 
-		if dist_sq < g.params.k_collect_dist_sq {
+		if dist_sq < g.params.physics.energy_collect_distance_squared {
 			g.energy += e.collectible_energy.energy
 			delete_entities[i] = true
 		}
@@ -359,7 +438,7 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 }
 
 sys_lifecycle_update_entities :: proc(g: ^Game) {
-	dt := frame_time()
+	dt := frame_time(g)
 
 	for i in 0 ..< MAX_ENTITIES {
 		if delete_entities[i] {
@@ -393,13 +472,13 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 		if mass_delta[i] > 0 {
 			e.mass += mass_delta[i]
 			if e.celestial.type == .Star {
-				star_density := g.params.densities[.Star]
+				star_density := g.params.physics.densities[.Star]
 				e.radius = physics_radius_from_mass_density(e.mass, star_density)
-				e.energy_source.output = f32(g.params.k_star_energy_scale * e.mass)
+				e.energy_source.output = f32(g.params.physics.star_energy_multiplier * e.mass)
 			} else {
 				e.radius = physics_radius_from_mass_density(
 					e.mass,
-					g.params.densities[e.celestial.type],
+					g.params.physics.densities[e.celestial.type],
 				)
 			}
 			mass_delta[i] = 0

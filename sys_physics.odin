@@ -4,7 +4,7 @@ import "core:math"
 import rl "vendor:raylib"
 
 sys_physics :: proc(g: ^Game) {
-	dt := frame_time() * g.params.sim_rate
+	dt := frame_time(g) * g.params.physics.simulation_rate_multiplier
 
 	for i in 0 ..< g.entities_count {
 		e1 := &g.entities[i]
@@ -12,7 +12,7 @@ sys_physics :: proc(g: ^Game) {
 		if !(PHYSICS_SIG <= e1.sig) do continue
 
 		total_accel := rl.Vector2(0)
-		e1_is_new := g.elapsed - e1.life.created_at < SPAWN_INVINCIBLE_DURATION
+		e1_is_new := g.elapsed - e1.life.created_at < g.params.physics.spawn_invincibility_duration_sec
 		e1_is_star := e1.celestial.type == .Star
 
 		for j in 0 ..< g.entities_count {
@@ -35,7 +35,7 @@ sys_physics :: proc(g: ^Game) {
 			total_accel += accel
 
 			e2_is_star := e2.celestial.type == .Star
-			e2_is_new := g.elapsed - e2.life.created_at < SPAWN_INVINCIBLE_DURATION
+			e2_is_new := g.elapsed - e2.life.created_at < g.params.physics.spawn_invincibility_duration_sec
 
 			invincible := (e1_is_new || e2_is_new) && !(e1_is_star || e2_is_star)
 
@@ -80,7 +80,7 @@ sys_physics :: proc(g: ^Game) {
 		}
 
 		dist_sq := rl.Vector2LengthSqr(e.pos.current)
-		if dist_sq > WORLD_RADIUS_SQ {
+		if dist_sq > g.params.physics.world_radius_squared {
 			push_event(g, Game_Event_ObjectOutOfBounds{id = Entity(i)})
 		}
 	}

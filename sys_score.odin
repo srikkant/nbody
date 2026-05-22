@@ -3,7 +3,7 @@ package main
 import rl "vendor:raylib"
 
 sys_score :: proc(g: ^Game) {
-	dt := frame_time()
+	dt := frame_time(g)
 
 	curr_energy := g.energy
 
@@ -13,11 +13,11 @@ sys_score :: proc(g: ^Game) {
 		if g.timers[.Score].done && KE_SCORE_SIG <= e.sig {
 			mass_score := e.mass
 			vel_score := rl.Vector2LengthSqr(e.velocity.current)
-			pos_score := 1 / (SOFTENING + rl.Vector2LengthSqr(e.pos.current))
+			pos_score := 1 / (g.params.physics.gravity_softening_factor + rl.Vector2LengthSqr(e.pos.current))
 
 			g.energy += f64(
-				g.params.k_energy_gain *
-				g.params.k_energy_momentum *
+				g.params.physics.energy_gain_coefficient *
+				g.params.physics.energy_momentum_coefficient *
 				mass_score *
 				vel_score *
 				pos_score,
@@ -26,8 +26,9 @@ sys_score :: proc(g: ^Game) {
 
 		if ENERGY_SOURCE_SIG <= e.sig {
 			gain := f64(
-				g.params.k_energy_gain *
-				(e.energy_source.output + (g.params.k_energy_source * e.radius * e.radius)),
+				g.params.physics.energy_gain_coefficient *
+				(e.energy_source.output +
+						(g.params.physics.energy_generation_coefficient * e.radius * e.radius)),
 			)
 
 			utils_math_update_timer(&e.energy_source.timer, dt)
@@ -40,6 +41,6 @@ sys_score :: proc(g: ^Game) {
 
 	if g.timers[.Score].done {
 		g.energy_gains[g.energy_rate_ticker] = (g.energy - curr_energy)
-		g.energy_rate_ticker = (g.energy_rate_ticker + 1) % RATE_CALC_TICKS
+		g.energy_rate_ticker = (g.energy_rate_ticker + 1) % AVG_CALC_TICKS
 	}
 }

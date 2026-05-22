@@ -21,13 +21,13 @@ sys_render_ui_score :: proc(g: ^Game, sx: f32, sy: f32) -> f32 {
 	cstr: cstring
 	text_size: rl.Vector2
 	avg_energy: f64
-	for i in 0 ..< RATE_CALC_TICKS {
-		avg_energy += g.energy_gains[i] / RATE_CALC_TICKS
+	for i in 0 ..< AVG_CALC_TICKS {
+		avg_energy += g.energy_gains[i] / AVG_CALC_TICKS
 	}
 
 	rl_texture_draw(g, .UI_Energy, {x, icon_y, icon_size, icon_size})
-	str := fmt.bprintf(g.render_state.score_energy[:], "%.2f", g.energy)
-	g.render_state.score_energy[len(str)] = 0
+	str := fmt.bprintf(g.render.score_energy[:], "%.2f", g.energy)
+	g.render.score_energy[len(str)] = 0
 	cstr = cstring(raw_data(str))
 
 	x += icon_size + UI_PADDING
@@ -36,8 +36,8 @@ sys_render_ui_score :: proc(g: ^Game, sx: f32, sy: f32) -> f32 {
 
 	x += text_size.x + UI_PADDING * 2
 	rl_texture_draw(g, .UI_EnergyAverage, {x, icon_y, icon_size, icon_size})
-	str = fmt.bprintf(g.render_state.score_avg_energy[:], "%.2f/sec", avg_energy)
-	g.render_state.score_avg_energy[len(str)] = 0
+	str = fmt.bprintf(g.render.score_avg_energy[:], "%.2f/sec", avg_energy)
+	g.render.score_avg_energy[len(str)] = 0
 	cstr = cstring(raw_data(str))
 
 	x += icon_size + UI_PADDING
@@ -46,8 +46,8 @@ sys_render_ui_score :: proc(g: ^Game, sx: f32, sy: f32) -> f32 {
 
 	x += text_size.x + UI_PADDING * 2
 	rl_texture_draw(g, .UI_ObjectCount, {x, icon_y, icon_size, icon_size})
-	str = fmt.bprintf(g.render_state.score_objects_count[:], "%d", g.total_objects)
-	g.render_state.score_objects_count[len(str)] = 0
+	str = fmt.bprintf(g.render.score_objects_count[:], "%d", g.total_objects)
+	g.render.score_objects_count[len(str)] = 0
 	cstr = cstring(raw_data(str))
 
 	x += icon_size + UI_PADDING
@@ -59,7 +59,12 @@ sys_render_ui_score :: proc(g: ^Game, sx: f32, sy: f32) -> f32 {
 }
 
 sys_render_ui_menu :: proc(g: ^Game, rect: rl.Rectangle) {
-	if !g.render_state.show_upgrade_menu do return
+	if !g.render.show_upgrade_menu do return
 
-	rl.DrawRectangleRounded(rect, 0.2, 1, rl.Color{100, 100, 100, 128})
+	rl.DrawRectangleRounded(
+		rect,
+		g.params.ui.menu_border_rounding,
+		g.params.ui.menu_segments,
+		g.theme.ui_menu_bg_color,
+	)
 }

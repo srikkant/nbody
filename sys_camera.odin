@@ -36,18 +36,18 @@ sys_camera :: proc(g: ^Game) {
 		}
 	}
 
-	padding :: 200.0
+	padding := g.theme.camera_padding
 	total_w := max_x * 2 + padding
 	total_h := max_y * 2 + padding
 
 	zoom_x := ww / total_w
 	zoom_y := wh / total_h
 	target_zoom := min(zoom_x, zoom_y)
-	target_zoom = clamp(target_zoom, 0.01, 2)
+	target_zoom = clamp(target_zoom, g.params.camera.zoom_min, g.params.camera.zoom_max)
 
-	dt := frame_time()
-	decay: f32 = 0.6 // zoom in
-	if target_zoom < g.camera.zoom do decay = 8.0 // zoom out
+	dt := frame_time(g)
+	decay := g.params.camera.zoom_in_interpolation_decay // zoom in
+	if target_zoom < g.camera.zoom do decay = g.params.camera.zoom_out_interpolation_decay // zoom out
 
 	t := 1.0 - math.exp(-decay * dt)
 	g.camera.zoom = math.lerp(g.camera.zoom, target_zoom, t)

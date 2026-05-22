@@ -1,5 +1,6 @@
 package main
 
+import "core:math"
 import rl "vendor:raylib"
 
 assets_map_load :: proc(g: ^Game) {
@@ -18,6 +19,84 @@ assets_map_load :: proc(g: ^Game) {
 
 	g.assets.fonts[.Heading] = rl.LoadFontEx("./assets/fonts/heading.ttf", 18, nil, 0)
 	g.assets.fonts[.Body] = rl.LoadFontEx("./assets/fonts/body.ttf", 14, nil, 0)
+
+	/*
+	Procedural Starfield Textures
+	*/
+
+	{
+		width, height := i32(32), i32(32)
+		img := rl.GenImageColor(width, height, rl.BLANK)
+		pixels := ([^]rl.Color)(img.data)[:width * height]
+
+		center_x := f32(width) / 2.0 - 0.5
+		center_y := f32(height) / 2.0 - 0.5
+		max_radius := f32(width) / 2.0
+
+		// Higher values make the glow tighter around the core; lower values make it softer and wider.
+		glow_falloff_rate := f32(3.5)
+
+		for y in 0 ..< height {
+			for x in 0 ..< width {
+				dx := f32(x) - center_x
+				dy := f32(y) - center_y
+				dist := math.sqrt(dx * dx + dy * dy)
+				r := dist / max_radius
+
+				if r < 1.0 {
+					glow := math.exp(-glow_falloff_rate * r * r)
+					val := u8(255.0 * glow)
+					pixels[y * width + x] = rl.Color{255, 255, 255, val}
+				}
+			}
+		}
+		g.assets.textures[.BgStarGlow] = rl.LoadTextureFromImage(img)
+		rl.UnloadImage(img)
+	}
+
+	{
+		width, height := i32(64), i32(64)
+		img := rl.GenImageColor(width, height, rl.BLANK)
+		pixels := ([^]rl.Color)(img.data)[:width * height]
+
+		center_x := f32(width) / 2.0 - 0.5
+		center_y := f32(height) / 2.0 - 0.5
+		max_radius := f32(width) / 2.0
+
+		core_falloff_rate := f32(6.0) // (higher = tighter central point)
+		spike_thickness_factor := f32(0.25) // (higher = thinner spikes)
+		spike_decay_rate := f32(0.08) // (lower = longer spikes)
+		spike_intensity_weight := f32(0.65)
+
+		for y in 0 ..< height {
+			for x in 0 ..< width {
+				dx := f32(x) - center_x
+				dy := f32(y) - center_y
+				dist := math.sqrt(dx * dx + dy * dy)
+				r := dist / max_radius
+
+				if r < 1.0 {
+					glow := math.exp(-core_falloff_rate * r * r)
+
+					spike_x :=
+						math.exp(-spike_thickness_factor * dx * dx) *
+						math.exp(-spike_decay_rate * math.abs(dy))
+
+					spike_y :=
+						math.exp(-spike_thickness_factor * dy * dy) *
+						math.exp(-spike_decay_rate * math.abs(dx))
+
+					intensity := glow + spike_intensity_weight * (spike_x + spike_y)
+					intensity = math.clamp(intensity, 0.0, 1.0)
+
+					val := u8(255.0 * intensity)
+					pixels[y * width + x] = rl.Color{255, 255, 255, val}
+				}
+			}
+		}
+		g.assets.textures[.BgStarFlare] = rl.LoadTextureFromImage(img)
+		rl.UnloadImage(img)
+	}
 }
 
 assets_map_free :: proc(g: ^Game) {
@@ -31,6 +110,9 @@ assets_map_free :: proc(g: ^Game) {
 	rl.UnloadShader(g.assets.shaders[.Objects_Glow])
 	rl.UnloadShader(g.assets.shaders[.BgGrid_Shimmer])
 	rl.UnloadShader(g.assets.shaders[.Energy_Shader])
+
+	rl.UnloadTexture(g.assets.textures[.BgStarGlow])
+	rl.UnloadTexture(g.assets.textures[.BgStarFlare])
 }
 
 assets_fonts_load :: proc(g: ^Game) {
@@ -77,6 +159,14 @@ assets_textures_load :: proc(g: ^Game) {
 	g.textures[.UI_EnergyAverage] = {
 		texture = .Atlas,
 		rect    = rl.Rectangle{192, 0, 96, 96},
+	}
+	g.textures[.BgStarGlow] = {
+		texture = .BgStarGlow,
+		rect    = rl.Rectangle{0, 0, 32, 32},
+	}
+	g.textures[.BgStarFlare] = {
+		texture = .BgStarFlare,
+		rect    = rl.Rectangle{0, 0, 64, 64},
 	}
 }
 
