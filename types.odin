@@ -332,6 +332,14 @@ Game_TimerType :: enum {
 	Trail,
 }
 
+Game_BgNebula :: struct {
+	pos:         rl.Vector2,
+	color:       rl.Color,
+	radius:      f32,
+	drift_speed: f32,
+	drift_phase: f32,
+}
+
 Game_BgStar :: struct {
 	pos:         rl.Vector2,
 	layer:       int,
@@ -358,6 +366,8 @@ Game :: struct {
 	camera:              rl.Camera2D,
 	render_state:        Game_RenderState,
 	bg_stars:            [BG_STAR_COUNT]Game_BgStar,
+	bg_nebulae:          [BG_NEBULA_COUNT]Game_BgNebula,
+
 
 	// Assets
 	assets:              Assets_Map,

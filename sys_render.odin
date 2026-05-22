@@ -40,18 +40,47 @@ sys_render_init :: proc(g: ^Game) {
 	redraw_bg_grid(g, ww, wh)
 
 	for i in 0 ..< BG_STAR_COUNT {
-		layer := int(rl.GetRandomValue(0, 2))
-		x := f32(rl.GetRandomValue(0, 10000)) / 10000.0 // normalized 0..1
-		y := f32(rl.GetRandomValue(0, 10000)) / 10000.0 // normalized 0..1
+		layer := 0
+		if i >= 380 {
+			layer = 3
+		} else if i >= 320 {
+			layer = 2
+		} else if i >= 220 {
+			layer = 1
+		}
 
-		size: f32 = 0.8 + 0.4 * f32(layer)
+		x := f32(rl.GetRandomValue(-20000, 20000)) / 10.0
+		y := f32(rl.GetRandomValue(-15000, 15000)) / 10.0
+
+		rand_val := f32(rl.GetRandomValue(0, 100)) / 100.0
+		size: f32 = 0.5
+		switch layer {
+		case 0:
+			size = 0.5 + 0.4 * rand_val
+		case 1:
+			size = 0.9 + 0.5 * rand_val
+		case 2:
+			size = 1.4 + 0.6 * rand_val
+		case 3:
+			size = 2.0 + 0.8 * rand_val
+		}
 
 		blink_speed := f32(rl.GetRandomValue(10, 35)) / 10.0
 		blink_phase := f32(rl.GetRandomValue(0, 628)) / 100.0
 
 		color := rl.WHITE
-		if rl.GetRandomValue(0, 3) == 0 {
-			color = rl.Color{185, 235, 255, 255}
+		rand_color := rl.GetRandomValue(0, 4)
+		switch rand_color {
+		case 0:
+			color = rl.Color{255, 140, 80, 255}
+		case 1:
+			color = rl.Color{170, 220, 255, 255}
+		case 2:
+			color = rl.Color{230, 180, 255, 255}
+		case 3:
+			color = rl.Color{255, 230, 150, 255}
+		case 4:
+			color = rl.WHITE
 		}
 
 		g.bg_stars[i] = Game_BgStar {
@@ -62,6 +91,48 @@ sys_render_init :: proc(g: ^Game) {
 			blink_phase = blink_phase,
 			color       = color,
 		}
+	}
+
+	// Initialize procedural cosmic nebulae with vibrant colors and prominent opacities (15-22%), clustered near center
+	g.bg_nebulae[0] = Game_BgNebula {
+		pos         = rl.Vector2 {
+			f32(rl.GetRandomValue(-6000, 6000)) / 10.0,
+			f32(rl.GetRandomValue(-4000, 4000)) / 10.0,
+		},
+		color       = rl.Color{10, 150, 180, 12}, // Cosmic Teal/Cyan (Vibrant)
+		radius      = f32(rl.GetRandomValue(850, 1200)),
+		drift_speed = f32(rl.GetRandomValue(3, 8)) / 10.0,
+		drift_phase = f32(rl.GetRandomValue(0, 628)) / 100.0,
+	}
+	g.bg_nebulae[1] = Game_BgNebula {
+		pos         = rl.Vector2 {
+			f32(rl.GetRandomValue(-6000, 6000)) / 10.0,
+			f32(rl.GetRandomValue(-4000, 4000)) / 10.0,
+		},
+		color       = rl.Color{200, 30, 140, 10}, // Deep Magenta/Pink
+		radius      = f32(rl.GetRandomValue(800, 1100)),
+		drift_speed = f32(rl.GetRandomValue(4, 9)) / 10.0,
+		drift_phase = f32(rl.GetRandomValue(0, 628)) / 100.0,
+	}
+	g.bg_nebulae[2] = Game_BgNebula {
+		pos         = rl.Vector2 {
+			f32(rl.GetRandomValue(-6000, 6000)) / 10.0,
+			f32(rl.GetRandomValue(-4000, 4000)) / 10.0,
+		},
+		color       = rl.Color{110, 30, 200, 12}, // Galactic Violet/Purple
+		radius      = f32(rl.GetRandomValue(850, 1200)),
+		drift_speed = f32(rl.GetRandomValue(2, 6)) / 10.0,
+		drift_phase = f32(rl.GetRandomValue(0, 628)) / 100.0,
+	}
+	g.bg_nebulae[3] = Game_BgNebula {
+		pos         = rl.Vector2 {
+			f32(rl.GetRandomValue(-6000, 6000)) / 10.0,
+			f32(rl.GetRandomValue(-4000, 4000)) / 10.0,
+		},
+		color       = rl.Color{220, 120, 20, 8}, // Stellar Gold/Amber
+		radius      = f32(rl.GetRandomValue(700, 1000)),
+		drift_speed = f32(rl.GetRandomValue(5, 10)) / 10.0,
+		drift_phase = f32(rl.GetRandomValue(0, 628)) / 100.0,
 	}
 }
 
@@ -327,7 +398,7 @@ sys_render_entities :: proc(g: ^Game) {
 			rl.DrawLineStrip(
 				raw_data(ordered_points[:]),
 				i32(e.orbit.count + 1),
-				rl.Fade(e.renderable.color, 0.1),
+				rl.Fade(e.renderable.color, 0.2),
 			)
 		}
 	}
@@ -373,35 +444,134 @@ sys_render_entities :: proc(g: ^Game) {
 sys_render_bg :: proc(g: ^Game) {
 	ww := f32(rl.GetScreenWidth())
 	wh := f32(rl.GetScreenHeight())
+	cx := ww / 2.0
+	cy := wh / 2.0
+
+	// Torus mapping bounds
+	L_x: f32 = 4000.0
+	L_y: f32 = 3000.0
+
+	depths := [4]f32{12.0, 5.0, 2.0, 0.8}
+	zoom_scales := [4]f32{0.05, 0.25, 0.6, 1.0}
+	size_zoom_scales := [4]f32{0.0, 0.15, 0.4, 0.8}
 
 	rl_begin_shader(g, .Bg_Vignette)
 	rl.ClearBackground(rl.BLACK)
 	rl_texture_draw(g, .Blank, {0, 0, ww, wh}, tint = g.theme.color_bg)
 	rl_end_shader(g)
 
+	// Render the nebulae
+	for i in 0 ..< BG_NEBULA_COUNT {
+		neb := g.bg_nebulae[i]
+
+		depth: f32 = 10.0
+		zoom_scale: f32 = 0.08
+
+		dx := neb.pos.x - g.camera.target.x / depth
+		dy := neb.pos.y - g.camera.target.y / depth
+
+		dx_wrapped := math.mod(dx + L_x / 2.0, L_x)
+		if dx_wrapped < 0 do dx_wrapped += L_x
+		dx_wrapped -= L_x / 2.0
+
+		dy_wrapped := math.mod(dy + L_y / 2.0, L_y)
+		if dy_wrapped < 0 do dy_wrapped += L_y
+		dy_wrapped -= L_y / 2.0
+
+		draw_x := cx + dx_wrapped * (1.0 + (g.camera.zoom - 1.0) * zoom_scale)
+		draw_y := cy + dy_wrapped * (1.0 + (g.camera.zoom - 1.0) * zoom_scale)
+
+		breath := 0.9 + 0.1 * math.sin(g.elapsed * neb.drift_speed + neb.drift_phase)
+		draw_radius := neb.radius * breath * (1.0 + (g.camera.zoom - 1.0) * 0.05)
+		alpha_scale := clamp(1.2 / g.camera.zoom, 0.3, 1.0)
+
+		color_inner := neb.color
+		color_inner.a = u8(f32(neb.color.a) * alpha_scale)
+		color_outer := neb.color
+		color_outer.a = 0
+
+		rl.DrawCircleGradient(i32(draw_x), i32(draw_y), draw_radius, color_inner, color_outer)
+	}
+
+	// Render the Starfield
 	for i in 0 ..< BG_STAR_COUNT {
 		star := g.bg_stars[i]
 
-		factor: f32 = 0.06 + 0.1 * f32(star.layer)
-		base_alpha: f32 = 0.1 + 0.1 * f32(star.layer)
+		depth := depths[star.layer]
+		zoom_scale := zoom_scales[star.layer]
+		size_zoom_scale := size_zoom_scales[star.layer]
 
-		shift_x := -g.camera.target.x * factor * g.camera.zoom
-		shift_y := -g.camera.target.y * factor * g.camera.zoom
+		// Compute parallax relative to camera target
+		dx := star.pos.x - g.camera.target.x / depth
+		dy := star.pos.y - g.camera.target.y / depth
 
-		draw_x := math.mod(star.pos.x * ww + shift_x, ww)
-		if draw_x < 0 do draw_x += ww
+		dx_wrapped := math.mod(dx + L_x / 2.0, L_x)
+		if dx_wrapped < 0 do dx_wrapped += L_x
+		dx_wrapped -= L_x / 2.0
 
-		draw_y := math.mod(star.pos.y * wh + shift_y, wh)
-		if draw_y < 0 do draw_y += wh
+		dy_wrapped := math.mod(dy + L_y / 2.0, L_y)
+		if dy_wrapped < 0 do dy_wrapped += L_y
+		dy_wrapped -= L_y / 2.0
 
+		draw_x := cx + dx_wrapped * (1.0 + (g.camera.zoom - 1.0) * zoom_scale)
+		draw_y := cy + dy_wrapped * (1.0 + (g.camera.zoom - 1.0) * zoom_scale)
+
+		padding: f32 = 40.0
+		if draw_x < -padding ||
+		   draw_x > ww + padding ||
+		   draw_y < -padding ||
+		   draw_y > wh + padding {
+			continue
+		}
+
+		draw_size := star.size * (1.0 + (g.camera.zoom - 1.0) * size_zoom_scale)
+		draw_size = clamp(draw_size, 0.4, 6.0)
 		blink := 0.4 + 0.4 * math.sin(g.elapsed * star.blink_speed + star.blink_phase)
 
-		color := star.color
-		color.a = u8(base_alpha * blink * 255.0)
+		alpha_scale: f32 = 1.0
+		switch star.layer {
+		case 0:
+			alpha_scale = clamp(1.5 / g.camera.zoom, 0.25, 1.0)
+		case 1:
+			alpha_scale = clamp(1.0 / g.camera.zoom, 0.4, 1.0)
+		case 2:
+			alpha_scale = clamp(g.camera.zoom / 0.2, 0.0, 1.0)
+		case 3:
+			alpha_scale = clamp((g.camera.zoom - 0.15) / 0.15, 0.0, 1.0)
+		}
 
-		rl.DrawRectangleV(rl.Vector2{draw_x, draw_y}, rl.Vector2{star.size, star.size}, color)
+		color := star.color
+		color.a = u8(f32(color.a) * blink * alpha_scale)
+
+		if color.a == 0 do continue
+
+		rl.DrawRectangleV(
+			rl.Vector2{draw_x - draw_size / 2.0, draw_y - draw_size / 2.0},
+			rl.Vector2{draw_size, draw_size},
+			color,
+		)
+
+		if star.layer == 3 && draw_size > 2.2 {
+			flare_col := color
+			flare_col.a = u8(f32(color.a) * 0.35)
+
+			rl.DrawLineEx(
+				rl.Vector2{draw_x - draw_size * 2.5, draw_y},
+				rl.Vector2{draw_x + draw_size * 2.5, draw_y},
+				1.0,
+				flare_col,
+			)
+
+			rl.DrawLineEx(
+				rl.Vector2{draw_x, draw_y - draw_size * 2.5},
+				rl.Vector2{draw_x, draw_y + draw_size * 2.5},
+				1.0,
+				flare_col,
+			)
+		}
 	}
 
+	// Shimmering sci-fi coordinate grid overlay
 	rl_begin_shader(g, .BgGrid_Shader)
 
 	shader := g.assets.shaders[g.shaders[.BgGrid_Shader].shader]

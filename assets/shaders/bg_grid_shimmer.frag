@@ -29,6 +29,6 @@ void main() {
 
     finalGrid.rgb *= shimmer;
 
-    finalGrid.a = finalGrid.a * shimmer * 0.4;
+    finalGrid.a = finalGrid.a * shimmer * 0.3;
     finalColor = finalGrid * fragColor;
 }

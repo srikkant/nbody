@@ -2,7 +2,9 @@ package main
 
 import "core:math"
 
-BG_STAR_COUNT :: 300
+BG_STAR_COUNT :: 400
+BG_NEBULA_COUNT :: 4
+
 
 MAX_ENTITIES :: 4096
 MAX_MODIFIERS :: 10
