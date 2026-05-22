@@ -53,10 +53,10 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 		Game_Event_ObjectSpawn {
 			pos = rl.Vector2(0),
 			celestial = {.Star},
-			density = g.params.physics.densities[.Star],
-			radius = g.params.physics.radii[.Star],
+			density = g.params.celestials[.Star].density,
+			radius = g.params.celestials[.Star].radius,
 			energy_source = {output = 10, timer = {interval = 1}},
-			renderable = {rl.RAYWHITE},
+			renderable = {g.params.celestials[.Star].color},
 		},
 	)
 

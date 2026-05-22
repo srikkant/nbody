@@ -8,35 +8,142 @@ params_init_defaults :: proc(p: ^Game_Parameters) {
 	// ==========================================
 	p.physics.gravity_constant = 1.0
 
-	p.physics.densities[.Star] = 50.0
-	p.physics.radii[.Star] = 40.0
+	// ==========================================
+	// PER-CELESTIAL-TYPE PARAMETERS
+	// ==========================================
 
-	p.physics.densities[.SuperJupiter] = 5.0
-	p.physics.radii[.SuperJupiter] = 18.0
-	p.physics.densities[.GiantPlanet] = 4.0
-	p.physics.radii[.GiantPlanet] = 15.0
-	p.physics.densities[.SuperNeptune] = 3.5
-	p.physics.radii[.SuperNeptune] = 13.0
-	p.physics.densities[.SubNeptune] = 3.0
-	p.physics.radii[.SubNeptune] = 11.0
-	p.physics.densities[.MiniNeptune] = 2.5
-	p.physics.radii[.MiniNeptune] = 9.0
-	p.physics.densities[.MegaEarth] = 2.0
-	p.physics.radii[.MegaEarth] = 7.0
-	p.physics.densities[.SuperEarth] = 1.5
-	p.physics.radii[.SuperEarth] = 5.0
-	p.physics.densities[.SubEarth] = 1.2
-	p.physics.radii[.SubEarth] = 3.5
-	p.physics.densities[.DwarfPlanet] = 1.0
-	p.physics.radii[.DwarfPlanet] = 2.0
-	p.physics.densities[.Moonlet] = 0.8
-	p.physics.radii[.Moonlet] = 1.5
-	p.physics.densities[.Asteroid] = 0.6
-	p.physics.radii[.Asteroid] = 1.0
+	p.celestials[.Asteroid] = {
+		density          = 0.6,
+		radius           = 1.0,
+		launch_cost      = 3.0,
+		color            = rl.Color{140, 140, 140, 160}, // cold, low-alpha gray
+		visual_class     = .Debris,
+		quad_multiplier  = 2.0,
+		trail_multiplier = 0.0, // no trail
+		glow_intensity   = 0.0,
+	}
+	p.celestials[.Moonlet] = {
+		density          = 0.8,
+		radius           = 1.5,
+		launch_cost      = 5.0,
+		color            = rl.Color{220, 220, 230, 220}, // crisp white
+		visual_class     = .Debris,
+		quad_multiplier  = 2.0,
+		trail_multiplier = 0.3, // razor-thin, low-opacity
+		glow_intensity   = 0.0,
+	}
+	p.celestials[.DwarfPlanet] = {
+		density          = 1.0,
+		radius           = 2.0,
+		launch_cost      = 10.0,
+		color            = rl.Color{120, 170, 175, 255}, // pale muted teal/slate
+		visual_class     = .Terrestrial,
+		quad_multiplier  = 4.0,
+		trail_multiplier = 1.0,
+		glow_intensity   = 0.0, // zero glow, hard edge
+	}
+	p.celestials[.SubEarth] = {
+		density          = 1.2,
+		radius           = 3.5,
+		launch_cost      = 0.0,
+		color            = rl.Color{130, 165, 120, 255}, // muted desaturated green
+		visual_class     = .Terrestrial,
+		quad_multiplier  = 4.0,
+		trail_multiplier = 1.0,
+		glow_intensity   = 0.0,
+	}
+	p.celestials[.SuperEarth] = {
+		density          = 1.5,
+		radius           = 5.0,
+		launch_cost      = 0.0,
+		color            = rl.Color{0, 200, 120, 255}, // vibrant jade/emerald
+		visual_class     = .Terrestrial,
+		quad_multiplier  = 4.0,
+		trail_multiplier = 1.0,
+		glow_intensity   = 0.15, // thin atmospheric halo
+	}
+	p.celestials[.MegaEarth] = {
+		density          = 2.0,
+		radius           = 7.0,
+		launch_cost      = 0.0,
+		color            = rl.Color{85, 120, 50, 255}, // deep forest green/olivine
+		visual_class     = .Terrestrial,
+		quad_multiplier  = 4.0,
+		trail_multiplier = 1.0,
+		glow_intensity   = 0.05, // dense core shadow effect
+	}
+	p.celestials[.MiniNeptune] = {
+		density          = 2.5,
+		radius           = 9.0,
+		launch_cost      = 0.0,
+		color            = rl.Color{0, 230, 255, 255}, // electric cyan
+		visual_class     = .GasGiant,
+		quad_multiplier  = 5.0,
+		trail_multiplier = 1.5,
+		glow_intensity   = 0.4, // soft linear glow
+	}
+	p.celestials[.SubNeptune] = {
+		density          = 3.0,
+		radius           = 11.0,
+		launch_cost      = 0.0,
+		color            = rl.Color{0, 130, 210, 255}, // deep sky blue
+		visual_class     = .GasGiant,
+		quad_multiplier  = 5.5,
+		trail_multiplier = 1.5,
+		glow_intensity   = 0.5, // two-tone core + envelope
+	}
+	p.celestials[.SuperNeptune] = {
+		density          = 3.5,
+		radius           = 13.0,
+		launch_cost      = 0.0,
+		color            = rl.Color{100, 60, 220, 255}, // neon indigo
+		visual_class     = .GasGiant,
+		quad_multiplier  = 6.0,
+		trail_multiplier = 2.0,
+		glow_intensity   = 0.7, // extends well past collision radius
+	}
+	p.celestials[.GiantPlanet] = {
+		density          = 4.0,
+		radius           = 15.0,
+		launch_cost      = 0.0,
+		color            = rl.Color{220, 170, 60, 255}, // warm banded amber/ochre
+		visual_class     = .GasGiant,
+		quad_multiplier  = 6.0,
+		trail_multiplier = 4.0, // thick majestic smear
+		glow_intensity   = 0.5,
+	}
+	p.celestials[.SuperJupiter] = {
+		density          = 5.0,
+		radius           = 18.0,
+		launch_cost      = 0.0,
+		color            = rl.Color{255, 120, 20, 255}, // intense neon orange
+		visual_class     = .GasGiant,
+		quad_multiplier  = 6.0,
+		trail_multiplier = 3.0,
+		glow_intensity   = 0.6, // thermal pulsing
+	}
+	p.celestials[.Star] = {
+		density          = 50.0,
+		radius           = 40.0,
+		launch_cost      = 0.0,
+		color            = rl.Color{255, 240, 200, 255}, // solar gold / warm white
+		visual_class     = .Anchor,
+		quad_multiplier  = 8.0, // massive bloom
+		trail_multiplier = 0.0, // no kinetic trail (shader handles flares)
+		glow_intensity   = 1.0,
+	}
 
-	p.physics.launch_costs[.DwarfPlanet] = 10.0
-	p.physics.launch_costs[.Moonlet] = 5.0
-	p.physics.launch_costs[.Asteroid] = 3.0
+	// .None — fallback
+	p.celestials[.None] = {
+		density          = 0.0,
+		radius           = 0.0,
+		launch_cost      = 0.0,
+		color            = rl.Color{255, 255, 255, 255},
+		visual_class     = .Debris,
+		quad_multiplier  = 4.0,
+		trail_multiplier = 1.0,
+		glow_intensity   = 0.0,
+	}
 
 	p.physics.slingshot_launch_power = 1.0
 	p.physics.slingshot_preview_length = 5
@@ -53,7 +160,8 @@ params_init_defaults :: proc(p: ^Game_Parameters) {
 	p.physics.out_of_bounds_refund_fraction = 0.1
 	p.physics.star_energy_multiplier = 0.05
 	p.physics.energy_collect_distance = 50.0
-	p.physics.energy_collect_distance_squared = p.physics.energy_collect_distance * p.physics.energy_collect_distance
+	p.physics.energy_collect_distance_squared =
+		p.physics.energy_collect_distance * p.physics.energy_collect_distance
 
 	p.physics.collision_debris_max_loss_fraction = 0.4
 	p.physics.collision_debris_speed_coefficient = 0.01
@@ -100,10 +208,10 @@ params_init_defaults :: proc(p: ^Game_Parameters) {
 	p.background.star_flare_alpha_multiplier = 0.35
 
 	// Star alpha clamp configs: [layer][zoom_div/multiplier/offset, min, max]
-	p.background.star_layer_alpha_clamp_configs[0] = {1.5, 0.45, 0.8}
-	p.background.star_layer_alpha_clamp_configs[1] = {1.0, 0.55, 0.9}
-	p.background.star_layer_alpha_clamp_configs[2] = {5.0, 0.3, 0.9}
-	p.background.star_layer_alpha_clamp_configs[3] = {0.15, 0.2, 0.9}
+	p.background.star_layer_alpha_clamp_configs[0] = {1.5, 0.45, 0.7}
+	p.background.star_layer_alpha_clamp_configs[1] = {1.0, 0.55, 0.5}
+	p.background.star_layer_alpha_clamp_configs[2] = {5.0, 0.3, 0.5}
+	p.background.star_layer_alpha_clamp_configs[3] = {0.15, 0.2, 0.5}
 
 	// --- Nebulae ---
 	p.background.nebula_spawn_bounds_x = 600.0
@@ -213,16 +321,6 @@ theme_init_default :: proc(t: ^Game_Theme) {
 	t.star_colors[3] = rl.Color{255, 230, 150, 255}
 	t.star_colors[4] = rl.WHITE
 
-	t.available_colors[0] = rl.Color{255, 179, 0, 255} // bright orange
-	t.available_colors[1] = rl.Color{255, 94, 98, 255} // coral / warm red
-	t.available_colors[2] = rl.Color{0, 183, 255, 255} // sky cyan
-	t.available_colors[3] = rl.Color{102, 255, 178, 255} // teal / aqua
-	t.available_colors[4] = rl.Color{177, 228, 255, 255}
-	t.available_colors[5] = rl.Color{255, 198, 255, 255} // soft pink
-	t.available_colors[6] = rl.Color{255, 235, 59, 255} // bright yellow
-	t.available_colors[7] = rl.Color{0, 132, 255, 255} // vivid blue
-	t.available_colors[8] = rl.Color{102, 255, 102, 255} // lime green
-	t.available_colors[9] = rl.Color{255, 255, 255, 255} // white
 
 	t.ui_collect_area_opacity = 64
 	t.ui_slingshot_preview_color = rl.Color{255, 255, 255, 200}

@@ -92,6 +92,27 @@ CelestialType :: enum {
 	Star,
 }
 
+Game_VisualClass :: enum {
+	Debris, // Class 1: Asteroid, Moonlet
+	Terrestrial, // Class 2: DwarfPlanet → MegaEarth
+	GasGiant, // Class 3: MiniNeptune → SuperJupiter
+	Anchor, // Class 4: Star
+}
+
+Game_CelestialParams :: struct {
+	// Physics
+	density:          f32,
+	radius:           f32,
+	launch_cost:      f32,
+
+	// Visuals
+	color:            rl.Color,
+	visual_class:     Game_VisualClass,
+	quad_multiplier:  f32, // Render quad size = radius * quad_multiplier
+	trail_multiplier: f32, // Trail thickness scale (0 = no trail)
+	glow_intensity:   f32, // Shader glow envelope strength (0.0–1.0)
+}
+
 CelestialComponent :: struct {
 	type: CelestialType,
 }
@@ -210,8 +231,10 @@ Assets_Texture :: enum {
 
 Assets_Shader :: enum {
 	Vignette,
-	Objects_Glow,
-	Objects_Base,
+	Celestial_Debris,
+	Celestial_Terrestrial,
+	Celestial_GasGiant,
+	Celestial_Star,
 	BgGrid_Shimmer,
 	Energy_Shader,
 }
@@ -242,8 +265,10 @@ Game_FontType :: enum {
 
 Game_ShaderType :: enum {
 	Bg_Vignette,
-	Stars_Layer,
-	Objects_Layer,
+	Celestial_Debris_Layer,
+	Celestial_Terrestrial_Layer,
+	Celestial_GasGiant_Layer,
+	Celestial_Star_Layer,
 	BgGrid_Shader,
 	Energy_Shader,
 }
@@ -275,32 +300,29 @@ Game_Modifier :: struct {
 }
 
 Game_Parameters_Physics :: struct {
-	gravity_constant:               f32,
-	densities:                      [CelestialType]f32,
-	radii:                          [CelestialType]f32,
-	launch_costs:                   [CelestialType]f32,
-	slingshot_launch_power:         f32,
-	slingshot_preview_length:       i32,
-	simulation_rate_multiplier:     f32,
-	energy_gain_coefficient:        f32,
-	energy_loss_coefficient:        f32,
-	energy_generation_coefficient:  f32,
-	energy_momentum_coefficient:    f32,
-	mass_loss_rate:                 f32,
-	collision_mass_scaling_factor:  f32,
-	shatter_base_energy:            f32,
-	debris_mass_loss_fraction:      f32,
-	out_of_bounds_refund_fraction:  f32,
-	star_energy_multiplier:         f32,
-	energy_collect_distance:        f32,
-	energy_collect_distance_squared:f32,
+	gravity_constant:                   f32,
+	slingshot_launch_power:             f32,
+	slingshot_preview_length:           i32,
+	simulation_rate_multiplier:         f32,
+	energy_gain_coefficient:            f32,
+	energy_loss_coefficient:            f32,
+	energy_generation_coefficient:      f32,
+	energy_momentum_coefficient:        f32,
+	mass_loss_rate:                     f32,
+	collision_mass_scaling_factor:      f32,
+	shatter_base_energy:                f32,
+	debris_mass_loss_fraction:          f32,
+	out_of_bounds_refund_fraction:      f32,
+	star_energy_multiplier:             f32,
+	energy_collect_distance:            f32,
+	energy_collect_distance_squared:    f32,
 	collision_debris_max_loss_fraction: f32,
 	collision_debris_speed_coefficient: f32,
 	spawn_invincibility_duration_sec:   f32,
-	world_radius:                   f32,
-	world_radius_squared:           f32,
-	gravity_softening_factor:       f32,
-	max_delta_time_sec:             f32,
+	world_radius:                       f32,
+	world_radius_squared:               f32,
+	gravity_softening_factor:           f32,
+	max_delta_time_sec:                 f32,
 }
 
 Game_Parameters_Background :: struct {
@@ -324,21 +346,21 @@ Game_Parameters_Background :: struct {
 	star_layer_alpha_clamp_configs:       [4][3]f32, // [layer][zoom_div, min, max]
 
 	// --- Nebulae ---
-	nebula_spawn_bounds_x:        f32,
-	nebula_spawn_bounds_y:        f32,
-	nebula_layer_depth:           f32,
-	nebula_zoom_multiplier:       f32,
-	nebula_pulsation_base:        f32,
-	nebula_pulsation_amplitude:   f32,
-	nebula_zoom_radius_multiplier:f32,
-	nebula_alpha_zoom_numerator:  f32,
-	nebula_alpha_zoom_min:        f32,
-	nebula_alpha_zoom_max:        f32,
-	nebula_radius_ranges:         [4][2]f32, // [index][min, max]
-	nebula_drift_speed_ranges:    [4][2]f32, // [index][min, max]
-	star_layer1_start_index:      i32,
-	star_layer2_start_index:      i32,
-	star_layer3_start_index:      i32,
+	nebula_spawn_bounds_x:                f32,
+	nebula_spawn_bounds_y:                f32,
+	nebula_layer_depth:                   f32,
+	nebula_zoom_multiplier:               f32,
+	nebula_pulsation_base:                f32,
+	nebula_pulsation_amplitude:           f32,
+	nebula_zoom_radius_multiplier:        f32,
+	nebula_alpha_zoom_numerator:          f32,
+	nebula_alpha_zoom_min:                f32,
+	nebula_alpha_zoom_max:                f32,
+	nebula_radius_ranges:                 [4][2]f32, // [index][min, max]
+	nebula_drift_speed_ranges:            [4][2]f32, // [index][min, max]
+	star_layer1_start_index:              i32,
+	star_layer2_start_index:              i32,
+	star_layer3_start_index:              i32,
 }
 
 Game_Parameters_UI :: struct {
@@ -348,64 +370,65 @@ Game_Parameters_UI :: struct {
 }
 
 Game_Parameters_Camera :: struct {
-	zoom_min:                    f32,
-	zoom_max:                    f32,
-	zoom_in_interpolation_decay: f32,
-	zoom_out_interpolation_decay:f32,
+	zoom_min:                     f32,
+	zoom_max:                     f32,
+	zoom_in_interpolation_decay:  f32,
+	zoom_out_interpolation_decay: f32,
 }
 
 Game_Parameters_VFX :: struct {
 	// --- Shockwaves & Particle Bursts ---
-	shockwave_radius_start:              f32,
-	shockwave_duration_base_sec:         f32,
-	shockwave_duration_ln_coefficient:   f32,
-	shockwave_growth_base:               f32,
-	shockwave_growth_sqrt_coefficient:   f32,
-	particle_burst_duration_base_sec:    f32,
+	shockwave_radius_start:                 f32,
+	shockwave_duration_base_sec:            f32,
+	shockwave_duration_ln_coefficient:      f32,
+	shockwave_growth_base:                  f32,
+	shockwave_growth_sqrt_coefficient:      f32,
+	particle_burst_duration_base_sec:       f32,
 	particle_burst_duration_ln_coefficient: f32,
-	particle_burst_count_sqrt_coefficient: f32,
-	particle_burst_count_base:           i32,
-	particle_burst_speed_base:           f32,
-	particle_burst_speed_sqrt_coefficient: f32,
-	particle_burst_speed_variance_min:    f32,
-	particle_burst_speed_variance_max:    f32,
-	particle_burst_drag_coefficient:     f32,
-	particle_burst_size_base:            f32,
-	particle_burst_size_ln_coefficient:  f32,
-	particle_burst_size_variance_min:     f32,
-	particle_burst_size_variance_max:     f32,
-	particle_burst_size_min:             f32,
-	particle_burst_size_max:             f32,
-	particle_burst_color_t1:             f32,
-	particle_burst_color_t2:             f32,
-	particle_burst_color_g1_base:        f32,
-	particle_burst_color_g1_range:       f32,
-	particle_burst_color_g2_base:        f32,
-	particle_burst_color_g2_range:       f32,
-	particle_burst_color_g3_base:        f32,
-	particle_burst_color_g3_range:       f32,
-	particle_burst_color_b3_range:       f32,
+	particle_burst_count_sqrt_coefficient:  f32,
+	particle_burst_count_base:              i32,
+	particle_burst_speed_base:              f32,
+	particle_burst_speed_sqrt_coefficient:  f32,
+	particle_burst_speed_variance_min:      f32,
+	particle_burst_speed_variance_max:      f32,
+	particle_burst_drag_coefficient:        f32,
+	particle_burst_size_base:               f32,
+	particle_burst_size_ln_coefficient:     f32,
+	particle_burst_size_variance_min:       f32,
+	particle_burst_size_variance_max:       f32,
+	particle_burst_size_min:                f32,
+	particle_burst_size_max:                f32,
+	particle_burst_color_t1:                f32,
+	particle_burst_color_t2:                f32,
+	particle_burst_color_g1_base:           f32,
+	particle_burst_color_g1_range:          f32,
+	particle_burst_color_g2_base:           f32,
+	particle_burst_color_g2_range:          f32,
+	particle_burst_color_g3_base:           f32,
+	particle_burst_color_g3_range:          f32,
+	particle_burst_color_b3_range:          f32,
 
 	// --- Fragment Vacuum & Drift ---
-	fragments_count_min:                 i32,
-	fragments_count_base:                i32,
-	fragments_count_speed_multiplier:    f32,
-	fragments_count_mod:                 f32,
-	fragments_radius_mass_divisor:       f32,
-	fragments_radius_mass_max:           f32,
-	fragments_pull_distance_multiplier:  f32,
-	fragments_pull_minimum_distance:     f32,
-	fragments_pull_speed_base:           f32,
-	fragments_drift_phase_multiplier:    f32,
-	fragments_drift_frequency_x:         f32,
-	fragments_drift_frequency_y:         f32,
-	fragments_drift_amplitude_x:          f32,
-	fragments_drift_amplitude_y:          f32,
-	energy_fragment_size:                f32,
+	fragments_count_min:                    i32,
+	fragments_count_base:                   i32,
+	fragments_count_speed_multiplier:       f32,
+	fragments_count_mod:                    f32,
+	fragments_radius_mass_divisor:          f32,
+	fragments_radius_mass_max:              f32,
+	fragments_pull_distance_multiplier:     f32,
+	fragments_pull_minimum_distance:        f32,
+	fragments_pull_speed_base:              f32,
+	fragments_drift_phase_multiplier:       f32,
+	fragments_drift_frequency_x:            f32,
+	fragments_drift_frequency_y:            f32,
+	fragments_drift_amplitude_x:            f32,
+	fragments_drift_amplitude_y:            f32,
+	energy_fragment_size:                   f32,
 }
 
 Game_Parameters :: struct {
 	physics:    Game_Parameters_Physics,
+	celestials: [CelestialType]Game_CelestialParams,
 	background: Game_Parameters_Background,
 	ui:         Game_Parameters_UI,
 	camera:     Game_Parameters_Camera,
@@ -414,9 +437,12 @@ Game_Parameters :: struct {
 
 
 Game_RenderLayerType :: enum {
+	Debris,
+	Terrestrial,
+	GasGiant,
 	Stars,
+	EmitterStations,
 	OrbitPoints,
-	Objects,
 	Collectibles,
 	Effects,
 }
@@ -450,7 +476,6 @@ Game_Theme :: struct {
 	bg_grid_color:                 rl.Color,
 	bg_nebula_colors:              [4]rl.Color,
 	star_colors:                   [5]rl.Color,
-	available_colors:              [10]rl.Color,
 	ui_collect_area_opacity:       u8,
 	ui_slingshot_preview_color:    rl.Color,
 	ui_slingshot_launch_ok_color:  rl.Color,

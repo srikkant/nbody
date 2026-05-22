@@ -2,7 +2,10 @@ package main
 
 import rl "vendor:raylib"
 
-get_object_color :: proc(g: ^Game) -> rl.Color {
-	rand_idx := rl.GetRandomValue(0, i32(9))
-	return g.theme.available_colors[int(rand_idx)]
+get_celestial_color :: proc(g: ^Game, ctype: CelestialType) -> rl.Color {
+	return g.params.celestials[ctype].color
+}
+
+get_celestial_params :: proc(g: ^Game, ctype: CelestialType) -> Game_CelestialParams {
+	return g.params.celestials[ctype]
 }

@@ -35,17 +35,24 @@ sys_input :: proc(g: ^Game) {
 		}
 
 		cost: f64
-		color := get_object_color(g)
+		launch_type: CelestialType
+		switch out in g.slingshot.output {
+		case Game_SlingshotOutput_Emitter:
+			launch_type = out.emitter.emit_celestial.type
+		case Game_SlingshotOutput_Celestial:
+			launch_type = out.celestial.type
+		}
+		color := get_celestial_color(g, launch_type)
 
 		switch out in g.slingshot.output {
 		case Game_SlingshotOutput_Emitter:
 			obj_type = .Emitter
-			event.radius = g.params.physics.radii[out.emitter.emit_celestial.type]
+			event.radius = g.params.celestials[out.emitter.emit_celestial.type].radius
 			event.emitter = out.emitter
 			event.emitter.emit_vel = vel
 			event.emitter.emit_density =
-				g.params.physics.densities[out.emitter.emit_celestial.type]
-			event.emitter.emit_radius = g.params.physics.radii[out.emitter.emit_celestial.type]
+				g.params.celestials[out.emitter.emit_celestial.type].density
+			event.emitter.emit_radius = g.params.celestials[out.emitter.emit_celestial.type].radius
 			event.emitter.emit_color = color
 			cost = f64(
 				g.params.physics.energy_loss_coefficient *
@@ -53,13 +60,13 @@ sys_input :: proc(g: ^Game) {
 			)
 		case Game_SlingshotOutput_Celestial:
 			event.celestial = out.celestial
-			event.density = g.params.physics.densities[out.celestial.type]
-			event.radius = g.params.physics.radii[out.celestial.type]
+			event.density = g.params.celestials[out.celestial.type].density
+			event.radius = g.params.celestials[out.celestial.type].radius
 			event.velocity = vel
 			event.show_orbit = true
 			event.renderable = RenderableComponent{color}
 			cost = f64(
-				g.params.physics.launch_costs[out.celestial.type] +
+				g.params.celestials[out.celestial.type].launch_cost +
 				g.params.physics.energy_loss_coefficient *
 					(event.density * event.radius * event.radius * rl.Vector2LengthSqr(vel)),
 			)
@@ -85,9 +92,9 @@ sys_input :: proc(g: ^Game) {
 		g.slingshot.output = Game_SlingshotOutput_Emitter {
 			emitter = {
 				emit_celestial = {.DwarfPlanet},
-				emit_density = g.params.physics.densities[.DwarfPlanet],
-				emit_radius = g.params.physics.radii[.DwarfPlanet],
-				base_cost = f64(g.params.physics.launch_costs[.DwarfPlanet]),
+				emit_density = g.params.celestials[.DwarfPlanet].density,
+				emit_radius = g.params.celestials[.DwarfPlanet].radius,
+				base_cost = f64(g.params.celestials[.DwarfPlanet].launch_cost),
 				timer = Timer{interval = 2},
 				destroy_timer = Timer{interval = 10},
 			},

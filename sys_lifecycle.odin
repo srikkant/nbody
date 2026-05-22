@@ -218,7 +218,9 @@ sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^Game_Event_ObjectSpawn) {
 	entity_add_celestial(g, id, event.celestial)
 
 	if event.show_orbit {
-		entity_add_orbit(g, id, {})
+		if g.params.celestials[event.celestial.type].trail_multiplier > 0 {
+			entity_add_orbit(g, id, {})
+		}
 	}
 }
 
@@ -255,7 +257,7 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	// TODO: If the new type is a star, we should rethink this.
 	new_type := entity_celestial_next_type(e1.celestial.type)
 	new_mass := e1.mass + e2.mass
-	new_density := g.params.physics.densities[new_type]
+	new_density := g.params.celestials[new_type].density
 	new_radius := physics_radius_from_mass_density(new_mass, new_density)
 
 	vel_x := (e1.mass * e1.velocity.current.x + e2.mass * e2.velocity.current.x) / new_mass
@@ -271,9 +273,11 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	entity_add_position(g, id, {current = pos})
 	entity_add_velocity(g, id, {current = new_vel})
 	entity_add_life(g, id, {created_at = g.elapsed})
-	entity_add_renderable(g, id, {e1.renderable.color})
+	entity_add_renderable(g, id, {g.params.celestials[new_type].color})
 	entity_add_celestial(g, id, {new_type})
-	entity_add_orbit(g, id, {})
+	if g.params.celestials[new_type].trail_multiplier > 0 {
+		entity_add_orbit(g, id, {})
+	}
 
 	sys_lifecycle_spawn_shockwave(g, pos, f64(new_mass))
 	sys_lifecycle_spawn_debris_particle_burst(g, pos, f64(new_mass))
@@ -340,7 +344,7 @@ sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	e_big.celestial.type = entity_celestial_prev_type(big_type)
 	e_big.mass = remaining_mass
 
-	new_density := g.params.physics.densities[e_big.celestial.type]
+	new_density := g.params.celestials[e_big.celestial.type].density
 	e_big.radius = physics_radius_from_mass_density(remaining_mass, new_density)
 
 	energy_loss := f64(loss) * f64(rel_speed * rel_speed)
@@ -472,13 +476,13 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 		if mass_delta[i] > 0 {
 			e.mass += mass_delta[i]
 			if e.celestial.type == .Star {
-				star_density := g.params.physics.densities[.Star]
+				star_density := g.params.celestials[.Star].density
 				e.radius = physics_radius_from_mass_density(e.mass, star_density)
 				e.energy_source.output = f32(g.params.physics.star_energy_multiplier * e.mass)
 			} else {
 				e.radius = physics_radius_from_mass_density(
 					e.mass,
-					g.params.physics.densities[e.celestial.type],
+					g.params.celestials[e.celestial.type].density,
 				)
 			}
 			mass_delta[i] = 0

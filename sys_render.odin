@@ -200,7 +200,7 @@ sys_render_slingshot :: proc(g: ^Game) {
 	end := g.mouse_pos
 
 	// TODO: Update this, this should rely on the slingshot output maybe?
-	ss_obj_radius := g.params.physics.radii[.DwarfPlanet]
+	ss_obj_radius := g.params.celestials[.DwarfPlanet].radius
 
 	// Slingshot trigger
 	line_col :=
@@ -218,7 +218,10 @@ sys_render_slingshot :: proc(g: ^Game) {
 	pos := g.slingshot.start_pos
 	vel := physics_get_slingshot_release_velocity(g, end)
 
-	dt := frame_time(g) * g.params.physics.simulation_rate_multiplier * f32(g.params.physics.slingshot_preview_length) // slingshot_preview_len x realtime for the preview
+	dt :=
+		frame_time(g) *
+		g.params.physics.simulation_rate_multiplier *
+		f32(g.params.physics.slingshot_preview_length) // slingshot_preview_len x realtime for the preview
 
 	star := &g.entities[Entity(0)]
 
@@ -256,18 +259,78 @@ sys_add_entity_to_layer :: proc(g: ^Game, id: Entity, layer: Game_RenderLayerTyp
 	g.render.layers[layer].count += 1
 }
 
+sys_render_get_entity_draw_info :: proc(
+	g: ^Game,
+	id: Entity,
+	qm: f32,
+) -> (
+	dest: rl.Rectangle,
+	texture: Game_TextureType,
+	is_oob: bool,
+) {
+	e := &g.entities[id]
+	r := e.radius
+	dest = rl.Rectangle{e.pos.current.x, e.pos.current.y, r * qm, r * qm}
+	texture = .Objects_Celestial
+
+	ww := f32(rl.GetScreenWidth())
+	wh := f32(rl.GetScreenHeight())
+	world_screen_rect := rl.Rectangle {
+		g.camera.target.x - (ww / 2) / g.camera.zoom,
+		g.camera.target.y - (wh / 2) / g.camera.zoom,
+		ww / g.camera.zoom,
+		wh / g.camera.zoom,
+	}
+
+	hit_pos, out_of_bounds := geometry_get_rectangle_intersection_point(
+		world_screen_rect,
+		e.pos.current,
+		g.theme.ui_out_of_bounds_margin,
+	)
+
+	if out_of_bounds {
+		dest.x = hit_pos.x
+		dest.y = hit_pos.y
+		texture = .Markers_OutOfBounds
+		is_oob = true
+	}
+
+	return
+}
+
+catmull_rom :: proc(p0, p1, p2, p3: rl.Vector2, t: f32) -> rl.Vector2 {
+	t2 := t * t
+	t3 := t2 * t
+	return(
+		0.5 *
+		((2.0 * p1) +
+				(-p0 + p2) * t +
+				(2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 +
+				(-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3) \
+	)
+}
+
+
 sys_render_entities :: proc(g: ^Game) {
 	for id in 0 ..< g.entities_count {
 		id := Entity(id)
 		e := g.entities[id]
 
 		if RENDER_SIG <= e.sig {
-			if .Celestial in e.sig {
-				// Celestials will be further classified.
-				if e.celestial.type == .Star {
+			if .Emitter in e.sig {
+				// Emitters always get their own layer (geometric render)
+				sys_add_entity_to_layer(g, id, .EmitterStations)
+			} else if .Celestial in e.sig {
+				cp := g.params.celestials[e.celestial.type]
+				switch cp.visual_class {
+				case .Debris:
+					sys_add_entity_to_layer(g, id, .Debris)
+				case .Terrestrial:
+					sys_add_entity_to_layer(g, id, .Terrestrial)
+				case .GasGiant:
+					sys_add_entity_to_layer(g, id, .GasGiant)
+				case .Anchor:
 					sys_add_entity_to_layer(g, id, .Stars)
-				} else {
-					sys_add_entity_to_layer(g, id, .Objects)
 				}
 			}
 
@@ -285,63 +348,112 @@ sys_render_entities :: proc(g: ^Game) {
 		}
 	}
 
-	rl_begin_shader(g, .Stars_Layer)
+	rl_begin_shader(g, .Celestial_Debris_Layer)
 
-	shader := g.assets.shaders[g.shaders[.Stars_Layer].shader]
-	loc := rl.GetShaderLocation(shader, "seconds")
-	rl.SetShaderValue(shader, loc, &g.elapsed, .FLOAT)
+	for i in 0 ..< g.render.layers[.Debris].count {
+		id := g.render.layers[.Debris].entities[i]
+		e := &g.entities[id]
+		cp := g.params.celestials[e.celestial.type]
+
+		dest_rect, tex, _ := sys_render_get_entity_draw_info(g, id, cp.quad_multiplier)
+		rl_texture_draw(g, tex, dest_rect, rl.Vector2(dest_rect.width / 2.0), tint = cp.color)
+	}
+
+	rl_end_shader(g)
+
+	rl_begin_shader(g, .Celestial_Terrestrial_Layer)
+
+	shader_terr := g.assets.shaders[g.shaders[.Celestial_Terrestrial_Layer].shader]
+	loc_glow_terr := rl.GetShaderLocation(shader_terr, "glow_intensity")
+
+	for i in 0 ..< g.render.layers[.Terrestrial].count {
+		id := g.render.layers[.Terrestrial].entities[i]
+		e := &g.entities[id]
+		cp := g.params.celestials[e.celestial.type]
+
+		rl.SetShaderValue(shader_terr, loc_glow_terr, &cp.glow_intensity, .FLOAT)
+
+		dest_rect, tex, _ := sys_render_get_entity_draw_info(g, id, cp.quad_multiplier)
+		rl_texture_draw(g, tex, dest_rect, rl.Vector2(dest_rect.width / 2.0), tint = cp.color)
+	}
+
+	rl_end_shader(g)
+
+	rl_begin_shader(g, .Celestial_GasGiant_Layer)
+
+	shader_gas := g.assets.shaders[g.shaders[.Celestial_GasGiant_Layer].shader]
+	loc_gas_sec := rl.GetShaderLocation(shader_gas, "seconds")
+	loc_glow_gas := rl.GetShaderLocation(shader_gas, "glow_intensity")
+	rl.SetShaderValue(shader_gas, loc_gas_sec, &g.elapsed, .FLOAT)
+
+	for i in 0 ..< g.render.layers[.GasGiant].count {
+		id := g.render.layers[.GasGiant].entities[i]
+		e := &g.entities[id]
+		cp := g.params.celestials[e.celestial.type]
+
+		rl.SetShaderValue(shader_gas, loc_glow_gas, &cp.glow_intensity, .FLOAT)
+
+		dest_rect, tex, _ := sys_render_get_entity_draw_info(g, id, cp.quad_multiplier)
+		rl_texture_draw(g, tex, dest_rect, rl.Vector2(dest_rect.width / 2.0), tint = cp.color)
+	}
+
+	rl_end_shader(g)
+
+	rl_begin_shader(g, .Celestial_Star_Layer)
+
+	shader_star := g.assets.shaders[g.shaders[.Celestial_Star_Layer].shader]
+	loc_star_sec := rl.GetShaderLocation(shader_star, "seconds")
+	rl.SetShaderValue(shader_star, loc_star_sec, &g.elapsed, .FLOAT)
 
 	for i in 0 ..< g.render.layers[.Stars].count {
-		e := &g.entities[g.render.layers[.Stars].entities[i]]
-		r := e.radius
-		tint := e.renderable.color
+		id := g.render.layers[.Stars].entities[i]
+		e := &g.entities[id]
+		cp := g.params.celestials[e.celestial.type]
 
-		dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 4, r * 4}
-		rl_texture_draw(g, .Objects_Celestial, dest_rect, rl.Vector2(r * 2), tint = tint)
+		dest_rect, tex, _ := sys_render_get_entity_draw_info(g, id, cp.quad_multiplier)
+		rl_texture_draw(g, tex, dest_rect, rl.Vector2(dest_rect.width / 2.0), tint = cp.color)
 	}
 
 	rl_end_shader(g)
 
-	rl_begin_shader(g, .Objects_Layer)
-
-	for i in 0 ..< g.render.layers[.Objects].count {
-		texture: Game_TextureType = .Objects_Celestial
-
-		e := &g.entities[g.render.layers[.Objects].entities[i]]
+	for i in 0 ..< g.render.layers[.EmitterStations].count {
+		id := g.render.layers[.EmitterStations].entities[i]
+		e := &g.entities[id]
 		r := e.radius
-		tint := e.renderable.color
 
-		ww := f32(rl.GetScreenWidth())
-		wh := f32(rl.GetScreenHeight())
-		world_screen_rect := rl.Rectangle {
-			g.camera.target.x - (ww / 2) / g.camera.zoom,
-			g.camera.target.y - (wh / 2) / g.camera.zoom,
-			ww / g.camera.zoom,
-			wh / g.camera.zoom,
+		dest_rect, tex, is_oob := sys_render_get_entity_draw_info(g, id, 4.0) // Emitter default multiplier
+		if is_oob {
+			rl_texture_draw(
+				g,
+				tex,
+				dest_rect,
+				rl.Vector2(dest_rect.width / 2.0),
+				tint = e.emitter.emit_color,
+			)
+		} else {
+			pos := e.pos.current
+			color := rl.Color{220, 225, 230, 255}
+
+			// Diamond shape
+			// TODO: Maybe move to a custom texture.
+			rl.DrawLineEx({pos.x, pos.y - r * 1.5}, {pos.x + r * 1.5, pos.y}, 1.5, color)
+			rl.DrawLineEx({pos.x + r * 1.5, pos.y}, {pos.x, pos.y + r * 1.5}, 1.5, color)
+			rl.DrawLineEx({pos.x, pos.y + r * 1.5}, {pos.x - r * 1.5, pos.y}, 1.5, color)
+			rl.DrawLineEx({pos.x - r * 1.5, pos.y}, {pos.x, pos.y - r * 1.5}, 1.5, color)
+			rl.DrawLineEx(
+				{pos.x - r * 2, pos.y},
+				{pos.x + r * 2, pos.y},
+				0.5,
+				rl.Color{220, 225, 230, 100},
+			)
+			rl.DrawLineEx(
+				{pos.x, pos.y - r * 2},
+				{pos.x, pos.y + r * 2},
+				0.5,
+				rl.Color{220, 225, 230, 100},
+			)
 		}
-
-		dest_rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, r * 4, r * 4}
-		hit_pos, out_of_bounds := geometry_get_rectangle_intersection_point(
-			world_screen_rect,
-			e.pos.current,
-			g.theme.ui_out_of_bounds_margin,
-		)
-
-		if (out_of_bounds) {
-			dest_rect.x = hit_pos.x
-			dest_rect.y = hit_pos.y
-			texture = .Markers_OutOfBounds
-		}
-
-		if .Emitter in e.sig {
-			texture = .Objects_Emitter
-			tint = e.emitter.emit_color
-		}
-
-		rl_texture_draw(g, texture, dest_rect, rl.Vector2(r * 2), tint = tint)
 	}
-
-	rl_end_shader(g)
 
 	rl_begin_shader(g, .Energy_Shader)
 
@@ -366,41 +478,89 @@ sys_render_entities :: proc(g: ^Game) {
 	for i in 0 ..< g.render.layers[.OrbitPoints].count {
 		e := &g.entities[g.render.layers[.OrbitPoints].entities[i]]
 
+		// Get trail multiplier — skip if 0 (no trail)
+		trail_mult: f32 = 1.0
+		if .Celestial in e.sig {
+			trail_mult = g.params.celestials[e.celestial.type].trail_multiplier
+		}
+		if trail_mult <= 0.0 do continue
+
+		trail_col_base := e.renderable.color
+
+		valid_pts: [POSITION_TRAIL_LENGTH + 1]rl.Vector2
+		valid_count := 0
 		zero: rl.Vector2
 
-		for j in 0 ..< POSITION_TRAIL_LENGTH - 1 {
-			start := (e.pos.trail_head + j) % POSITION_TRAIL_LENGTH
-			end := (e.pos.trail_head + j + 1) % POSITION_TRAIL_LENGTH
+		for j in 0 ..< POSITION_TRAIL_LENGTH {
+			idx := (e.pos.trail_head + j) % POSITION_TRAIL_LENGTH
+			if e.pos.trail[idx] != zero {
+				valid_pts[valid_count] = e.pos.trail[idx]
+				valid_count += 1
+			}
+		}
 
-			if e.pos.trail[start] == e.pos.trail[end] do break
-			if e.pos.trail[start] == zero || e.pos.trail[end] == zero do continue
+		valid_pts[valid_count] = e.pos.current
+		valid_count += 1
 
-			fade_factor := (f32(j) / f32(POSITION_TRAIL_LENGTH))
-			trail_col := e.renderable.color
-			trail_col.a = u8(255.0 * fade_factor)
-			thickness := 2 * e.radius * fade_factor
+		if valid_count >= 2 {
+			total_steps := (valid_count - 1) * TRAIL_SUBDIVISIONS
 
-			rl.DrawLineEx(e.pos.trail[start], e.pos.trail[end], thickness, trail_col)
+			prev_pt := valid_pts[0]
+			for step in 1 ..= total_steps {
+				seg_f := f32(step) / f32(TRAIL_SUBDIVISIONS)
+				seg := int(seg_f)
+				local_t := seg_f - f32(seg)
 
-			if j == POSITION_TRAIL_LENGTH - 2 {
-				rl.DrawLineEx(e.pos.trail[end], e.pos.current, e.radius * 2, e.renderable.color)
+				if seg >= valid_count - 1 {
+					seg = valid_count - 2
+					local_t = 1.0
+				}
+
+				// Catmull-Rom control points with clamped boundary
+				i0 := max(seg - 1, 0)
+				i1 := seg
+				i2 := min(seg + 1, valid_count - 1)
+				i3 := min(seg + 2, valid_count - 1)
+
+				curr_pt := catmull_rom(
+					valid_pts[i0],
+					valid_pts[i1],
+					valid_pts[i2],
+					valid_pts[i3],
+					local_t,
+				)
+
+				// Progress 0→1 from oldest to newest
+				progress := f32(step) / f32(total_steps)
+
+				// Width tapers continuously: thin at tail → thick at head
+				thickness := e.radius * 2.0 * progress * trail_mult
+
+				// Alpha also fades continuously
+				col := trail_col_base
+				col.a = u8(255.0 * progress * min(trail_mult, 1.0))
+
+				if thickness > 0.1 {
+					rl.DrawLineEx(prev_pt, curr_pt, thickness, col)
+				}
+
+				prev_pt = curr_pt
 			}
 		}
 
 		ordered_points: [MAX_ORBIT_LENGTH + 1]rl.Vector2
 		for j in 0 ..< e.orbit.count {
-			// Find the oldest point and work forward
 			oldest_index :=
 				(e.orbit.head - e.orbit.count + j + MAX_ORBIT_LENGTH) % MAX_ORBIT_LENGTH
 			ordered_points[j] = e.orbit.points[oldest_index]
 		}
-
 		ordered_points[e.orbit.count] = e.pos.current
+
 		if g.show_orbits {
 			rl.DrawLineStrip(
 				raw_data(ordered_points[:]),
 				i32(e.orbit.count + 1),
-				rl.Fade(e.renderable.color, 0.2),
+				rl.Fade(e.renderable.color, 0.2 * min(trail_mult, 1.0)),
 			)
 		}
 	}
