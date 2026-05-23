@@ -10,6 +10,8 @@ nbody.dSYM/
 *.dSYM
 *.rdi
 
+.antigravitycli/
+
 debug_build
 
 .DS_Store

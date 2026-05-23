@@ -474,8 +474,6 @@ Game_SlingshotMode :: enum {
 Game_MenuState :: struct {
 	selected_mode:      Game_SlingshotMode,
 	selected_celestial: CelestialType,
-	hover_mode:         int,  // -1 = none, 0 = Normal, 1 = Emitter
-	hover_celestial:    int,  // -1 = none, or index into rendered list
 	scroll_offset:      f32,
 }
 
@@ -490,7 +488,6 @@ Game_RenderState :: struct {
 	score_energy:        [128]byte,
 	score_objects_count: [128]byte,
 	score_avg_energy:    [128]byte,
-
 	score_rect:          rl.Rectangle,
 	menu:                Game_MenuState,
 }
@@ -506,13 +503,13 @@ Game_Theme :: struct {
 	ui_slingshot_launch_ok_color:  rl.Color,
 	ui_slingshot_launch_err_color: rl.Color,
 	ui_menu_bg_color:              rl.Color,
-	ui_menu_header_color:          rl.Color,   // section header text
-	ui_menu_item_color:            rl.Color,   // normal item text
-	ui_menu_item_hover_color:      rl.Color,   // hovered item bg
-	ui_menu_item_selected_color:   rl.Color,   // selected item accent
-	ui_menu_item_locked_color:     rl.Color,   // locked/grayed out
-	ui_menu_accent_color:          rl.Color,   // accent glow line
-	ui_menu_divider_color:         rl.Color,   // section divider line
+	ui_menu_header_color:          rl.Color, // section header text
+	ui_menu_item_color:            rl.Color, // normal item text
+	ui_menu_item_hover_color:      rl.Color, // hovered item bg
+	ui_menu_item_selected_color:   rl.Color, // selected item accent
+	ui_menu_item_locked_color:     rl.Color, // locked/grayed out
+	ui_menu_accent_color:          rl.Color, // accent glow line
+	ui_menu_divider_color:         rl.Color, // section divider line
 	ui_out_of_bounds_margin:       f32,
 	bg_star_render_padding:        f32,
 	camera_padding:                f32,
@@ -541,6 +538,44 @@ Game_BgStar :: struct {
 	blink_speed: f32,
 	blink_phase: f32,
 	color:       rl.Color,
+}
+
+Game_Debug_Section :: enum {
+	LaunchControls,
+	Diagnostics,
+	Physics,
+	Slingshot,
+	Energy,
+	Collision,
+	Celestials,
+	Celestial_Asteroid,
+	Celestial_Moonlet,
+	Celestial_DwarfPlanet,
+	Celestial_SubEarth,
+	Celestial_SuperEarth,
+	Celestial_MegaEarth,
+	Celestial_MiniNeptune,
+	Celestial_SubNeptune,
+	Celestial_SuperNeptune,
+	Celestial_GiantPlanet,
+	Celestial_SuperJupiter,
+	Star,
+	Camera,
+	VfxShockwaves,
+	VfxParticles,
+	VfxFragments,
+	Background,
+	Actions,
+	Telemetry,
+}
+
+Game_DebugState :: struct {
+	initialized:     bool,
+	scroll_offset:   rl.Vector2,
+	scroll_bounds:   rl.Rectangle,
+	sections_open:   bit_set[Game_Debug_Section],
+	hover_mode:      int, // -1 = none, 0 = Normal, 1 = Emitter
+	hover_celestial: int, // -1 = none, or index into rendered list
 }
 
 Game :: struct {
@@ -595,46 +630,11 @@ Game :: struct {
 	energy_losses:       [AVG_CALC_TICKS]f64,
 	total_objects:       int,
 
-	// debug
-	draw_debug_panel:    bool,
-	debug:               Debug_State,
+	// Pause
 	paused:              bool,
+
+	// Debug
+	draw_debug_panel:    bool,
+	debug:               Game_DebugState,
 	input_blocked:       bool,
 }
-
-Debug_Section :: enum {
-	LaunchControls,
-	Diagnostics,
-	Physics,
-	Slingshot,
-	Energy,
-	Collision,
-	Celestials,
-	Celestial_Asteroid,
-	Celestial_Moonlet,
-	Celestial_DwarfPlanet,
-	Celestial_SubEarth,
-	Celestial_SuperEarth,
-	Celestial_MegaEarth,
-	Celestial_MiniNeptune,
-	Celestial_SubNeptune,
-	Celestial_SuperNeptune,
-	Celestial_GiantPlanet,
-	Celestial_SuperJupiter,
-	Star,
-	Camera,
-	VfxShockwaves,
-	VfxParticles,
-	VfxFragments,
-	Background,
-	Actions,
-	Telemetry,
-}
-
-Debug_State :: struct {
-	scroll_offset: rl.Vector2,
-	scroll_bounds: rl.Rectangle,
-	sections_open: bit_set[Debug_Section],
-	initialized:   bool,
-}
-

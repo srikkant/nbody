@@ -64,4 +64,3 @@ Key architecture implications for agents:
 # Skills 
 
 - Always use the Caveman skill and talk like a caveman
-
