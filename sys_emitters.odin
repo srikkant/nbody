@@ -1,6 +1,7 @@
 package main
 
 sys_emitters :: proc(g: ^Game) {
+	if g.paused do return
 	dt := frame_time(g)
 
 	for i in 0 ..< g.entities_count {

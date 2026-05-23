@@ -63,7 +63,7 @@ void main() {
     vec4 final_grid = grid_color * grid_val * shimmer;
 
     float zoom_fade = smoothstep(0.005, 0.02, camera_zoom);
-    final_grid.a *= zoom_fade * 0.45; // Subtle overall alpha
+    final_grid.a *= zoom_fade * 0.25; // Subtle overall alpha
 
     finalColor = final_grid * fragColor;
 }

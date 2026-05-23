@@ -115,10 +115,6 @@ sys_render :: proc(g: ^Game) {
 	g.render.rect = rl.Rectangle{0, 0, ww, wh}
 	g.render.scale = 1.0
 
-
-	rl.BeginDrawing()
-	rl.ClearBackground(rl.BLACK)
-
 	sys_render_bg(g)
 
 	rl.BeginMode2D(g.camera)
@@ -130,20 +126,16 @@ sys_render :: proc(g: ^Game) {
 	sys_render_cursor(g)
 	sys_render_slingshot(g)
 	sys_render_entities(g)
-	sys_render_stats_reticle(g)
 
 	rl.EndMode2D()
 
 	sys_render_ui(g)
-
-	if g.draw_debug_panel {
-		rl.DrawFPS(rl.GetScreenWidth() - 80, rl.GetScreenHeight() - 30)
-	}
-
-	rl.EndDrawing()
 }
 
 sys_render_cursor :: proc(g: ^Game) {
+	// If mouse is hovering over custom UI / input blocked, don't draw custom cursor in world space
+	if g.input_blocked do return
+
 	// TODO: Move to a custom texture?
 	rl.DrawCircle(
 		i32(g.mouse_pos.x),
@@ -827,42 +819,6 @@ sys_render_bg :: proc(g: ^Game) {
 	rl_end_shader(g)
 }
 
-sys_render_stats_reticle :: proc(g: ^Game) {
-	if !g.render.show_stats_panel do return
-
-	closest_id, found := get_inspected_entity(g)
-	if !found do return
-
-	e := &g.entities[closest_id]
-	pos := e.pos.current
-	radius := e.radius
-
-	pulse := 1.0 + 0.12 * math.sin(g.elapsed * 5.0)
-	reticle_radius := radius * 2.2 * pulse
-
-	col := g.theme.ui_menu_item_selected_color
-	col.a = 180
-
-	rl.DrawCircleLines(i32(pos.x), i32(pos.y), reticle_radius, col)
-
-	notch_len := clamp(radius * 0.8, 4.0, 30.0)
-	// Top Left
-	rl.DrawLineEx({pos.x - reticle_radius, pos.y - reticle_radius}, {pos.x - reticle_radius + notch_len, pos.y - reticle_radius}, 1.2, col)
-	rl.DrawLineEx({pos.x - reticle_radius, pos.y - reticle_radius}, {pos.x - reticle_radius, pos.y - reticle_radius + notch_len}, 1.2, col)
-	// Top Right
-	rl.DrawLineEx({pos.x + reticle_radius, pos.y - reticle_radius}, {pos.x + reticle_radius - notch_len, pos.y - reticle_radius}, 1.2, col)
-	rl.DrawLineEx({pos.x + reticle_radius, pos.y - reticle_radius}, {pos.x + reticle_radius, pos.y - reticle_radius + notch_len}, 1.2, col)
-	// Bottom Left
-	rl.DrawLineEx({pos.x - reticle_radius, pos.y + reticle_radius}, {pos.x - reticle_radius + notch_len, pos.y + reticle_radius}, 1.2, col)
-	rl.DrawLineEx({pos.x - reticle_radius, pos.y + reticle_radius}, {pos.x - reticle_radius, pos.y + reticle_radius - notch_len}, 1.2, col)
-	// Bottom Right
-	rl.DrawLineEx({pos.x + reticle_radius, pos.y + reticle_radius}, {pos.x + reticle_radius - notch_len, pos.y + reticle_radius}, 1.2, col)
-	rl.DrawLineEx({pos.x + reticle_radius, pos.y + reticle_radius}, {pos.x + reticle_radius, pos.y + reticle_radius - notch_len}, 1.2, col)
-
-	// Draw target indicator line and crosshair
-	rl.DrawCircle(i32(pos.x), i32(pos.y), 1.5, col)
-}
-
 sys_render_collect_gravity_wells :: proc(g: ^Game) -> (wells: [MAX_GRID_WELLS]rl.Vector4, count: i32) {
 	// A small struct for sorting
 	WellInfo :: struct {
@@ -912,4 +868,3 @@ sys_render_collect_gravity_wells :: proc(g: ^Game) -> (wells: [MAX_GRID_WELLS]rl
 
 	return wells, count
 }
-

@@ -491,13 +491,8 @@ Game_RenderState :: struct {
 	score_objects_count: [128]byte,
 	score_avg_energy:    [128]byte,
 
-	// Menus & overlays
-	show_upgrade_menu:   bool,
-	menu:                Game_MenuState,
-	upgrade_menu_rect:   rl.Rectangle,
 	score_rect:          rl.Rectangle,
-	show_stats_panel:    bool,
-	stats_panel_rect:    rl.Rectangle,
+	menu:                Game_MenuState,
 }
 
 Game_Theme :: struct {
@@ -602,4 +597,44 @@ Game :: struct {
 
 	// debug
 	draw_debug_panel:    bool,
+	debug:               Debug_State,
+	paused:              bool,
+	input_blocked:       bool,
 }
+
+Debug_Section :: enum {
+	LaunchControls,
+	Diagnostics,
+	Physics,
+	Slingshot,
+	Energy,
+	Collision,
+	Celestials,
+	Celestial_Asteroid,
+	Celestial_Moonlet,
+	Celestial_DwarfPlanet,
+	Celestial_SubEarth,
+	Celestial_SuperEarth,
+	Celestial_MegaEarth,
+	Celestial_MiniNeptune,
+	Celestial_SubNeptune,
+	Celestial_SuperNeptune,
+	Celestial_GiantPlanet,
+	Celestial_SuperJupiter,
+	Star,
+	Camera,
+	VfxShockwaves,
+	VfxParticles,
+	VfxFragments,
+	Background,
+	Actions,
+	Telemetry,
+}
+
+Debug_State :: struct {
+	scroll_offset: rl.Vector2,
+	scroll_bounds: rl.Rectangle,
+	sections_open: bit_set[Debug_Section],
+	initialized:   bool,
+}
+

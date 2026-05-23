@@ -27,6 +27,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	sys_render_init(g)
 	sys_camera_init(g)
 	sys_lifecycle_init(g)
+	sys_debug_init(g)
 
 	/*
 	TODO: Move to a dynamic menu
@@ -91,6 +92,7 @@ game_free :: proc(g: ^Game) {
 }
 
 game_run :: proc(g: ^Game) {
+	sys_debug_input(g)
 	sys_input(g)
 	sys_modifier(g)
 	sys_emitters(g)
@@ -98,5 +100,17 @@ game_run :: proc(g: ^Game) {
 	sys_score(g)
 	sys_lifecycle(g)
 	sys_camera(g)
+
+	rl.BeginDrawing()
+	rl.ClearBackground(rl.BLACK)
 	sys_render(g)
+
+	if g.draw_debug_panel {
+		rl.BeginMode2D(g.camera)
+		sys_debug_render_world(g)
+		rl.EndMode2D()
+	}
+
+	sys_debug(g)
+	rl.EndDrawing()
 }

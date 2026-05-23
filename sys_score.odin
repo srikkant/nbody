@@ -3,6 +3,7 @@ package main
 import rl "vendor:raylib"
 
 sys_score :: proc(g: ^Game) {
+	if g.paused do return
 	dt := frame_time(g)
 
 	curr_energy := g.energy

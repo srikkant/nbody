@@ -12,10 +12,14 @@ sys_modifier :: proc(g: ^Game) {
 		m := &g.modifiers[i]
 		if !m.active do continue
 
-		// If the modifier has a duration, check if it has expired
-		if m.duration != 0 && rl.GetTime() - m.started_at > m.duration {
-			g.modifiers[i] = {}
-			continue
+		// If the modifier has a duration, check if it has expired (freeze countdown when paused)
+		if m.duration != 0 {
+			if g.paused {
+				m.started_at += f64(rl.GetFrameTime())
+			} else if rl.GetTime() - m.started_at > m.duration {
+				g.modifiers[i] = {}
+				continue
+			}
 		}
 
 		g.slingshot.launch_power += g.slingshot.launch_power * m.slingshot_power

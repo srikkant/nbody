@@ -8,28 +8,21 @@ input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
 sys_input :: proc(g: ^Game) {
 	dt := frame_time(g)
 
-	g.elapsed += dt
 	g.mouse_pos = input_mouse_pos(g)
 
-	// Update all timers in the input system
-	for i in Game_TimerType {
-		utils_math_update_timer(&g.timers[i], dt)
-	}
-
-	stats_hovered := g.render.show_stats_panel &&
-		rl.CheckCollisionPointRec(rl.GetMousePosition(), g.render.stats_panel_rect)
-
-	menu_hovered := (g.render.show_upgrade_menu &&
-		rl.CheckCollisionPointRec(rl.GetMousePosition(), g.render.upgrade_menu_rect)) || stats_hovered
-
-	if (rl.IsMouseButtonPressed(.LEFT)) {
-		if !menu_hovered {
-			g.slingshot.active = true
-			g.slingshot.start_pos = input_mouse_pos(g)
+	if !g.paused {
+		g.elapsed += dt
+		for i in Game_TimerType {
+			utils_math_update_timer(&g.timers[i], dt)
 		}
 	}
 
-	if (rl.IsMouseButtonReleased(.RIGHT) || rl.IsKeyPressed(.C)) {
+	if rl_is_mouse_button_pressed(g, .LEFT) {
+		g.slingshot.active = true
+		g.slingshot.start_pos = input_mouse_pos(g)
+	}
+
+	if rl_is_mouse_button_released(g, .RIGHT) || rl_is_key_pressed(g, .C) {
 		g.slingshot.active = false
 	}
 
@@ -80,31 +73,18 @@ sys_input :: proc(g: ^Game) {
 			)
 		}
 
-
 		g.slingshot.can_launch = g.energy >= cost
 
-		if (rl.IsMouseButtonReleased(.LEFT)) {
+		if rl_is_mouse_button_released(g, .LEFT) {
 			g.slingshot.active = false
-			if (g.slingshot.can_launch) {
+			if g.slingshot.can_launch {
 				push_event(g, event)
 				g.energy -= cost // TODO: should this be an event?
 			}
 		}
 	}
 
-	if (rl.IsKeyPressed(.D)) {
-		g.draw_debug_panel = !g.draw_debug_panel
-	}
-
-	if rl.IsKeyPressed(.M) {
-		g.render.show_upgrade_menu = !g.render.show_upgrade_menu
-	}
-
-	if rl.IsKeyPressed(.S) {
-		g.render.show_stats_panel = !g.render.show_stats_panel
-	}
-
-	if rl.IsKeyPressed(.T) {
+	if rl_is_key_pressed(g, .T) {
 		g.show_orbits = !g.show_orbits
 	}
 }
