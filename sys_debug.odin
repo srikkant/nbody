@@ -47,6 +47,10 @@ sys_debug_init :: proc(g: ^Game) {
 	rl.GuiSetStyle(rl.GuiControl.DEFAULT, c.int(rl.GuiControlProperty.TEXT_COLOR_PRESSED), color_to_int(rl.Color{0, 230, 255, 255}))
 	rl.GuiSetStyle(rl.GuiControl.DEFAULT, c.int(rl.GuiControlProperty.BORDER_COLOR_PRESSED), color_to_int(rl.Color{0, 230, 255, 255}))
 
+	// Text alignment and padding for toggle buttons to look premium with inline color swatch dots
+	rl.GuiSetStyle(rl.GuiControl.TOGGLE, c.int(rl.GuiControlProperty.TEXT_ALIGNMENT), c.int(rl.GuiTextAlignment.TEXT_ALIGN_LEFT))
+	rl.GuiSetStyle(rl.GuiControl.TOGGLE, c.int(rl.GuiControlProperty.TEXT_PADDING), 24)
+
 	g.debug.initialized = true
 
 	// Expand initial focus areas
@@ -247,7 +251,14 @@ sys_debug :: proc(g: ^Game) {
 	actual_view: rl.Rectangle
 	rl.GuiScrollPanel(view_rect, nil, content_rect, &g.debug.scroll_offset, &actual_view)
 
-	// We bypass BeginScissorMode to avoid any viewport clipping bugs on various screen DPIs/backends, ensuring 100% visibility of all debug controls.
+	// Set stable clipping area to only draw inside the scroll view limits (using virtual screen coordinates)
+	rl.BeginScissorMode(
+		i32(view_rect.x),
+		i32(view_rect.y),
+		i32(view_rect.width),
+		i32(view_rect.height),
+	)
+
 	curr_y := view_rect.y + g.debug.scroll_offset.y
 	startX := view_rect.x + 8
 	w := view_rect.width - 28
@@ -270,61 +281,34 @@ sys_debug :: proc(g: ^Game) {
 		curr_y += 20
 
 		active_normal := g.render.menu.selected_mode == .Normal
-		active_emitter := g.render.menu.selected_mode == .Emitter
-
-		// Normal mode button
-		normal_rect := rl.Rectangle{startX, curr_y, w * 0.48, item_h}
-		normal_hovered := rl.CheckCollisionPointRec(rl.GetMousePosition(), normal_rect)
-		
-		if normal_hovered {
-			rl.DrawRectangleRec(normal_rect, g.theme.ui_menu_item_hover_color)
-			if rl.IsMouseButtonPressed(.LEFT) {
+		prev_active_normal := active_normal
+		// Temporarily center text and remove padding for these buttons
+		rl.GuiSetStyle(rl.GuiControl.TOGGLE, c.int(rl.GuiControlProperty.TEXT_ALIGNMENT), c.int(rl.GuiTextAlignment.TEXT_ALIGN_CENTER))
+		rl.GuiSetStyle(rl.GuiControl.TOGGLE, c.int(rl.GuiControlProperty.TEXT_PADDING), 0)
+		rl.GuiToggle(rl.Rectangle{startX, curr_y, w * 0.48, item_h}, "normal", &active_normal)
+		if active_normal != prev_active_normal {
+			if active_normal {
 				g.render.menu.selected_mode = .Normal
 				debug_menu_apply_slingshot(g)
+			} else {
+				active_normal = true
 			}
-		} else {
-			rl.DrawRectangleRec(normal_rect, rl.Color{20, 25, 40, 150})
 		}
-		
-		if active_normal {
-			rl.DrawRectangleRec({normal_rect.x, normal_rect.y, 3, normal_rect.height}, g.theme.ui_menu_item_selected_color)
-		}
-		
-		normal_text_col := active_normal ? g.theme.ui_menu_item_selected_color : (normal_hovered ? rl.WHITE : g.theme.ui_menu_item_color)
-		rl_text_draw(
-			g,
-			.Body,
-			"normal",
-			{normal_rect.x + 12, normal_rect.y + (item_h - g.fonts[.Body].size) / 2},
-			normal_text_col,
-		)
 
-		// Emitter mode button
-		emitter_rect := rl.Rectangle{startX + w * 0.52, curr_y, w * 0.48, item_h}
-		emitter_hovered := rl.CheckCollisionPointRec(rl.GetMousePosition(), emitter_rect)
-		
-		if emitter_hovered {
-			rl.DrawRectangleRec(emitter_rect, g.theme.ui_menu_item_hover_color)
-			if rl.IsMouseButtonPressed(.LEFT) {
+		active_emitter := g.render.menu.selected_mode == .Emitter
+		prev_active_emitter := active_emitter
+		rl.GuiToggle(rl.Rectangle{startX + w * 0.52, curr_y, w * 0.48, item_h}, "emitter", &active_emitter)
+		if active_emitter != prev_active_emitter {
+			if active_emitter {
 				g.render.menu.selected_mode = .Emitter
 				debug_menu_apply_slingshot(g)
+			} else {
+				active_emitter = true
 			}
-		} else {
-			rl.DrawRectangleRec(emitter_rect, rl.Color{20, 25, 40, 150})
 		}
-		
-		if active_emitter {
-			rl.DrawRectangleRec({emitter_rect.x, emitter_rect.y, 3, emitter_rect.height}, g.theme.ui_menu_item_selected_color)
-		}
-		
-		emitter_text_col := active_emitter ? g.theme.ui_menu_item_selected_color : (emitter_hovered ? rl.WHITE : g.theme.ui_menu_item_color)
-		rl_text_draw(
-			g,
-			.Body,
-			"emitter",
-			{emitter_rect.x + 12, emitter_rect.y + (item_h - g.fonts[.Body].size) / 2},
-			emitter_text_col,
-		)
+		// Restore left-alignment and padding for subsequent celestial toggles
+		rl.GuiSetStyle(rl.GuiControl.TOGGLE, c.int(rl.GuiControlProperty.TEXT_ALIGNMENT), c.int(rl.GuiTextAlignment.TEXT_ALIGN_LEFT))
+		rl.GuiSetStyle(rl.GuiControl.TOGGLE, c.int(rl.GuiControlProperty.TEXT_PADDING), 24)
 		
 		curr_y += item_h + 8
 
@@ -354,51 +338,39 @@ sys_debug :: proc(g: ^Game) {
 			unlocked := ct in g.available_objects
 			selected := g.render.menu.selected_celestial == ct
 
-			hovered := unlocked && rl.CheckCollisionPointRec(rl.GetMousePosition(), row_rect)
+			t_state := selected
+			prev_state := t_state
+
+			if !unlocked {
+				rl.GuiSetState(c.int(rl.GuiState.STATE_DISABLED))
+			}
+
+			name_cstr := get_celestial_display_name(ct)
 			
-			if hovered {
+			// Native raygui GuiToggle button
+			rl.GuiToggle(row_rect, name_cstr, &t_state)
+
+			if !unlocked {
+				rl.GuiSetState(c.int(rl.GuiState.STATE_NORMAL))
+			}
+
+			if unlocked && rl.CheckCollisionPointRec(rl.GetMousePosition(), row_rect) {
 				g.render.menu.hover_celestial = idx
-				rl.DrawRectangleRec(row_rect, g.theme.ui_menu_item_hover_color)
-				
-				if rl.IsMouseButtonPressed(.LEFT) {
+			}
+
+			if t_state != prev_state {
+				if unlocked && t_state {
 					g.render.menu.selected_celestial = ct
 					debug_menu_apply_slingshot(g)
+				} else {
+					t_state = true
 				}
-			} else {
-				rl.DrawRectangleRec(row_rect, rl.Color{16, 20, 32, 100})
 			}
 
-			if selected {
-				rl.DrawRectangleRec(
-					{row_rect.x, row_rect.y, 3, row_rect.height},
-					g.theme.ui_menu_item_selected_color,
-				)
-			}
-
-			// Swatch dots & labels
+			// Draw premium color dot next to the label (aligned)
 			dot_color := unlocked ? g.params.celestials[ct].color : g.theme.ui_menu_item_locked_color
 			dot_color.a = 255
 			rl.DrawCircle(i32(row_rect.x + 12), i32(row_rect.y + item_h / 2), 3.5, dot_color)
-
-			name_str := get_celestial_display_name(ct)
-			text_color: rl.Color
-			if !unlocked {
-				text_color = g.theme.ui_menu_item_locked_color
-			} else if selected {
-				text_color = g.theme.ui_menu_item_selected_color
-			} else if hovered {
-				text_color = rl.WHITE
-			} else {
-				text_color = g.theme.ui_menu_item_color
-			}
-
-			rl_text_draw(
-				g,
-				.Body,
-				name_str,
-				{row_rect.x + 24, row_rect.y + (item_h - g.fonts[.Body].size) / 2},
-				text_color,
-			)
 
 			curr_y += item_h + 4
 		}
@@ -869,6 +841,8 @@ sys_debug :: proc(g: ^Game) {
 		}
 
 	}
+
+	rl.EndScissorMode()
 
 	// Track scroll content height dynamically for scroll calculations next frame
 	content_height := curr_y - (view_rect.y + g.debug.scroll_offset.y)
