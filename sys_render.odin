@@ -3,32 +3,6 @@ package main
 import "core:math"
 import rl "vendor:raylib"
 
-redraw_bg_grid :: proc(g: ^Game, ww, wh: f32) {
-	rl.BeginTextureMode(g.bg_texture)
-	rl.ClearBackground(rl.Color{0, 0, 0, 0})
-
-	grid_color := g.theme.bg_grid_color
-
-	cx := ww / 2
-	cy := wh / 2
-	spacing := g.params.background.grid_spacing
-
-	// Draw vertical lines from center outwards
-	x_count := int(ww / spacing) / 2 + 1
-	for x_int := -x_count; x_int <= x_count; x_int += 1 {
-		x := cx + f32(x_int) * spacing
-		rl.DrawLineEx(rl.Vector2{x, 0}, rl.Vector2{x, wh}, 1.0, grid_color)
-	}
-
-	// Draw horizontal lines from center outwards
-	y_count := int(wh / spacing) / 2 + 1
-	for y_int := -y_count; y_int <= y_count; y_int += 1 {
-		y := cy + f32(y_int) * spacing
-		rl.DrawLineEx(rl.Vector2{0, y}, rl.Vector2{ww, y}, 1.0, grid_color)
-	}
-
-	rl.EndTextureMode()
-}
 
 sys_render_init :: proc(g: ^Game) {
 	ww := f32(rl.GetScreenWidth())
@@ -36,8 +10,6 @@ sys_render_init :: proc(g: ^Game) {
 
 	g.render.rect = rl.Rectangle{0, 0, ww, wh}
 	g.render.scale = 1.0
-	g.bg_texture = rl.LoadRenderTexture(i32(ww), i32(wh))
-	redraw_bg_grid(g, ww, wh)
 
 	for i in 0 ..< BG_STAR_COUNT {
 		layer := 0
@@ -134,7 +106,6 @@ sys_render_init :: proc(g: ^Game) {
 }
 
 sys_render_free :: proc(g: ^Game) {
-	rl.UnloadRenderTexture(g.bg_texture)
 }
 
 sys_render :: proc(g: ^Game) {
@@ -144,11 +115,6 @@ sys_render :: proc(g: ^Game) {
 	g.render.rect = rl.Rectangle{0, 0, ww, wh}
 	g.render.scale = 1.0
 
-	if g.bg_texture.texture.width != i32(ww) || g.bg_texture.texture.height != i32(wh) {
-		rl.UnloadRenderTexture(g.bg_texture)
-		g.bg_texture = rl.LoadRenderTexture(i32(ww), i32(wh))
-		redraw_bg_grid(g, ww, wh)
-	}
 
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
@@ -802,21 +768,61 @@ sys_render_bg :: proc(g: ^Game) {
 		}
 	}
 
-	// Shimmering grid overlay
+	// Gravity-distorted world grid overlay
 	rl_begin_shader(g, .BgGrid_Shader)
 
 	shader := g.assets.shaders[g.shaders[.BgGrid_Shader].shader]
-	loc := rl.GetShaderLocation(shader, "seconds")
-	rl.SetShaderValue(shader, loc, &g.elapsed, .FLOAT)
 
-	rl.DrawTexturePro(
-		g.bg_texture.texture,
-		rl.Rectangle{0, 0, f32(g.bg_texture.texture.width), -f32(g.bg_texture.texture.height)},
-		rl.Rectangle{0, 0, ww, wh},
-		rl.Vector2{0, 0},
-		0,
-		rl.WHITE,
-	)
+	loc_seconds := rl.GetShaderLocation(shader, "seconds")
+	rl.SetShaderValue(shader, loc_seconds, &g.elapsed, .FLOAT)
+
+	camera_target := g.camera.target
+	loc_camera_target := rl.GetShaderLocation(shader, "camera_target")
+	rl.SetShaderValue(shader, loc_camera_target, &camera_target, .VEC2)
+
+	camera_zoom := g.camera.zoom
+	loc_camera_zoom := rl.GetShaderLocation(shader, "camera_zoom")
+	rl.SetShaderValue(shader, loc_camera_zoom, &camera_zoom, .FLOAT)
+
+	screen_size := rl.Vector2{ww, wh}
+	loc_screen_size := rl.GetShaderLocation(shader, "screen_size")
+	rl.SetShaderValue(shader, loc_screen_size, &screen_size, .VEC2)
+
+	grid_spacing := g.params.background.grid_spacing
+	loc_grid_spacing := rl.GetShaderLocation(shader, "grid_spacing")
+	rl.SetShaderValue(shader, loc_grid_spacing, &grid_spacing, .FLOAT)
+
+	grid_line_width := g.params.background.grid_line_width
+	loc_grid_line_width := rl.GetShaderLocation(shader, "grid_line_width")
+	rl.SetShaderValue(shader, loc_grid_line_width, &grid_line_width, .FLOAT)
+
+	grid_col_normalized := rl.Vector4 {
+		f32(g.theme.bg_grid_color.r) / 255.0,
+		f32(g.theme.bg_grid_color.g) / 255.0,
+		f32(g.theme.bg_grid_color.b) / 255.0,
+		f32(g.theme.bg_grid_color.a) / 255.0,
+	}
+	loc_grid_color := rl.GetShaderLocation(shader, "grid_color")
+	rl.SetShaderValue(shader, loc_grid_color, &grid_col_normalized, .VEC4)
+
+	gravity_constant := g.params.physics.gravity_constant
+	loc_gravity_constant := rl.GetShaderLocation(shader, "gravity_constant")
+	rl.SetShaderValue(shader, loc_gravity_constant, &gravity_constant, .FLOAT)
+
+	warp_strength := g.params.background.grid_warp_strength
+	loc_warp_strength := rl.GetShaderLocation(shader, "warp_strength")
+	rl.SetShaderValue(shader, loc_warp_strength, &warp_strength, .FLOAT)
+
+	wells, well_count := sys_render_collect_gravity_wells(g)
+	loc_well_count := rl.GetShaderLocation(shader, "well_count")
+	rl.SetShaderValue(shader, loc_well_count, &well_count, .INT)
+
+	if well_count > 0 {
+		loc_wells := rl.GetShaderLocation(shader, "wells")
+		rl.SetShaderValueV(shader, loc_wells, &wells[0], .VEC4, well_count)
+	}
+
+	rl_texture_draw(g, .Blank, {0, 0, ww, wh})
 
 	rl_end_shader(g)
 }
@@ -856,3 +862,54 @@ sys_render_stats_reticle :: proc(g: ^Game) {
 	// Draw target indicator line and crosshair
 	rl.DrawCircle(i32(pos.x), i32(pos.y), 1.5, col)
 }
+
+sys_render_collect_gravity_wells :: proc(g: ^Game) -> (wells: [MAX_GRID_WELLS]rl.Vector4, count: i32) {
+	// A small struct for sorting
+	WellInfo :: struct {
+		pos:       rl.Vector2,
+		mass:      f32,
+		radius:    f32,
+		influence: f32,
+	}
+
+	temp_wells: [MAX_ENTITIES]WellInfo
+	temp_count := 0
+
+	for i in 0 ..< g.entities_count {
+		e := &g.entities[i]
+		if !(PHYSICS_SIG <= e.sig) do continue
+		if e.mass <= 0.0 do continue
+
+		diff := e.pos.current - g.camera.target
+		dist_sq := diff.x * diff.x + diff.y * diff.y
+		influence := e.mass / (dist_sq + 1.0)
+
+		temp_wells[temp_count] = WellInfo {
+			pos       = e.pos.current,
+			mass      = e.mass,
+			radius    = e.radius,
+			influence = influence,
+		}
+		temp_count += 1
+	}
+
+	// Sort temp_wells by influence descending (simple insertion sort)
+	for i in 1 ..< temp_count {
+		key := temp_wells[i]
+		j := i - 1
+		for j >= 0 && temp_wells[j].influence < key.influence {
+			temp_wells[j + 1] = temp_wells[j]
+			j = j - 1
+		}
+		temp_wells[j + 1] = key
+	}
+
+	count = i32(min(temp_count, MAX_GRID_WELLS))
+	for i in 0 ..< count {
+		w := temp_wells[i]
+		wells[i] = rl.Vector4{w.pos.x, w.pos.y, w.mass, w.radius}
+	}
+
+	return wells, count
+}
+

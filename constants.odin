@@ -26,6 +26,8 @@ AVG_CALC_TICKS :: 10
 ORBIT_POINTS_MIN_ANGLE :: (2 * math.PI) / (MAX_ORBIT_LENGTH - 1) // do a -1 so the orbit always closes
 // Subdivisions per trail segment for smoothing
 TRAIL_SUBDIVISIONS :: 4
+MAX_GRID_WELLS :: 16
+
 
 /*
 Signatures used by different systems

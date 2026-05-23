@@ -235,7 +235,7 @@ Assets_Shader :: enum {
 	Celestial_Terrestrial,
 	Celestial_GasGiant,
 	Celestial_Star,
-	BgGrid_Shimmer,
+	BgGrid_Gravity,
 	Energy_Shader,
 	Vfx_Effects,
 }
@@ -330,6 +330,8 @@ Game_Parameters_Physics :: struct {
 
 Game_Parameters_Background :: struct {
 	grid_spacing:                         f32,
+	grid_line_width:                      f32,
+	grid_warp_strength:                   f32,
 	star_spawn_bounds_x:                  f32,
 	star_spawn_bounds_y:                  f32,
 	star_blink_speed_min:                 f32,
@@ -572,7 +574,7 @@ Game :: struct {
 	fonts:               [Game_FontType]Game_Font,
 
 	// Special render textures
-	bg_texture:          rl.RenderTexture2D,
+
 
 	// View options
 	show_orbits:         bool,

@@ -25,7 +25,10 @@ assets_map_load :: proc(g: ^Game) {
 		"./assets/shaders/celestial_gasgiant.frag",
 	)
 	g.assets.shaders[.Celestial_Star] = rl.LoadShader(nil, "./assets/shaders/celestial_star.frag")
-	g.assets.shaders[.BgGrid_Shimmer] = rl.LoadShader(nil, "./assets/shaders/bg_grid_shimmer.frag")
+	g.assets.shaders[.BgGrid_Gravity] = rl.LoadShader(
+		nil,
+		"./assets/shaders/bg_grid_gravity.frag",
+	)
 	g.assets.shaders[.Energy_Shader] = rl.LoadShader(nil, "./assets/shaders/energy_glow.frag")
 	g.assets.shaders[.Vfx_Effects] = rl.LoadShader(nil, "./assets/shaders/vfx_effects.frag")
 
@@ -122,7 +125,7 @@ assets_map_free :: proc(g: ^Game) {
 	rl.UnloadShader(g.assets.shaders[.Celestial_Terrestrial])
 	rl.UnloadShader(g.assets.shaders[.Celestial_GasGiant])
 	rl.UnloadShader(g.assets.shaders[.Celestial_Star])
-	rl.UnloadShader(g.assets.shaders[.BgGrid_Shimmer])
+	rl.UnloadShader(g.assets.shaders[.BgGrid_Gravity])
 	rl.UnloadShader(g.assets.shaders[.Energy_Shader])
 	rl.UnloadShader(g.assets.shaders[.Vfx_Effects])
 
@@ -207,7 +210,7 @@ assets_shaders_load :: proc(g: ^Game) {
 		shader = .Vignette,
 	}
 	g.shaders[.BgGrid_Shader] = {
-		shader = .BgGrid_Shimmer,
+		shader = .BgGrid_Gravity,
 	}
 	g.shaders[.Energy_Shader] = {
 		shader = .Energy_Shader,
