@@ -1490,6 +1490,9 @@ sys_debug :: proc(g: ^Game) {
 sys_debug_render_world :: proc(g: ^Game) {
 	if !g.draw_debug_panel do return
 
+	rl.BeginMode2D(g.camera)
+	defer rl.EndMode2D()
+
 	closest_id, found := get_inspected_entity(g)
 	if !found do return
 

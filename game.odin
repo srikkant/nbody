@@ -97,11 +97,9 @@ game_run :: proc(g: ^Game) {
 	sys_render(g)
 
 	if g.draw_debug_panel {
-		rl.BeginMode2D(g.camera)
 		sys_debug_render_world(g)
-		rl.EndMode2D()
+		sys_debug(g)
 	}
 
-	sys_debug(g)
 	rl.EndDrawing()
 }

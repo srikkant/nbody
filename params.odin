@@ -175,8 +175,8 @@ params_init_defaults :: proc(p: ^Game_Parameters) {
 	// ==========================================
 	// BACKGROUND & PARALLAX PARAMETERS
 	// ==========================================
-	p.background.grid_spacing = 30.0
-	p.background.grid_line_width = 0.8
+	p.background.grid_spacing = 20.0
+	p.background.grid_line_width = 1.0
 	p.background.grid_warp_strength = 1.0
 
 	p.background.star_spawn_bounds_x = 2000.0

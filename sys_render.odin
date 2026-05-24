@@ -524,7 +524,7 @@ sys_render_entities :: proc(g: ^Game) {
 			rl.DrawLineStrip(
 				raw_data(ordered_points[:]),
 				i32(e.orbit.count + 1),
-				rl.Fade(e.renderable.color, 0.2 * min(trail_mult, 1.0)),
+				rl.Fade(e.renderable.color, 0.35 * min(trail_mult, 1.0)),
 			)
 		}
 	}
@@ -819,7 +819,12 @@ sys_render_bg :: proc(g: ^Game) {
 	rl_end_shader(g)
 }
 
-sys_render_collect_gravity_wells :: proc(g: ^Game) -> (wells: [MAX_GRID_WELLS]rl.Vector4, count: i32) {
+sys_render_collect_gravity_wells :: proc(
+	g: ^Game,
+) -> (
+	wells: [MAX_GRID_WELLS]rl.Vector4,
+	count: i32,
+) {
 	// A small struct for sorting
 	WellInfo :: struct {
 		pos:       rl.Vector2,
