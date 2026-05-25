@@ -17,7 +17,31 @@ sys_camera :: proc(g: ^Game) {
 
 	g.camera.offset = rl.Vector2{ww / 2, wh / 2}
 
-	if g.slingshot.active do return // Lock camera zoom while slingshot is active to prevent input breaking
+	dt := frame_time(g)
+	if g.camera_shake_intensity > 0.05 {
+		g.camera_shake_intensity *= math.exp(-12.0 * dt)
+		angle := f32(rl.GetRandomValue(0, 360)) * (math.PI / 180.0)
+		shake_offset := rl.Vector2{math.cos(angle), math.sin(angle)} * g.camera_shake_intensity
+		g.camera.offset += shake_offset
+	} else {
+		g.camera_shake_intensity = 0.0
+	}
+
+	// If slingshot is active, add some vibration and exit.
+	if g.slingshot.active {
+		drag := g.mouse_pos - g.slingshot.start_pos
+		pull_dist := rl.Vector2Length(drag)
+
+		// Scale vibration with pull distance
+		vibration := clamp(pull_dist * f32(0.012), f32(0.0), f32(3.5))
+		if vibration > 0.05 {
+			angle := f32(rl.GetRandomValue(0, 360)) * (math.PI / 180.0)
+			vib_offset := rl.Vector2{math.cos(angle), math.sin(angle)} * vibration
+			g.camera.offset += vib_offset
+		}
+
+		return
+	}
 
 	max_x: f32 = 0
 	max_y: f32 = 0
@@ -45,10 +69,9 @@ sys_camera :: proc(g: ^Game) {
 	target_zoom := min(zoom_x, zoom_y)
 	target_zoom = clamp(target_zoom, g.params.camera.zoom_min, g.params.camera.zoom_max)
 
-	dt := frame_time(g)
 	decay := g.params.camera.zoom_in_interpolation_decay // zoom in
 	if target_zoom < g.camera.zoom do decay = g.params.camera.zoom_out_interpolation_decay // zoom out
 
-	t := 1.0 - math.exp(-decay * dt)
+	t := f32(1.0) - math.exp_f32(-decay * dt)
 	g.camera.zoom = math.lerp(g.camera.zoom, target_zoom, t)
 }

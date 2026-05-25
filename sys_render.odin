@@ -154,64 +154,7 @@ sys_render_cursor :: proc(g: ^Game) {
 	)
 }
 
-sys_render_slingshot :: proc(g: ^Game) {
-	if !g.slingshot.active do return
-	end := g.mouse_pos
 
-	// TODO: Update this, this should rely on the slingshot output maybe?
-	ss_obj_radius := g.params.celestials[.DwarfPlanet].radius
-
-	// Slingshot trigger
-	line_col :=
-		g.slingshot.can_launch ? g.theme.ui_slingshot_launch_ok_color : g.theme.ui_slingshot_launch_err_color
-	rl.DrawLineEx(g.slingshot.start_pos, end, 1, line_col)
-	rl.DrawCircle(
-		i32(g.slingshot.start_pos.x),
-		i32(g.slingshot.start_pos.y),
-		ss_obj_radius,
-		rl.Color{255, 255, 255, 255},
-	)
-
-	if g.slingshot.preview == 0 || !g.slingshot.can_launch do return
-
-	pos := g.slingshot.start_pos
-	vel := physics_get_slingshot_release_velocity(g, end)
-
-	dt :=
-		frame_time(g) *
-		g.params.physics.simulation_rate_multiplier *
-		f32(g.params.physics.slingshot_preview_length) // slingshot_preview_len x realtime for the preview
-
-	star := &g.entities[Entity(0)]
-
-	frames := g.params.physics.slingshot_preview_length * i32(g.slingshot.preview)
-
-	g.slingshot.preview_points[0] = g.slingshot.start_pos
-	for idx in 1 ..= frames {
-		acc, dist := physics_get_gravitational_acceleration(
-			g,
-			pos,
-			ss_obj_radius,
-			star.pos.current,
-			star.mass,
-			star.radius,
-		)
-
-		collision := dist < (ss_obj_radius + star.radius) * (ss_obj_radius + star.radius)
-		if collision {
-			frames = idx
-			break
-		}
-
-		vel += acc * dt
-		pos += vel * dt
-
-		g.slingshot.preview_points[idx] = pos
-	}
-
-	raw_ptr := ([^][2]f32)(&g.slingshot.preview_points[0])
-	rl.DrawLineStrip(raw_ptr, frames, g.theme.ui_slingshot_preview_color)
-}
 
 sys_add_entity_to_layer :: proc(g: ^Game, id: Entity, layer: Game_RenderLayerType) {
 	g.render.layers[layer].entities[g.render.layers[layer].count] = Entity(id)
@@ -849,6 +792,35 @@ sys_render_collect_gravity_wells :: proc(
 			pos       = e.pos.current,
 			mass      = e.mass,
 			radius    = e.radius,
+			influence = influence,
+		}
+	}
+
+	if g.slingshot.active {
+		launch_type: CelestialType
+		switch out in g.slingshot.output {
+		case Game_SlingshotOutput_Emitter:
+			launch_type = out.emitter.emit_celestial.type
+		case Game_SlingshotOutput_Celestial:
+			launch_type = out.celestial.type
+		}
+		density := g.params.celestials[launch_type].density
+		radius := g.params.celestials[launch_type].radius
+		payload_mass := density * (radius * radius)
+		pull_dist := rl.Vector2Distance(g.slingshot.start_pos, g.mouse_pos)
+
+		slingshot_well_mass := (payload_mass + 50.0) * (pull_dist / 100.0) * 1.5
+		slingshot_well_mass = clamp(slingshot_well_mass, 20.0, 1500.0)
+		slingshot_well_radius := radius * 2.5
+
+		diff := g.slingshot.start_pos - g.camera.target
+		dist_sq := diff.x * diff.x + diff.y * diff.y
+		influence := slingshot_well_mass / (dist_sq + 1.0)
+
+		temp_wells[temp_count] = WellInfo {
+			pos       = g.slingshot.start_pos,
+			mass      = slingshot_well_mass,
+			radius    = slingshot_well_radius,
 			influence = influence,
 		}
 		temp_count += 1

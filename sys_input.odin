@@ -1,4 +1,5 @@
 package main
+import "core:math"
 import rl "vendor:raylib"
 
 input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
@@ -80,6 +81,34 @@ sys_input :: proc(g: ^Game) {
 			if g.slingshot.can_launch {
 				push_event(g, event)
 				g.energy -= cost // TODO: should this be an event?
+
+				// Trigger camera shake proportional to payload mass
+				payload_mass := event.density * (event.radius * event.radius)
+				g.camera_shake_intensity = clamp(math.sqrt(payload_mass) * 0.45, 0.0, 25.0)
+
+				// Trigger physical engine shockwave entity at the release/spawn coordinates
+				sys_lifecycle_spawn_shockwave(g, g.slingshot.start_pos, f64(payload_mass * 2.0))
+
+				// Trigger chromatic ring flash in an available slot
+				for i in 0 ..< len(g.ring_flashes) {
+					flash := &g.ring_flashes[i]
+					if !flash.active {
+						flash.active = true
+						flash.pos = g.slingshot.start_pos
+						flash.radius = event.radius
+						flash.max_radius = event.radius * 7.0
+						flash.color = color
+						flash.life = 1.0
+						break
+					}
+				}
+
+				// Trigger slingshot snap animation
+				g.slingshot_snap.active = true
+				g.slingshot_snap.start_pos = g.slingshot.start_pos
+				g.slingshot_snap.end_pos = end
+				g.slingshot_snap.timer = 1.0
+				g.slingshot_snap.color = color
 			}
 		}
 	}

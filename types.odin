@@ -155,6 +155,23 @@ Game_SlingshotOutput :: union {
 	Game_SlingshotOutput_Celestial,
 }
 
+Game_SlingshotSnap :: struct {
+	active:    bool,
+	start_pos: rl.Vector2,
+	end_pos:   rl.Vector2,
+	timer:     f32,
+	color:     rl.Color,
+}
+
+Game_RingFlash :: struct {
+	active:     bool,
+	pos:        rl.Vector2,
+	radius:     f32,
+	max_radius: f32,
+	color:      rl.Color,
+	life:       f32, // 1.0 down to 0.0
+}
+
 Game_Slingshot :: struct {
 	output:         Game_SlingshotOutput,
 	active:         bool,
@@ -162,8 +179,10 @@ Game_Slingshot :: struct {
 	start_pos:      rl.Vector2,
 	launch_power:   f32,
 	preview:        f32,
-	preview_points: [100]rl.Vector2,
+	preview_points: [600]rl.Vector2,
+	preview_times:  [600]f32,
 }
+
 
 Game_Event_ObjectSpawn :: struct {
 	pos:           rl.Vector2,
@@ -617,6 +636,11 @@ Game :: struct {
 
 	// Input -> Slingshot
 	slingshot:           Game_Slingshot,
+	slingshot_snap:      Game_SlingshotSnap,
+	ring_flashes:        [8]Game_RingFlash,
+	camera_shake_intensity: f32,
+	camera_shake_dir:    rl.Vector2,
+	slingshot_shimmer_time: f32,
 	available_objects:   bit_set[CelestialType],
 
 	// Timers
