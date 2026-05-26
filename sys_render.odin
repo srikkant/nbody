@@ -780,6 +780,8 @@ sys_render_collect_gravity_wells :: proc(
 	temp_count := 0
 
 	for i in 0 ..< g.entities_count {
+		if temp_count >= MAX_ENTITIES do break
+
 		e := &g.entities[i]
 		if !(PHYSICS_SIG <= e.sig) do continue
 		if e.mass <= 0.0 do continue
@@ -794,9 +796,10 @@ sys_render_collect_gravity_wells :: proc(
 			radius    = e.radius,
 			influence = influence,
 		}
+		temp_count += 1
 	}
 
-	if g.slingshot.active {
+	if g.slingshot.active && temp_count < MAX_ENTITIES {
 		launch_type: CelestialType
 		switch out in g.slingshot.output {
 		case Game_SlingshotOutput_Emitter:
