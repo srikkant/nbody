@@ -86,7 +86,6 @@ sys_input :: proc(g: ^Game) {
 				payload_mass := event.density * (event.radius * event.radius)
 				g.camera_shake_intensity = clamp(math.sqrt(payload_mass) * 0.45, 0.0, 25.0)
 
-				// Trigger physical engine shockwave entity at the release/spawn coordinates
 				sys_lifecycle_spawn_shockwave(g, g.slingshot.start_pos, f64(payload_mass * 2.0))
 
 				// Trigger chromatic ring flash in an available slot

@@ -3,7 +3,11 @@ package main
 import "core:math"
 import rl "vendor:raylib"
 
-physics_get_total_acceleration_at_pos :: proc(g: ^Game, target_pos: rl.Vector2, target_radius: f32) -> rl.Vector2 {
+physics_get_total_acceleration_at_pos :: proc(
+	g: ^Game,
+	target_pos: rl.Vector2,
+	target_radius: f32,
+) -> rl.Vector2 {
 	total_accel := rl.Vector2(0)
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
@@ -185,9 +189,13 @@ sys_render_slingshot :: proc(g: ^Game) {
 	for step in 1 ..= BEZIER_STEPS {
 		t_val := f32(step) / f32(BEZIER_STEPS)
 		one_minus_t := f32(1.0) - t_val
-		curr_point := one_minus_t * one_minus_t * P0 + f32(2.0) * one_minus_t * t_val * P1 + t_val * t_val * P2
+		curr_point :=
+			one_minus_t * one_minus_t * P0 +
+			f32(2.0) * one_minus_t * t_val * P1 +
+			t_val * t_val * P2
 
-		line_col := g.slingshot.can_launch ? g.theme.ui_slingshot_launch_ok_color : g.theme.ui_slingshot_launch_err_color
+		line_col :=
+			g.slingshot.can_launch ? g.theme.ui_slingshot_launch_ok_color : g.theme.ui_slingshot_launch_err_color
 		line_col.a = u8(math.lerp(f32(220.0), f32(90.0), t_val))
 
 		rl.DrawLineEx(prev_point, curr_point, 1.2, line_col)
@@ -255,7 +263,10 @@ sys_render_slingshot :: proc(g: ^Game) {
 			total_cycle_time := math.max(total_sim_time, min_cycle_time_sim)
 
 			// Advance shimmer time by simulated delta time
-			g.slingshot_shimmer_time = math.mod(g.slingshot_shimmer_time + dt * g.params.physics.simulation_rate_multiplier, total_cycle_time)
+			g.slingshot_shimmer_time = math.mod(
+				g.slingshot_shimmer_time + dt * g.params.physics.simulation_rate_multiplier,
+				total_cycle_time,
+			)
 
 			// Only render the shimmer pulse if it is within the active simulated path time
 			if g.slingshot_shimmer_time < total_sim_time {
@@ -270,32 +281,32 @@ sys_render_slingshot :: proc(g: ^Game) {
 					}
 				}
 
-			// Render glowing energy comet trail in additive mode for intense brightness and 5% larger size
-			rl.BeginBlendMode(.ADDITIVE)
-			TRAIL_LEN :: 10
-			for k in 0 ..< TRAIL_LEN {
-				idx := shimmer_idx - k
-				// Loop or clamp: clamping provides a cleaner start-to-end flow
-				if idx >= 0 && idx < int(actual_frames) {
-					pt := g.slingshot.preview_points[idx]
-					trail_t := f32(k) / f32(TRAIL_LEN)
+				// Render glowing energy comet trail in additive mode for intense brightness and 5% larger size
+				rl.BeginBlendMode(.ADDITIVE)
+				TRAIL_LEN :: 10
+				for k in 0 ..< TRAIL_LEN {
+					idx := shimmer_idx - k
+					// Loop or clamp: clamping provides a cleaner start-to-end flow
+					if idx >= 0 && idx < int(actual_frames) {
+						pt := g.slingshot.preview_points[idx]
+						trail_t := f32(k) / f32(TRAIL_LEN)
 
-					// Intense white-hot core and vibrant payload-themed outer glow
-					shimmer_alpha := u8(f32(255.0) * (f32(1.0) - trail_t))
+						// Intense white-hot core and vibrant payload-themed outer glow
+						shimmer_alpha := u8(f32(255.0) * (f32(1.0) - trail_t))
 
-					shimmer_core_col := rl.Color{255, 255, 255, shimmer_alpha}
-					shimmer_glow_col := payload_color
-					shimmer_glow_col.a = shimmer_alpha
+						shimmer_core_col := rl.Color{255, 255, 255, shimmer_alpha}
+						shimmer_glow_col := payload_color
+						shimmer_glow_col.a = shimmer_alpha
 
-					// Exactly 5% larger than usual (usual glow is 3.5, usual core is 1.8)
-					glow_radius := f32(3.675) * (f32(1.0) - trail_t * f32(0.35))
-					core_radius := f32(1.89) * (f32(1.0) - trail_t * f32(0.55))
+						// Exactly 5% larger than usual (usual glow is 3.5, usual core is 1.8)
+						glow_radius := f32(3.675) * (f32(1.0) - trail_t * f32(0.35))
+						core_radius := f32(1.89) * (f32(1.0) - trail_t * f32(0.55))
 
-					rl.DrawCircleV(pt, glow_radius, shimmer_glow_col)
-					rl.DrawCircleV(pt, core_radius, shimmer_core_col)
+						rl.DrawCircleV(pt, glow_radius, shimmer_glow_col)
+						rl.DrawCircleV(pt, core_radius, shimmer_core_col)
+					}
 				}
-			}
-			rl.EndBlendMode()
+				rl.EndBlendMode()
 			}
 		}
 	}

@@ -10,6 +10,28 @@ import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
+sys_debug :: proc(g: ^Game) {
+	sys_debug_input(g)
+	sys_debug_init_once(g)
+	sys_debug_draw_panel(g)
+}
+
+sys_debug_input :: proc(g: ^Game) {
+	if rl.IsKeyPressed(.D) {
+		g.draw_debug_panel = !g.draw_debug_panel
+	}
+
+	if !g.draw_debug_panel {
+		g.input_blocked = false
+		rl.HideCursor()
+		return
+	}
+
+	rl.ShowCursor()
+	debug_rect := debug_get_panel_rect(g)
+	g.input_blocked = rl.CheckCollisionPointRec(rl.GetMousePosition(), debug_rect)
+}
+
 debug_get_panel_rect :: proc(g: ^Game) -> rl.Rectangle {
 	ww := f32(rl.GetScreenWidth())
 	wh := f32(rl.GetScreenHeight())
@@ -23,12 +45,8 @@ debug_get_panel_rect :: proc(g: ^Game) -> rl.Rectangle {
 	}
 }
 
-color_to_int :: proc(col: rl.Color) -> c.int {
-	return c.int(col.r) << 24 | c.int(col.g) << 16 | c.int(col.b) << 8 | c.int(col.a)
-}
-
-sys_debug_init :: proc(g: ^Game) {
-	if g.debug.initialized do return
+sys_debug_init_once :: proc(g: ^Game) {
+	if g.debug.initialized || !g.draw_debug_panel do return
 
 	// Use custom style overrides on Raygui defaults to match Cosmic Space theme
 	rl.GuiSetStyle(rl.GuiControl.DEFAULT, c.int(rl.GuiDefaultProperty.TEXT_SIZE), 11)
@@ -101,20 +119,6 @@ sys_debug_init :: proc(g: ^Game) {
 
 	// Expand initial focus areas
 	g.debug.sections_open = {.LaunchControls, .Diagnostics, .Actions}
-}
-
-sys_debug_input :: proc(g: ^Game) {
-	if rl.IsKeyPressed(.D) do g.draw_debug_panel = !g.draw_debug_panel
-
-	if g.draw_debug_panel {
-		if rl.IsCursorHidden() do rl.ShowCursor()
-		debug_rect := debug_get_panel_rect(g)
-		g.input_blocked = rl.CheckCollisionPointRec(rl.GetMousePosition(), debug_rect)
-		if g.input_blocked do g.slingshot.active = false
-	} else {
-		g.input_blocked = false
-		if rl.IsCursorHidden() do rl.HideCursor()
-	}
 }
 
 draw_section_header :: proc(
@@ -277,14 +281,12 @@ debug_menu_apply_slingshot :: proc(g: ^Game) {
 	}
 }
 
-sys_debug :: proc(g: ^Game) {
+sys_debug_draw_panel :: proc(g: ^Game) {
 	if !g.draw_debug_panel do return
 
 	rl.BeginMode2D(g.camera)
 	sys_debug_render_world(g)
 	rl.EndMode2D()
-
-	sys_debug_init(g)
 
 	panel_rect := debug_get_panel_rect(g)
 

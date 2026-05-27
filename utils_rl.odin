@@ -1,5 +1,6 @@
 package main
 
+import "core:c"
 import rl "vendor:raylib"
 
 rl_text_measure :: proc(g: ^Game, type: Game_FontType, text: cstring) -> rl.Vector2 {
@@ -86,4 +87,8 @@ rl_is_mouse_button_down :: proc(g: ^Game, button: rl.MouseButton) -> bool {
 rl_is_mouse_button_released :: proc(g: ^Game, button: rl.MouseButton) -> bool {
 	if g.input_blocked do return false
 	return rl.IsMouseButtonReleased(button)
+}
+
+color_to_int :: proc(col: rl.Color) -> c.int {
+	return c.int(col.r) << 24 | c.int(col.g) << 16 | c.int(col.b) << 8 | c.int(col.a)
 }

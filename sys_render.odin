@@ -154,8 +154,6 @@ sys_render_cursor :: proc(g: ^Game) {
 	)
 }
 
-
-
 sys_add_entity_to_layer :: proc(g: ^Game, id: Entity, layer: Game_RenderLayerType) {
 	g.render.layers[layer].entities[g.render.layers[layer].count] = Entity(id)
 	g.render.layers[layer].count += 1
@@ -211,7 +209,6 @@ catmull_rom :: proc(p0, p1, p2, p3: rl.Vector2, t: f32) -> rl.Vector2 {
 				(-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3) \
 	)
 }
-
 
 sys_render_entities :: proc(g: ^Game) {
 	for id in 0 ..< g.entities_count {

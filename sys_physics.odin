@@ -13,7 +13,8 @@ sys_physics :: proc(g: ^Game) {
 		if !(PHYSICS_SIG <= e1.sig) do continue
 
 		total_accel := rl.Vector2(0)
-		e1_is_new := g.elapsed - e1.life.created_at < g.params.physics.spawn_invincibility_duration_sec
+		e1_is_new :=
+			g.elapsed - e1.life.created_at < g.params.physics.spawn_invincibility_duration_sec
 		e1_is_star := e1.celestial.type == .Star
 
 		for j in 0 ..< g.entities_count {
@@ -36,7 +37,8 @@ sys_physics :: proc(g: ^Game) {
 			total_accel += accel
 
 			e2_is_star := e2.celestial.type == .Star
-			e2_is_new := g.elapsed - e2.life.created_at < g.params.physics.spawn_invincibility_duration_sec
+			e2_is_new :=
+				g.elapsed - e2.life.created_at < g.params.physics.spawn_invincibility_duration_sec
 
 			invincible := (e1_is_new || e2_is_new) && !(e1_is_star || e2_is_star)
 

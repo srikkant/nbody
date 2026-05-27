@@ -1,6 +1,6 @@
 package main
 
-sys_emitters :: proc(g: ^Game) {
+sys_automation :: proc(g: ^Game) {
 	if g.paused do return
 	dt := frame_time(g)
 

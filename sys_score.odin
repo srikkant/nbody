@@ -14,7 +14,9 @@ sys_score :: proc(g: ^Game) {
 		if g.timers[.Score].done && KE_SCORE_SIG <= e.sig {
 			mass_score := e.mass
 			vel_score := rl.Vector2LengthSqr(e.velocity.current)
-			pos_score := 1 / (g.params.physics.gravity_softening_factor + rl.Vector2LengthSqr(e.pos.current))
+			pos_score :=
+				1 /
+				(g.params.physics.gravity_softening_factor + rl.Vector2LengthSqr(e.pos.current))
 
 			g.energy += f64(
 				g.params.physics.energy_gain_coefficient *

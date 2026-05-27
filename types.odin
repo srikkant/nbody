@@ -598,67 +598,67 @@ Game_DebugState :: struct {
 }
 
 Game :: struct {
-	elapsed:             f32,
-	params:              Game_Parameters,
-	mouse_pos:           rl.Vector2,
+	elapsed:                f32,
+	params:                 Game_Parameters,
+	mouse_pos:              rl.Vector2,
 
 	// Event queue
-	events:              [MAX_ENTITIES]Game_Event,
-	events_count:        u64,
+	events:                 [MAX_ENTITIES]Game_Event,
+	events_count:           u64,
 
 	// Modifiers / Upgrades
-	modifiers:           [MAX_MODIFIERS]Game_Modifier,
+	modifiers:              [MAX_MODIFIERS]Game_Modifier,
 
 	// Render
-	theme:               Game_Theme,
-	camera:              rl.Camera2D,
-	render:              Game_RenderState,
-	bg_stars:            [BG_STAR_COUNT]Game_BgStar,
-	bg_nebulae:          [BG_NEBULA_COUNT]Game_BgNebula,
+	theme:                  Game_Theme,
+	camera:                 rl.Camera2D,
+	render:                 Game_RenderState,
+	bg_stars:               [BG_STAR_COUNT]Game_BgStar,
+	bg_nebulae:             [BG_NEBULA_COUNT]Game_BgNebula,
 
 	// Assets
-	assets:              Assets_Map,
-	textures:            [Game_TextureType]Game_Texture,
-	shaders:             [Game_ShaderType]Game_Shader,
-	fonts:               [Game_FontType]Game_Font,
+	assets:                 Assets_Map,
+	textures:               [Game_TextureType]Game_Texture,
+	shaders:                [Game_ShaderType]Game_Shader,
+	fonts:                  [Game_FontType]Game_Font,
 
 	// Special render textures
 
 
 	// View options
-	show_orbits:         bool,
+	show_orbits:            bool,
 
 	// Entities
-	entities:            #soa[MAX_ENTITIES]Game_Entity,
-	entities_count:      u64,
-	free_entities:       [MAX_ENTITIES]Entity,
-	free_entities_count: u64,
+	entities:               #soa[MAX_ENTITIES]Game_Entity,
+	entities_count:         u64,
+	free_entities:          [MAX_ENTITIES]Entity,
+	free_entities_count:    u64,
 
 	// Input -> Slingshot
-	slingshot:           Game_Slingshot,
-	slingshot_snap:      Game_SlingshotSnap,
-	ring_flashes:        [8]Game_RingFlash,
+	slingshot:              Game_Slingshot,
+	slingshot_snap:         Game_SlingshotSnap,
+	ring_flashes:           [8]Game_RingFlash,
 	camera_shake_intensity: f32,
-	camera_shake_dir:    rl.Vector2,
+	camera_shake_dir:       rl.Vector2,
 	slingshot_shimmer_time: f32,
-	available_objects:   bit_set[CelestialType],
+	available_objects:      bit_set[CelestialType],
 
 	// Timers
 	// These are updated every frame
-	timers:              [Game_TimerType]Timer,
+	timers:                 [Game_TimerType]Timer,
 
 	// Score
-	energy:              f64,
-	energy_rate_ticker:  int,
-	energy_gains:        [AVG_CALC_TICKS]f64,
-	energy_losses:       [AVG_CALC_TICKS]f64,
-	total_objects:       int,
+	energy:                 f64,
+	energy_rate_ticker:     int,
+	energy_gains:           [AVG_CALC_TICKS]f64,
+	energy_losses:          [AVG_CALC_TICKS]f64,
+	total_objects:          int,
 
 	// Pause
-	paused:              bool,
+	paused:                 bool,
 
 	// Debug
-	draw_debug_panel:    bool,
-	debug:               Game_DebugState,
-	input_blocked:       bool,
+	draw_debug_panel:       bool,
+	debug:                  Game_DebugState,
+	input_blocked:          bool,
 }

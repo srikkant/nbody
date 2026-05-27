@@ -9,6 +9,7 @@ nbody.dSYM/
 *.pdb
 *.dSYM
 *.rdi
+*.bak
 
 .antigravitycli/
 

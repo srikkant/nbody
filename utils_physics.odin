@@ -16,7 +16,9 @@ physics_get_gravitational_acceleration :: proc(
 ) {
 	diff := source_pos - target_pos
 	r2 := diff.x * diff.x + diff.y * diff.y
-	r3 := (r2 + g.params.physics.gravity_softening_factor) * math.sqrt(r2 + g.params.physics.gravity_softening_factor)
+	r3 :=
+		(r2 + g.params.physics.gravity_softening_factor) *
+		math.sqrt(r2 + g.params.physics.gravity_softening_factor)
 
 	strength := g.params.physics.gravity_constant * source_mass
 	accel := rl.Vector2{(strength * diff.x) / r3, (strength * diff.y) / r3}

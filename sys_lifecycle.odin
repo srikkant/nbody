@@ -507,6 +507,7 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 
 sys_lifecycle :: proc(g: ^Game) {
 	if g.paused do return
+
 	for i in 0 ..< g.events_count {
 		switch &event in g.events[i] {
 		case Game_Event_ObjectSpawn:
