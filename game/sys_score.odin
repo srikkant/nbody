@@ -13,8 +13,7 @@ sys_score :: proc(g: ^Game) {
 			mass_score := e.mass
 			vel_score := vec2_length_sq(e.velocity.current)
 			pos_score :=
-				1 /
-				(g.params.physics.gravity_softening_factor + vec2_length_sq(e.pos.current))
+				1 / (g.params.physics.gravity_softening_factor + vec2_length_sq(e.pos.current))
 
 			g.energy += f64(
 				g.params.physics.energy_gain_coefficient *
