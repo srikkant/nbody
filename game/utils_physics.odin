@@ -1,4 +1,4 @@
-package main
+package game
 
 import "core:math"
 import rl "vendor:raylib"
@@ -34,8 +34,4 @@ physics_get_slingshot_release_velocity :: proc(g: ^Game, release_pos: rl.Vector2
 physics_radius_from_mass_density :: proc(mass: f32, density: f32) -> f32 {
 	if density <= 0 do return 0
 	return math.sqrt(mass / density)
-}
-
-frame_time :: proc(g: ^Game) -> f32 {
-	return math.min(rl.GetFrameTime(), g.params.physics.max_delta_time_sec)
 }

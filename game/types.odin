@@ -1,4 +1,4 @@
-package main
+package game
 
 import rl "vendor:raylib"
 
@@ -599,6 +599,7 @@ Game_DebugState :: struct {
 
 Game :: struct {
 	elapsed:                f32,
+	dt:                     f32,
 	params:                 Game_Parameters,
 	mouse_pos:              rl.Vector2,
 

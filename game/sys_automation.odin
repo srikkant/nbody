@@ -1,8 +1,8 @@
-package main
+package game
 
 sys_automation :: proc(g: ^Game) {
 	if g.paused do return
-	dt := frame_time(g)
+	dt := g.dt
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]

@@ -1,5 +1,6 @@
-package main
+package game
 
+import "core:math"
 import rl "vendor:raylib"
 
 Game_InitParams :: struct {
@@ -82,6 +83,8 @@ game_free :: proc(g: ^Game) {
 }
 
 game_run :: proc(g: ^Game) {
+	g.dt = math.min(rl.GetFrameTime(), g.params.physics.max_delta_time_sec)
+
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
 

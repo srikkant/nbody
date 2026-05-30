@@ -1,4 +1,4 @@
-package main
+package game
 
 import "core:math"
 import rl "vendor:raylib"
@@ -241,7 +241,7 @@ sys_lifecycle_collision_classify :: proc(
 		g.params.physics.shatter_base_energy *
 		((e1.mass + e2.mass) / math.max(e1.radius + e2.radius, 1.0))
 
-	rel_speed_sq := rl.Vector2LengthSqr(e1.velocity.current - e2.velocity.current)
+	rel_speed_sq := vec2_length_sq(e1.velocity.current - e2.velocity.current)
 	if rel_speed_sq > shatter_threshold_sq do return .Shatter
 
 	return .Merge
@@ -294,7 +294,7 @@ sys_lifecycle_resolve_shatter :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	e1 := &g.entities[e.id1]
 	e2 := &g.entities[e.id2]
 
-	rel_speed := rl.Vector2Length(e1.velocity.current - e2.velocity.current)
+	rel_speed := vec2_length(e1.velocity.current - e2.velocity.current)
 	impact_point := (e1.pos.current + e2.pos.current) * 0.5
 
 	mass := f64(e1.mass + e2.mass) * 0.5
@@ -331,7 +331,7 @@ sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^Game_Event_Collision) {
 
 	delete_entities[small_id] = true
 
-	rel_speed := rl.Vector2Length(e1.velocity.current - e2.velocity.current)
+	rel_speed := vec2_length(e1.velocity.current - e2.velocity.current)
 	loss := math.min(
 		big_mass * g.params.physics.collision_debris_max_loss_fraction,
 		small_mass *
@@ -404,7 +404,7 @@ sys_lifecycle_handle_destroyed :: proc(g: ^Game, event: ^Game_Event_ObjectDestro
 
 sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 	cursor := &g.mouse_pos
-	dt := frame_time(g)
+	dt := g.dt
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
@@ -444,7 +444,7 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 }
 
 sys_lifecycle_update_entities :: proc(g: ^Game) {
-	dt := frame_time(g)
+	dt := g.dt
 
 	for i in 0 ..< MAX_ENTITIES {
 		if delete_entities[i] {

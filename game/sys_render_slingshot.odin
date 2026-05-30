@@ -1,4 +1,4 @@
-package main
+package game
 
 import "core:math"
 import rl "vendor:raylib"
@@ -72,7 +72,7 @@ rk4_step :: proc(g: ^Game, pos: ^rl.Vector2, vel: ^rl.Vector2, dt: f32, radius: 
 }
 
 sys_render_slingshot :: proc(g: ^Game) {
-	dt := frame_time(g)
+	dt := g.dt
 
 	// 1. Update and draw slingshot release snap animation
 	if g.slingshot_snap.active {
@@ -133,7 +133,7 @@ sys_render_slingshot :: proc(g: ^Game) {
 
 	end := g.mouse_pos
 	drag := end - g.slingshot.start_pos
-	pull_dist := rl.Vector2Length(drag)
+	pull_dist := vec2_length(drag)
 
 	launch_type: CelestialType
 	switch out in g.slingshot.output {
@@ -213,7 +213,7 @@ sys_render_slingshot :: proc(g: ^Game) {
 	g.slingshot.preview_times[0] = 0.0
 	actual_frames: i32 = 0
 
-	base_dt := frame_time(g) * g.params.physics.simulation_rate_multiplier
+	base_dt := g.dt * g.params.physics.simulation_rate_multiplier
 	accumulated_t: f32 = 0.0
 
 	for idx in 1 ..< frames {

@@ -2,7 +2,7 @@
 This file should only contain compile-time constants.
 Everything else should be defined in the game params/theme.
 */
-package main
+package game
 
 import "core:math"
 

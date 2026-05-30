@@ -6,6 +6,7 @@ import "base:intrinsics"
 import "base:runtime"
 import "core:c"
 import "core:mem"
+import "game"
 import rl "vendor:raylib"
 
 @(private = "file")
@@ -145,7 +146,7 @@ emscripten_allocator_proc :: proc(
 	return nil, .Mode_Not_Implemented
 }
 
-g: ^Game
+g: ^game.Game
 
 @(export)
 start :: proc "c" (h: c.int, w: c.int) {
@@ -155,13 +156,13 @@ start :: proc "c" (h: c.int, w: c.int) {
 
 	web_context = context
 
-	g = game_init({h = h, w = w})
+	g = game.game_init({h = h, w = w})
 }
 
 @(export)
 run :: proc "c" () {
 	context = web_context
-	game_run(g)
+	game.game_run(g)
 }
 
 @(export)

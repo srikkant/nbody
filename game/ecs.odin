@@ -1,4 +1,4 @@
-package main
+package game
 
 entity_create :: proc(g: ^Game) -> Entity {
 	id: Entity

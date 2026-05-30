@@ -1,10 +1,8 @@
-package main
-
-import rl "vendor:raylib"
+package game
 
 sys_score :: proc(g: ^Game) {
 	if g.paused do return
-	dt := frame_time(g)
+	dt := g.dt
 
 	curr_energy := g.energy
 
@@ -13,10 +11,10 @@ sys_score :: proc(g: ^Game) {
 
 		if g.timers[.Score].done && KE_SCORE_SIG <= e.sig {
 			mass_score := e.mass
-			vel_score := rl.Vector2LengthSqr(e.velocity.current)
+			vel_score := vec2_length_sq(e.velocity.current)
 			pos_score :=
 				1 /
-				(g.params.physics.gravity_softening_factor + rl.Vector2LengthSqr(e.pos.current))
+				(g.params.physics.gravity_softening_factor + vec2_length_sq(e.pos.current))
 
 			g.energy += f64(
 				g.params.physics.energy_gain_coefficient *

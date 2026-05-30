@@ -1,4 +1,4 @@
-package main
+package game
 import "core:math"
 import rl "vendor:raylib"
 
@@ -7,7 +7,7 @@ input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
 }
 
 sys_input :: proc(g: ^Game) {
-	dt := frame_time(g)
+	dt := g.dt
 
 	g.mouse_pos = input_mouse_pos(g)
 
@@ -58,7 +58,7 @@ sys_input :: proc(g: ^Game) {
 			event.emitter.emit_color = color
 			cost = f64(
 				g.params.physics.energy_loss_coefficient *
-				(event.density * event.radius * event.radius * rl.Vector2LengthSqr(vel)),
+				(event.density * event.radius * event.radius * vec2_length_sq(vel)),
 			)
 		case Game_SlingshotOutput_Celestial:
 			event.celestial = out.celestial
@@ -70,7 +70,7 @@ sys_input :: proc(g: ^Game) {
 			cost = f64(
 				g.params.celestials[out.celestial.type].launch_cost +
 				g.params.physics.energy_loss_coefficient *
-					(event.density * event.radius * event.radius * rl.Vector2LengthSqr(vel)),
+					(event.density * event.radius * event.radius * vec2_length_sq(vel)),
 			)
 		}
 

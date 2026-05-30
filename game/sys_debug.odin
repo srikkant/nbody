@@ -3,7 +3,7 @@
 // This is almost entirely vibecoded.
 //
 
-package main
+package game
 
 import "core:c"
 import "core:fmt"
@@ -454,7 +454,7 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 		draw_label_val("fps", cstring(raw_data(str)), startX, &curr_y, w)
 
 		// Frame Time
-		str = fmt.bprintf(buf[:], "%.2f ms", frame_time(g) * 1000.0)
+		str = fmt.bprintf(buf[:], "%.2f ms", g.dt * 1000.0)
 		buf[len(str)] = 0
 		draw_label_val("frame time", cstring(raw_data(str)), startX, &curr_y, w)
 
@@ -613,7 +613,7 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 			buf[len(str)] = 0
 			draw_label_val("coordinates", cstring(raw_data(str)), startX, &curr_y, w)
 
-			speed := rl.Vector2Length(target.velocity.current)
+			speed := vec2_length(target.velocity.current)
 			str = fmt.bprintf(buf[:], "%.1f", speed)
 			buf[len(str)] = 0
 			draw_label_val("speed", cstring(raw_data(str)), startX, &curr_y, w)

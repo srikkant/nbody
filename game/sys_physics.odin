@@ -1,11 +1,11 @@
-package main
+package game
 
 import "core:math"
 import rl "vendor:raylib"
 
 sys_physics :: proc(g: ^Game) {
 	if g.paused do return
-	dt := frame_time(g) * g.params.physics.simulation_rate_multiplier
+	dt := g.dt * g.params.physics.simulation_rate_multiplier
 
 	for i in 0 ..< g.entities_count {
 		e1 := &g.entities[i]
@@ -76,13 +76,13 @@ sys_physics :: proc(g: ^Game) {
 				}
 			}
 
-			curr_dist_sq := rl.Vector2LengthSqr(e.pos.current)
+			curr_dist_sq := vec2_length_sq(e.pos.current)
 			if curr_dist_sq > e.orbit.max_distance_sq {
 				e.orbit.max_distance_sq = curr_dist_sq
 			}
 		}
 
-		dist_sq := rl.Vector2LengthSqr(e.pos.current)
+		dist_sq := vec2_length_sq(e.pos.current)
 		if dist_sq > g.params.physics.world_radius_squared {
 			push_event(g, Game_Event_ObjectOutOfBounds{id = Entity(i)})
 		}
