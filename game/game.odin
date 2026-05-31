@@ -14,6 +14,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.InitWindow(params.w, params.h, "n-body forge")
 	rl.SetTargetFPS(60)
 	rl.HideCursor()
+	rl.SetExitKey(.KEY_NULL)
 
 	g := new(Game)
 
@@ -71,7 +72,48 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 		},
 	)
 
+	g.state = .Menu
+
 	return g
+}
+
+game_reset :: proc(g: ^Game) {
+	// 1. Clear all entities & event queues
+	g.entities_count = 0
+	g.free_entities_count = 0
+	for i in 0 ..< MAX_ENTITIES {
+		g.entities[i].sig = {}
+	}
+	g.events_count = 0
+
+	// 2. Reset energy and score averages
+	g.energy = 0
+	g.total_objects = 0
+	g.energy_rate_ticker = 0
+	for i in 0 ..< AVG_CALC_TICKS {
+		g.energy_gains[i] = 0
+		g.energy_losses[i] = 0
+	}
+
+	// 3. Reset camera and zoom
+	sys_camera_init(g)
+
+	// 4. Reset slingshot and timer states
+	g.slingshot.active = false
+	g.slingshot_snap.active = false
+	for i in Game_TimerType {
+		g.timers[i].curr = 0
+	}
+
+	// 5. Re-spawn central Star anchor
+	push_event(g, Game_Event_ObjectSpawn{
+		pos = rl.Vector2(0),
+		celestial = {.Star},
+		density = g.params.celestials[.Star].density,
+		radius = g.params.celestials[.Star].radius,
+		energy_source = {output = 10, timer = {interval = 1}},
+		renderable = {g.params.celestials[.Star].color},
+	})
 }
 
 game_free :: proc(g: ^Game) {
@@ -84,20 +126,46 @@ game_free :: proc(g: ^Game) {
 
 game_run :: proc(g: ^Game) {
 	g.dt = math.min(rl.GetFrameTime(), g.params.physics.max_delta_time_sec)
+	g.elapsed += g.dt
+
+	g.mouse_pos = input_mouse_pos(g)
+
+	// Centralized premium cursor visibility management
+	if g.state == .Menu || g.paused || g.draw_debug_panel {
+		rl.ShowCursor()
+	} else {
+		rl.HideCursor()
+	}
 
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
 
-	sys_input(g)
-	sys_modifier(g)
-	sys_automation(g)
-	sys_physics(g)
-	sys_score(g)
-	sys_lifecycle(g)
-	sys_camera(g)
-	sys_render(g)
+	if g.state == .Menu {
+		sys_camera(g)
+		sys_render(g)
+		sys_render_menu_main(g)
+	} else if g.state == .Playing {
+		if rl.IsKeyPressed(.ESCAPE) {
+			g.paused = !g.paused
+		}
 
-	sys_debug(g)
+		if !g.paused {
+			sys_input(g)
+			sys_modifier(g)
+			sys_automation(g)
+			sys_physics(g)
+			sys_score(g)
+			sys_lifecycle(g)
+			sys_camera(g)
+			sys_render(g)
+		} else {
+			sys_render(g)
+			sys_render_menu_pause(g)
+		}
+
+		// Always allow debug panel tweaks
+		sys_debug(g)
+	}
 
 	rl.EndDrawing()
 }

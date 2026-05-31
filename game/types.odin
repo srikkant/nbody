@@ -278,11 +278,18 @@ Game_TextureType :: enum {
 	BgStarFlare,
 }
 
+Game_State :: enum {
+	Menu,
+	Playing,
+}
+
 Game_FontType :: enum {
 	Heading,
 	Body,
 	Menu_Label,
+	Title,
 }
+
 
 Game_ShaderType :: enum {
 	Bg_Vignette,
@@ -655,7 +662,8 @@ Game :: struct {
 	energy_losses:          [AVG_CALC_TICKS]f64,
 	total_objects:          int,
 
-	// Pause
+	// State & Pause
+	state:                  Game_State,
 	paused:                 bool,
 
 	// Debug

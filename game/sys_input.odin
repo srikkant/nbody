@@ -12,7 +12,6 @@ sys_input :: proc(g: ^Game) {
 	g.mouse_pos = input_mouse_pos(g)
 
 	if !g.paused {
-		g.elapsed += dt
 		for i in Game_TimerType {
 			utils_math_update_timer(&g.timers[i], dt)
 		}

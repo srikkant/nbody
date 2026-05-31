@@ -145,6 +145,11 @@ assets_fonts_load :: proc(g: ^Game) {
 		font = .Body,
 		size = 11,
 	}
+
+	g.fonts[.Title] = {
+		font = .Heading,
+		size = 36,
+	}
 }
 
 assets_textures_load :: proc(g: ^Game) {
