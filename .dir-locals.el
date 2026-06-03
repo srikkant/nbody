@@ -8,4 +8,6 @@
                                         :type "lldb"
                                         :request "launch"
                                         :program "nbody"
-                                        :cwd ".")))))))
+                                        :cwd "."
+                                        :fn (lambda (config)
+                                              (dape-compile config "make debug")))))))))

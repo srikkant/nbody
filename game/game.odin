@@ -30,12 +30,6 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	sys_camera_init(g)
 	sys_lifecycle_init(g)
 
-	/*
-	TODO: Move to a dynamic menu
-	Sets up a new game.
-	This will eventually move to a menu system and allow the player to start a game.
-	*/
-
 	g.slingshot.output = Game_SlingshotOutput_Celestial {
 		celestial = {type = .DwarfPlanet},
 	}
@@ -78,15 +72,14 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 }
 
 game_reset :: proc(g: ^Game) {
-	// 1. Clear all entities & event queues
 	g.entities_count = 0
 	g.free_entities_count = 0
+	g.events_count = 0
+
 	for i in 0 ..< MAX_ENTITIES {
 		g.entities[i].sig = {}
 	}
-	g.events_count = 0
 
-	// 2. Reset energy and score averages
 	g.energy = 0
 	g.total_objects = 0
 	g.energy_rate_ticker = 0
@@ -95,25 +88,25 @@ game_reset :: proc(g: ^Game) {
 		g.energy_losses[i] = 0
 	}
 
-	// 3. Reset camera and zoom
 	sys_camera_init(g)
 
-	// 4. Reset slingshot and timer states
 	g.slingshot.active = false
 	g.slingshot_snap.active = false
 	for i in Game_TimerType {
 		g.timers[i].curr = 0
 	}
 
-	// 5. Re-spawn central Star anchor
-	push_event(g, Game_Event_ObjectSpawn{
-		pos = rl.Vector2(0),
-		celestial = {.Star},
-		density = g.params.celestials[.Star].density,
-		radius = g.params.celestials[.Star].radius,
-		energy_source = {output = 10, timer = {interval = 1}},
-		renderable = {g.params.celestials[.Star].color},
-	})
+	push_event(
+		g,
+		Game_Event_ObjectSpawn {
+			pos = rl.Vector2(0),
+			celestial = {.Star},
+			density = g.params.celestials[.Star].density,
+			radius = g.params.celestials[.Star].radius,
+			energy_source = {output = 10, timer = {interval = 1}},
+			renderable = {g.params.celestials[.Star].color},
+		},
+	)
 }
 
 game_free :: proc(g: ^Game) {
@@ -139,6 +132,17 @@ game_run :: proc(g: ^Game) {
 
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
+
+	switch g.state {
+	case .Menu:
+		{
+			sys_camera(g)
+			sys_render(g)
+			sys_render_menu_main(g)
+		}
+	case .Playing:
+		{}
+	}
 
 	if g.state == .Menu {
 		sys_camera(g)
@@ -169,3 +173,4 @@ game_run :: proc(g: ^Game) {
 
 	rl.EndDrawing()
 }
+

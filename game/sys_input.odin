@@ -1,20 +1,13 @@
 package game
 import "core:math"
-import rl "vendor:raylib"
-
-input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
-	return rl.GetScreenToWorld2D(rl.GetMousePosition(), g.camera)
-}
 
 sys_input :: proc(g: ^Game) {
 	dt := g.dt
 
 	g.mouse_pos = input_mouse_pos(g)
 
-	if !g.paused {
-		for i in Game_TimerType {
-			utils_math_update_timer(&g.timers[i], dt)
-		}
+	for i in Game_TimerType {
+		utils_math_update_timer(&g.timers[i], dt)
 	}
 
 	if rl_is_mouse_button_pressed(g, .LEFT) {
