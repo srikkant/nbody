@@ -110,11 +110,11 @@ game_reset :: proc(g: ^Game) {
 }
 
 game_free :: proc(g: ^Game) {
-	rl.CloseWindow()
-
 	sys_render_free(g)
 	assets_map_free(g)
 	free(g)
+
+	rl.CloseWindow()
 }
 
 game_run :: proc(g: ^Game) {

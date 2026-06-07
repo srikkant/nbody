@@ -605,6 +605,7 @@ Game_DebugState :: struct {
 }
 
 Game :: struct {
+	exit:                   bool,
 	elapsed:                f32,
 	dt:                     f32,
 	params:                 Game_Parameters,
@@ -671,3 +672,4 @@ Game :: struct {
 	debug:                  Game_DebugState,
 	input_blocked:          bool,
 }
+

@@ -19,7 +19,7 @@ sys_menu_draw_button :: proc(g: ^Game, text: cstring, rect: rl.Rectangle) -> boo
 	// Text selection coloring
 	text_color := hovered ? g.theme.ui_menu_item_selected_color : g.theme.ui_menu_item_color
 	text_size := rl_text_measure(g, .Body, text)
-	text_pos := rl.Vector2{
+	text_pos := rl.Vector2 {
 		rect.x + (rect.width - text_size.x) / 2.0,
 		rect.y + (rect.height - text_size.y) / 2.0,
 	}
@@ -30,7 +30,12 @@ sys_menu_draw_button :: proc(g: ^Game, text: cstring, rect: rl.Rectangle) -> boo
 	if hovered {
 		dot_y := rect.y + rect.height / 2.0
 		rl.DrawCircle(i32(rect.x + 12), i32(dot_y), 2.0, g.theme.ui_menu_item_selected_color)
-		rl.DrawCircle(i32(rect.x + rect.width - 12), i32(dot_y), 2.0, g.theme.ui_menu_item_selected_color)
+		rl.DrawCircle(
+			i32(rect.x + rect.width - 12),
+			i32(dot_y),
+			2.0,
+			g.theme.ui_menu_item_selected_color,
+		)
 	}
 
 	if hovered && rl.IsMouseButtonPressed(.LEFT) {
@@ -65,7 +70,7 @@ sys_render_menu_main :: proc(g: ^Game) {
 
 	// Text shadow
 	rl_text_draw(g, .Title, title_str, {title_x + 2, title_y + 2}, rl.Color{0, 0, 0, 160})
-	
+
 	// Pulsing glow alpha
 	glow_alpha := u8(180 + 75 * math.sin(g.elapsed * 4.0))
 	title_color := g.theme.ui_menu_item_selected_color
@@ -103,7 +108,7 @@ sys_render_menu_main :: proc(g: ^Game) {
 	}
 
 	if sys_menu_draw_button(g, "EXIT", {btn_x, exit_y, btn_width, btn_height}) {
-		rl.CloseWindow()
+		g.exit = true
 	}
 }
 
@@ -183,6 +188,7 @@ sys_render_menu_pause :: proc(g: ^Game) {
 	}
 
 	if sys_menu_draw_button(g, "EXIT", {btn_x, exit_y, btn_width, btn_height}) {
-		rl.CloseWindow()
+		g.exit = true
 	}
 }
+

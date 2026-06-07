@@ -4,7 +4,6 @@ package main
 
 import "core:mem"
 import "game"
-import rl "vendor:raylib"
 
 main :: proc() {
 	track := init_memory_tracker()
@@ -14,7 +13,8 @@ main :: proc() {
 	g := game.game_init({h = 810, w = 1440})
 	defer game.game_free(g)
 
-	for !rl.WindowShouldClose() {
+	for !g.exit {
 		game.game_run(g)
 	}
 }
+
