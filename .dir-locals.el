@@ -5,9 +5,8 @@
                                         command "codelldb"
                                         command-args ("--port" :autoport)
                                         port :autoport
+                                        compile (lambda () (concat "make -C " (project-root (project-current)) " debug"))
                                         :type "lldb"
                                         :request "launch"
-                                        :program "nbody"
-                                        :cwd "."
-                                        :fn (lambda (config)
-                                              (dape-compile config "make debug")))))))))
+                                        :program (lambda () (concat (project-root (project-current)) "nbody"))
+                                        :cwd (lambda () (project-root (project-current))))))))))
