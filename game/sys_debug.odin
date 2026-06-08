@@ -18,18 +18,18 @@ sys_debug :: proc(g: ^Game) {
 
 sys_debug_input :: proc(g: ^Game) {
 	if rl.IsKeyPressed(.D) {
-		g.draw_debug_panel = !g.draw_debug_panel
+		g.debug.draw_panel = !g.debug.draw_panel
 	}
 
-	if !g.draw_debug_panel {
-		g.input_blocked = false
+	if !g.debug.draw_panel {
+		g.debug.input_blocked = false
 		rl.HideCursor()
 		return
 	}
 
 	rl.ShowCursor()
 	debug_rect := debug_get_panel_rect(g)
-	g.input_blocked = rl.CheckCollisionPointRec(rl.GetMousePosition(), debug_rect)
+	g.debug.input_blocked = rl.CheckCollisionPointRec(rl.GetMousePosition(), debug_rect)
 }
 
 debug_get_panel_rect :: proc(g: ^Game) -> rl.Rectangle {
@@ -46,7 +46,7 @@ debug_get_panel_rect :: proc(g: ^Game) -> rl.Rectangle {
 }
 
 sys_debug_init_once :: proc(g: ^Game) {
-	if g.debug.initialized || !g.draw_debug_panel do return
+	if g.debug.initialized || !g.debug.draw_panel do return
 
 	// Use custom style overrides on Raygui defaults to match Cosmic Space theme
 	rl.GuiSetStyle(rl.GuiControl.DEFAULT, c.int(rl.GuiDefaultProperty.TEXT_SIZE), 11)
@@ -261,8 +261,8 @@ spawn_random_celestials :: proc(g: ^Game) {
 }
 
 debug_menu_apply_slingshot :: proc(g: ^Game) {
-	ct := g.render.menu.selected_celestial
-	switch g.render.menu.selected_mode {
+	ct := g.debug.selected_slingshot_celestial
+	switch g.debug.selected_slingshot_mode {
 	case .Normal:
 		g.slingshot.output = Game_SlingshotOutput_Celestial {
 			celestial = {type = ct},
@@ -282,9 +282,9 @@ debug_menu_apply_slingshot :: proc(g: ^Game) {
 }
 
 sys_debug_draw_panel :: proc(g: ^Game) {
-	if !g.draw_debug_panel do return
+	if !g.debug.draw_panel do return
 
-	rl.BeginMode2D(g.camera)
+	rl.BeginMode2D(g.camera.rl_cam)
 	sys_debug_render_world(g)
 	rl.EndMode2D()
 
@@ -320,14 +320,6 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 	startX := view_rect.x + 8
 	w := view_rect.width - 28
 
-	// Pause Toggle Checkbox
-	pause_rect := rl.Rectangle{startX, curr_y, 16, 16}
-	rl.GuiCheckBox(pause_rect, " Pause Simulation", &g.paused)
-	curr_y += 24
-
-	rl.GuiLine(rl.Rectangle{startX, curr_y, w, 10}, nil)
-	curr_y += 12
-
 	// =========================================================================
 	// LAUNCH CONTROLS (UPGRADE MENU)
 	// =========================================================================
@@ -337,7 +329,7 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 		rl.GuiLabel(rl.Rectangle{startX, curr_y, w, 18}, "Launch Mode:")
 		curr_y += 20
 
-		active_normal := g.render.menu.selected_mode == .Normal
+		active_normal := g.debug.selected_slingshot_mode == .Normal
 		prev_active_normal := active_normal
 		// Temporarily center text and remove padding for these buttons
 		rl.GuiSetStyle(
@@ -349,14 +341,14 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 		rl.GuiToggle(rl.Rectangle{startX, curr_y, w * 0.48, item_h}, "normal", &active_normal)
 		if active_normal != prev_active_normal {
 			if active_normal {
-				g.render.menu.selected_mode = .Normal
+				g.debug.selected_slingshot_mode = .Normal
 				debug_menu_apply_slingshot(g)
 			} else {
 				active_normal = true
 			}
 		}
 
-		active_emitter := g.render.menu.selected_mode == .Emitter
+		active_emitter := g.debug.selected_slingshot_mode == .Emitter
 		prev_active_emitter := active_emitter
 		rl.GuiToggle(
 			rl.Rectangle{startX + w * 0.52, curr_y, w * 0.48, item_h},
@@ -365,7 +357,7 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 		)
 		if active_emitter != prev_active_emitter {
 			if active_emitter {
-				g.render.menu.selected_mode = .Emitter
+				g.debug.selected_slingshot_mode = .Emitter
 				debug_menu_apply_slingshot(g)
 			} else {
 				active_emitter = true
@@ -404,7 +396,7 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 		g.debug.hover_celestial = -1
 		for ct, idx in launchable_celestials {
 			row_rect := rl.Rectangle{startX, curr_y, w, item_h}
-			selected := g.render.menu.selected_celestial == ct
+			selected := g.debug.selected_slingshot_celestial == ct
 
 			t_state := selected
 			prev_state := t_state
@@ -421,7 +413,7 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 
 			if t_state != prev_state {
 				if t_state {
-					g.render.menu.selected_celestial = ct
+					g.debug.selected_slingshot_celestial = ct
 					debug_menu_apply_slingshot(g)
 				}
 			}
@@ -477,7 +469,7 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 		draw_label_val("ecs active load", cstring(raw_data(str)), startX, &curr_y, w)
 
 		// Camera Zoom
-		str = fmt.bprintf(buf[:], "%.2fx", g.camera.zoom)
+		str = fmt.bprintf(buf[:], "%.2fx", g.camera.rl_cam.zoom)
 		buf[len(str)] = 0
 		draw_label_val("camera zoom", cstring(raw_data(str)), startX, &curr_y, w)
 
@@ -488,15 +480,15 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 		curr_y += 18
 
 		// Reserves
-		str = fmt.bprintf(buf[:], "%.1f", g.energy)
+		str = fmt.bprintf(buf[:], "%.1f", g.score.energy)
 		buf[len(str)] = 0
 		draw_label_val("reserves", cstring(raw_data(str)), startX, &curr_y, w)
 
 		avg_gain: f64 = 0
 		avg_loss: f64 = 0
 		for i in 0 ..< AVG_CALC_TICKS {
-			avg_gain += g.energy_gains[i] / AVG_CALC_TICKS
-			avg_loss += g.energy_losses[i] / AVG_CALC_TICKS
+			avg_gain += g.score.energy_gains[i] / AVG_CALC_TICKS
+			avg_loss += g.score.energy_losses[i] / AVG_CALC_TICKS
 		}
 		net_rate := avg_gain - avg_loss
 
@@ -1454,7 +1446,7 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 	// =========================================================================
 	if draw_section_header(g, "Quick Simulation Actions", .Actions, startX, &curr_y, w) {
 		if draw_button("Reset Params to Defaults", startX, &curr_y, w) {
-			params_init_defaults(&g.params)
+			params_init(&g.params)
 		}
 
 		if draw_button("Kill All Non-Star Entities", startX, &curr_y, w) {
@@ -1467,10 +1459,6 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 					}
 				}
 			}
-		}
-
-		if draw_button("Set Reserves to 1000 Energy", startX, &curr_y, w) {
-			g.energy = 1000.0
 		}
 
 		if draw_button("Spawn 10 Random Bodies", startX, &curr_y, w) {
@@ -1490,9 +1478,7 @@ sys_debug_draw_panel :: proc(g: ^Game) {
 }
 
 sys_debug_render_world :: proc(g: ^Game) {
-	if !g.draw_debug_panel do return
-
-	rl.BeginMode2D(g.camera)
+	rl.BeginMode2D(g.camera.rl_cam)
 	defer rl.EndMode2D()
 
 	closest_id, found := get_inspected_entity(g)
@@ -1561,3 +1547,4 @@ sys_debug_render_world :: proc(g: ^Game) {
 	)
 	rl.DrawCircle(i32(pos.x), i32(pos.y), 1.5, col)
 }
+

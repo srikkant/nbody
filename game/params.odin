@@ -2,7 +2,7 @@ package game
 
 import rl "vendor:raylib"
 
-params_init_defaults :: proc(p: ^Game_Parameters) {
+params_init :: proc(p: ^Game_Parameters) {
 	// ==========================================
 	// PHYSICS & GAMEPLAY PARAMETERS
 	// ==========================================
@@ -316,8 +316,8 @@ params_init_defaults :: proc(p: ^Game_Parameters) {
 	p.vfx.energy_fragment_size = 2.0
 }
 
-theme_init_default :: proc(t: ^Game_Theme) {
-	t.name = "Cosmic Space"
+theme_init :: proc(t: ^Game_Theme) {
+	t.name = "nbody: Default"
 	t.color_bg = rl.Color{12, 12, 24, 255}
 	t.bg_grid_color = rl.Color{0, 183, 255, 60}
 
@@ -331,7 +331,6 @@ theme_init_default :: proc(t: ^Game_Theme) {
 	t.star_colors[2] = rl.Color{230, 180, 255, 255}
 	t.star_colors[3] = rl.Color{255, 230, 150, 255}
 	t.star_colors[4] = rl.WHITE
-
 
 	t.ui_collect_area_opacity = 64
 	t.ui_slingshot_preview_color = rl.Color{255, 255, 255, 200}
@@ -352,3 +351,4 @@ theme_init_default :: proc(t: ^Game_Theme) {
 	t.bg_star_blink_amp_base = 0.5
 	t.bg_star_blink_amp_scale = 0.35
 }
+

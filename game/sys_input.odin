@@ -66,23 +66,22 @@ sys_input :: proc(g: ^Game) {
 			)
 		}
 
-		g.slingshot.can_launch = g.energy >= cost
+		g.slingshot.can_launch = g.score.energy >= cost
 
 		if rl_is_mouse_button_released(g, .LEFT) {
 			g.slingshot.active = false
 			if g.slingshot.can_launch {
 				push_event(g, event)
-				g.energy -= cost // TODO: should this be an event?
+				g.score.energy -= cost
 
-				// Trigger camera shake proportional to payload mass
 				payload_mass := event.density * (event.radius * event.radius)
-				g.camera_shake_intensity = clamp(math.sqrt(payload_mass) * 0.45, 0.0, 25.0)
+				g.camera.shake_intensity = clamp(math.sqrt(payload_mass) * 0.45, 0.0, 25.0)
 
 				sys_lifecycle_spawn_shockwave(g, g.slingshot.start_pos, f64(payload_mass * 2.0))
 
 				// Trigger chromatic ring flash in an available slot
-				for i in 0 ..< len(g.ring_flashes) {
-					flash := &g.ring_flashes[i]
+				for i in 0 ..< len(g.slingshot.ring_flashes) {
+					flash := &g.slingshot.ring_flashes[i]
 					if !flash.active {
 						flash.active = true
 						flash.pos = g.slingshot.start_pos
@@ -95,16 +94,25 @@ sys_input :: proc(g: ^Game) {
 				}
 
 				// Trigger slingshot snap animation
-				g.slingshot_snap.active = true
-				g.slingshot_snap.start_pos = g.slingshot.start_pos
-				g.slingshot_snap.end_pos = end
-				g.slingshot_snap.timer = 1.0
-				g.slingshot_snap.color = color
+				g.slingshot.snap.active = true
+				g.slingshot.snap.start_pos = g.slingshot.start_pos
+				g.slingshot.snap.end_pos = end
+				g.slingshot.snap.timer = 1.0
+				g.slingshot.snap.color = color
 			}
 		}
 	}
 
+	if rl_is_key_pressed(g, .ESCAPE) && g.status == .Paused {
+		g.status = .Playing
+	}
+
+	if rl_is_key_pressed(g, .ESCAPE) && g.status == .Playing {
+		g.status = .Paused
+	}
+
 	if rl_is_key_pressed(g, .T) {
-		g.show_orbits = !g.show_orbits
+		g.render.show_orbits = !g.render.show_orbits
 	}
 }
+

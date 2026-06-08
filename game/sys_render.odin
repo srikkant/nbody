@@ -3,7 +3,6 @@ package game
 import "core:math"
 import rl "vendor:raylib"
 
-
 sys_render_init :: proc(g: ^Game) {
 	ww := f32(rl.GetScreenWidth())
 	wh := f32(rl.GetScreenHeight())
@@ -56,7 +55,7 @@ sys_render_init :: proc(g: ^Game) {
 
 		color := g.theme.star_colors[rl.GetRandomValue(0, 4)]
 
-		g.bg_stars[i] = Game_BgStar {
+		g.bg.stars[i] = Game_BgStar {
 			pos         = rl.Vector2{x, y},
 			layer       = layer,
 			size        = size,
@@ -95,7 +94,7 @@ sys_render_init :: proc(g: ^Game) {
 		drift_phase :=
 			f32(rl.GetRandomValue(0, i32(g.params.background.star_blink_phase_max * 100))) / 100.0
 
-		g.bg_nebulae[i] = Game_BgNebula {
+		g.bg.nebulae[i] = Game_BgNebula {
 			pos         = rl.Vector2{neb_x, neb_y},
 			color       = g.theme.bg_nebula_colors[i],
 			radius      = radius,
@@ -105,8 +104,7 @@ sys_render_init :: proc(g: ^Game) {
 	}
 }
 
-sys_render_free :: proc(g: ^Game) {
-}
+sys_render_free :: proc(g: ^Game) {}
 
 sys_render :: proc(g: ^Game) {
 	ww := f32(rl.GetScreenWidth())
@@ -117,15 +115,15 @@ sys_render :: proc(g: ^Game) {
 
 	sys_render_bg(g)
 
-	rl.BeginMode2D(g.camera)
+	rl.BeginMode2D(g.camera.rl_cam)
 
 	for i in Game_RenderLayerType {
 		g.render.layers[i].count = 0
 	}
 
-	sys_render_cursor(g)
 	sys_render_slingshot(g)
 	sys_render_entities(g)
+	sys_render_cursor(g)
 
 	rl.EndMode2D()
 
@@ -133,10 +131,6 @@ sys_render :: proc(g: ^Game) {
 }
 
 sys_render_cursor :: proc(g: ^Game) {
-	// If mouse is hovering over custom UI / input blocked, don't draw custom cursor in world space
-	if g.input_blocked do return
-
-	// TODO: Move to a custom texture?
 	rl.DrawCircle(
 		i32(g.mouse_pos.x),
 		i32(g.mouse_pos.y),
@@ -176,10 +170,10 @@ sys_render_get_entity_draw_info :: proc(
 	ww := f32(rl.GetScreenWidth())
 	wh := f32(rl.GetScreenHeight())
 	world_screen_rect := rl.Rectangle {
-		g.camera.target.x - (ww / 2) / g.camera.zoom,
-		g.camera.target.y - (wh / 2) / g.camera.zoom,
-		ww / g.camera.zoom,
-		wh / g.camera.zoom,
+		g.camera.rl_cam.target.x - (ww / 2) / g.camera.rl_cam.zoom,
+		g.camera.rl_cam.target.y - (wh / 2) / g.camera.rl_cam.zoom,
+		ww / g.camera.rl_cam.zoom,
+		wh / g.camera.rl_cam.zoom,
 	}
 
 	hit_pos, out_of_bounds := geometry_get_rectangle_intersection_point(
@@ -262,7 +256,8 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Celestial_Terrestrial_Layer)
 
-	shader_terr := g.assets.shaders[g.shaders[.Celestial_Terrestrial_Layer].shader]
+	shader_terr :=
+		g.assets.assets_map.shaders[g.assets.shaders[.Celestial_Terrestrial_Layer].shader]
 	loc_glow_terr := rl.GetShaderLocation(shader_terr, "glow_intensity")
 
 	for i in 0 ..< g.render.layers[.Terrestrial].count {
@@ -280,7 +275,7 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Celestial_GasGiant_Layer)
 
-	shader_gas := g.assets.shaders[g.shaders[.Celestial_GasGiant_Layer].shader]
+	shader_gas := g.assets.assets_map.shaders[g.assets.shaders[.Celestial_GasGiant_Layer].shader]
 	loc_gas_sec := rl.GetShaderLocation(shader_gas, "seconds")
 	loc_glow_gas := rl.GetShaderLocation(shader_gas, "glow_intensity")
 	rl.SetShaderValue(shader_gas, loc_gas_sec, &g.elapsed, .FLOAT)
@@ -300,7 +295,7 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Celestial_Star_Layer)
 
-	shader_star := g.assets.shaders[g.shaders[.Celestial_Star_Layer].shader]
+	shader_star := g.assets.assets_map.shaders[g.assets.shaders[.Celestial_Star_Layer].shader]
 	loc_star_sec := rl.GetShaderLocation(shader_star, "seconds")
 	rl.SetShaderValue(shader_star, loc_star_sec, &g.elapsed, .FLOAT)
 
@@ -356,7 +351,7 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Energy_Shader)
 
-	energy_shader := g.assets.shaders[g.shaders[.Energy_Shader].shader]
+	energy_shader := g.assets.assets_map.shaders[g.assets.shaders[.Energy_Shader].shader]
 	energy_loc := rl.GetShaderLocation(energy_shader, "seconds")
 	rl.SetShaderValue(energy_shader, energy_loc, &g.elapsed, .FLOAT)
 
@@ -460,7 +455,7 @@ sys_render_entities :: proc(g: ^Game) {
 		}
 		ordered_points[e.orbit.count] = e.pos.current
 
-		if g.show_orbits {
+		if g.render.show_orbits {
 			rl.DrawLineStrip(
 				raw_data(ordered_points[:]),
 				i32(e.orbit.count + 1),
@@ -470,7 +465,7 @@ sys_render_entities :: proc(g: ^Game) {
 	}
 
 	rl_begin_shader(g, .Vfx_Shader)
-	vfx_shader := g.assets.shaders[g.shaders[.Vfx_Shader].shader]
+	vfx_shader := g.assets.assets_map.shaders[g.assets.shaders[.Vfx_Shader].shader]
 	loc_vfx_type := rl.GetShaderLocation(vfx_shader, "u_vfx_type")
 	loc_vfx_sec := rl.GetShaderLocation(vfx_shader, "seconds")
 	rl.SetShaderValue(vfx_shader, loc_vfx_sec, &g.elapsed, .FLOAT)
@@ -555,13 +550,13 @@ sys_render_bg :: proc(g: ^Game) {
 
 	// Render the nebulae
 	for i in 0 ..< BG_NEBULA_COUNT {
-		neb := g.bg_nebulae[i]
+		neb := g.bg.nebulae[i]
 
 		depth := g.params.background.nebula_layer_depth
 		zoom_scale := g.params.background.nebula_zoom_multiplier
 
-		dx := neb.pos.x - g.camera.target.x / depth
-		dy := neb.pos.y - g.camera.target.y / depth
+		dx := neb.pos.x - g.camera.rl_cam.target.x / depth
+		dy := neb.pos.y - g.camera.rl_cam.target.y / depth
 
 		dx_wrapped := math.mod(dx + L_x / 2.0, L_x)
 		if dx_wrapped < 0 do dx_wrapped += L_x
@@ -571,8 +566,8 @@ sys_render_bg :: proc(g: ^Game) {
 		if dy_wrapped < 0 do dy_wrapped += L_y
 		dy_wrapped -= L_y / 2.0
 
-		draw_x := cx + dx_wrapped * (1.0 + (g.camera.zoom - 1.0) * zoom_scale)
-		draw_y := cy + dy_wrapped * (1.0 + (g.camera.zoom - 1.0) * zoom_scale)
+		draw_x := cx + dx_wrapped * (1.0 + (g.camera.rl_cam.zoom - 1.0) * zoom_scale)
+		draw_y := cy + dy_wrapped * (1.0 + (g.camera.rl_cam.zoom - 1.0) * zoom_scale)
 
 		breath :=
 			g.params.background.nebula_pulsation_base +
@@ -581,9 +576,12 @@ sys_render_bg :: proc(g: ^Game) {
 		draw_radius :=
 			neb.radius *
 			breath *
-			(1.0 + (g.camera.zoom - 1.0) * g.params.background.nebula_zoom_radius_multiplier)
+			(1.0 +
+					(g.camera.rl_cam.zoom - 1.0) *
+						g.params.background.nebula_zoom_radius_multiplier)
+
 		alpha_scale := clamp(
-			g.params.background.nebula_alpha_zoom_numerator / g.camera.zoom,
+			g.params.background.nebula_alpha_zoom_numerator / g.camera.rl_cam.zoom,
 			g.params.background.nebula_alpha_zoom_min,
 			g.params.background.nebula_alpha_zoom_max,
 		)
@@ -598,15 +596,15 @@ sys_render_bg :: proc(g: ^Game) {
 
 	// Render the Starfield
 	for i in 0 ..< BG_STAR_COUNT {
-		star := g.bg_stars[i]
+		star := g.bg.stars[i]
 
 		depth := depths[star.layer]
 		zoom_scale := zoom_scales[star.layer]
 		size_zoom_scale := size_zoom_scales[star.layer]
 
 		// Compute parallax relative to camera target
-		dx := star.pos.x - g.camera.target.x / depth
-		dy := star.pos.y - g.camera.target.y / depth
+		dx := star.pos.x - g.camera.rl_cam.target.x / depth
+		dy := star.pos.y - g.camera.rl_cam.target.y / depth
 
 		dx_wrapped := math.mod(dx + L_x / 2.0, L_x)
 		if dx_wrapped < 0 do dx_wrapped += L_x
@@ -616,8 +614,8 @@ sys_render_bg :: proc(g: ^Game) {
 		if dy_wrapped < 0 do dy_wrapped += L_y
 		dy_wrapped -= L_y / 2.0
 
-		draw_x := cx + dx_wrapped * (1.0 + (g.camera.zoom - 1.0) * zoom_scale)
-		draw_y := cy + dy_wrapped * (1.0 + (g.camera.zoom - 1.0) * zoom_scale)
+		draw_x := cx + dx_wrapped * (1.0 + (g.camera.rl_cam.zoom - 1.0) * zoom_scale)
+		draw_y := cy + dy_wrapped * (1.0 + (g.camera.rl_cam.zoom - 1.0) * zoom_scale)
 
 		padding := g.theme.bg_star_render_padding
 		if draw_x < -padding ||
@@ -627,7 +625,7 @@ sys_render_bg :: proc(g: ^Game) {
 			continue
 		}
 
-		draw_size := star.size * (1.0 + (g.camera.zoom - 1.0) * size_zoom_scale)
+		draw_size := star.size * (1.0 + (g.camera.rl_cam.zoom - 1.0) * size_zoom_scale)
 		draw_size = clamp(
 			draw_size,
 			g.params.background.star_size_min,
@@ -642,25 +640,25 @@ sys_render_bg :: proc(g: ^Game) {
 		switch star.layer {
 		case 0:
 			alpha_scale = clamp(
-				g.params.background.star_layer_alpha_clamp_configs[0][0] / g.camera.zoom,
+				g.params.background.star_layer_alpha_clamp_configs[0][0] / g.camera.rl_cam.zoom,
 				g.params.background.star_layer_alpha_clamp_configs[0][1],
 				g.params.background.star_layer_alpha_clamp_configs[0][2],
 			)
 		case 1:
 			alpha_scale = clamp(
-				g.params.background.star_layer_alpha_clamp_configs[1][0] / g.camera.zoom,
+				g.params.background.star_layer_alpha_clamp_configs[1][0] / g.camera.rl_cam.zoom,
 				g.params.background.star_layer_alpha_clamp_configs[1][1],
 				g.params.background.star_layer_alpha_clamp_configs[1][2],
 			)
 		case 2:
 			alpha_scale = clamp(
-				g.camera.zoom * g.params.background.star_layer_alpha_clamp_configs[2][0],
+				g.camera.rl_cam.zoom * g.params.background.star_layer_alpha_clamp_configs[2][0],
 				g.params.background.star_layer_alpha_clamp_configs[2][1],
 				g.params.background.star_layer_alpha_clamp_configs[2][2],
 			)
 		case 3:
 			alpha_scale = clamp(
-				(g.camera.zoom - g.params.background.star_layer_alpha_clamp_configs[3][0]) /
+				(g.camera.rl_cam.zoom - g.params.background.star_layer_alpha_clamp_configs[3][0]) /
 				g.params.background.star_layer_alpha_clamp_configs[3][0],
 				g.params.background.star_layer_alpha_clamp_configs[3][1],
 				g.params.background.star_layer_alpha_clamp_configs[3][2],
@@ -672,15 +670,12 @@ sys_render_bg :: proc(g: ^Game) {
 
 		if color.a == 0 do continue
 
-		// Foreground stars (layer 3) use custom lens flare texture.
-		// All other layers use the standard soft circular glow texture.
-		tex_type: Game_TextureType = star.layer == 3 ? .BgStarFlare : .BgStarGlow
+		tex_type: Game_TextureType = star.layer == 3 ? .Bg_StarFlare : .Bg_StarGlow
 
 		radius := draw_size
 		dest_rect := rl.Rectangle{draw_x, draw_y, radius * 2.0, radius * 2.0}
 		origin := rl.Vector2{radius, radius}
 
-		// Apply a randomized rotation to foreground stars so their flares don't all align uniformly
 		rotation := f32(0.0)
 		if star.layer == 3 {
 			rotation = star.blink_phase * 25.0
@@ -695,7 +690,7 @@ sys_render_bg :: proc(g: ^Game) {
 				core_col.a = u8(f32(color.a) * 0.92)
 				core_rect := rl.Rectangle{draw_x, draw_y, core_radius * 2.0, core_radius * 2.0}
 				core_origin := rl.Vector2{core_radius, core_radius}
-				rl_texture_draw(g, .BgStarGlow, core_rect, core_origin, 0.0, core_col)
+				rl_texture_draw(g, .Bg_StarGlow, core_rect, core_origin, 0.0, core_col)
 			}
 		}
 	}
@@ -703,16 +698,16 @@ sys_render_bg :: proc(g: ^Game) {
 	// Gravity-distorted world grid overlay
 	rl_begin_shader(g, .BgGrid_Shader)
 
-	shader := g.assets.shaders[g.shaders[.BgGrid_Shader].shader]
+	shader := g.assets.assets_map.shaders[g.assets.shaders[.BgGrid_Shader].shader]
 
 	loc_seconds := rl.GetShaderLocation(shader, "seconds")
 	rl.SetShaderValue(shader, loc_seconds, &g.elapsed, .FLOAT)
 
-	camera_target := g.camera.target
+	camera_target := g.camera.rl_cam.target
 	loc_camera_target := rl.GetShaderLocation(shader, "camera_target")
 	rl.SetShaderValue(shader, loc_camera_target, &camera_target, .VEC2)
 
-	camera_zoom := g.camera.zoom
+	camera_zoom := g.camera.rl_cam.zoom
 	loc_camera_zoom := rl.GetShaderLocation(shader, "camera_zoom")
 	rl.SetShaderValue(shader, loc_camera_zoom, &camera_zoom, .FLOAT)
 
@@ -783,7 +778,7 @@ sys_render_collect_gravity_wells :: proc(
 		if !(PHYSICS_SIG <= e.sig) do continue
 		if e.mass <= 0.0 do continue
 
-		diff := e.pos.current - g.camera.target
+		diff := e.pos.current - g.camera.rl_cam.target
 		dist_sq := diff.x * diff.x + diff.y * diff.y
 		influence := e.mass / (dist_sq + 1.0)
 
@@ -813,7 +808,7 @@ sys_render_collect_gravity_wells :: proc(
 		slingshot_well_mass = clamp(slingshot_well_mass, 20.0, 1500.0)
 		slingshot_well_radius := radius * 2.5
 
-		diff := g.slingshot.start_pos - g.camera.target
+		diff := g.slingshot.start_pos - g.camera.rl_cam.target
 		dist_sq := diff.x * diff.x + diff.y * diff.y
 		influence := slingshot_well_mass / (dist_sq + 1.0)
 
@@ -845,3 +840,4 @@ sys_render_collect_gravity_wells :: proc(
 
 	return wells, count
 }
+

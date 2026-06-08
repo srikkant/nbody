@@ -2,7 +2,6 @@ package tests
 
 import game "../game"
 import "core:testing"
-import rl "vendor:raylib"
 
 @(test)
 test_game_init_empty :: proc(t: ^testing.T) {

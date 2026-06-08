@@ -283,7 +283,7 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	sys_lifecycle_spawn_debris_particle_burst(g, pos, f64(new_mass))
 
 	if entity_celestial_is_unlockable(new_type) {
-		g.available_objects += {new_type}
+		g.slingshot.available_objects += {new_type}
 	}
 }
 
@@ -393,7 +393,7 @@ sys_lifecycle_handle_out_of_bounds :: proc(g: ^Game, event: ^Game_Event_ObjectOu
 	e := &g.entities[event.id]
 	if e.celestial.type != .Star && e.mass > 0 {
 		refund := f64(g.params.physics.out_of_bounds_refund_fraction * e.mass * e.radius)
-		g.energy += refund
+		g.score.energy += refund
 	}
 	delete_entities[event.id] = true
 }
@@ -437,7 +437,7 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 		}
 
 		if dist_sq < g.params.physics.energy_collect_distance_squared {
-			g.energy += e.collectible_energy.energy
+			g.score.energy += e.collectible_energy.energy
 			delete_entities[i] = true
 		}
 	}
@@ -500,14 +500,12 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 		}
 
 		if PHYSICS_SIG <= e.sig && e.celestial.type != .Star {
-			g.total_objects += 1
+			g.score.total_objects += 1
 		}
 	}
 }
 
 sys_lifecycle :: proc(g: ^Game) {
-	if g.paused do return
-
 	for i in 0 ..< g.events_count {
 		switch &event in g.events[i] {
 		case Game_Event_ObjectSpawn:
@@ -523,8 +521,9 @@ sys_lifecycle :: proc(g: ^Game) {
 
 	sys_lifecycle_handle_fragments(g)
 
-	g.total_objects = 0
+	g.score.total_objects = 0
 	g.events_count = 0
 
 	sys_lifecycle_update_entities(g)
 }
+

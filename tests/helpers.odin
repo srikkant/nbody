@@ -6,8 +6,8 @@ import rl "vendor:raylib"
 
 make_test_game :: proc() -> ^game.Game {
 	g := new(game.Game)
-	game.params_init_defaults(&g.params)
-	game.theme_init_default(&g.theme)
+	game.params_init(&g.params)
+	game.theme_init(&g.theme)
 	return g
 }
 
@@ -46,3 +46,4 @@ add_test_entity :: proc(
 add_test_star :: proc(g: ^game.Game, mass: f32, pos: rl.Vector2) -> game.Entity {
 	return add_test_entity(g, .Star, mass, pos, rl.Vector2{0, 0})
 }
+

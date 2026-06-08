@@ -6,25 +6,25 @@ import rl "vendor:raylib"
 CAMERA_SIG: Signature : {.Position}
 
 sys_camera_init :: proc(g: ^Game) {
-	g.camera.zoom = 1
-	g.camera.offset = rl.Vector2{f32(rl.GetScreenWidth()) / 2, f32(rl.GetScreenHeight()) / 2}
-	g.camera.target = rl.Vector2(0)
+	g.camera.rl_cam.zoom = 1
+	g.camera.rl_cam.offset = rl.Vector2{g.screenw / 2, g.screenh / 2}
+	g.camera.rl_cam.target = rl.Vector2(0)
 }
 
 sys_camera :: proc(g: ^Game) {
 	ww := f32(rl.GetScreenWidth())
 	wh := f32(rl.GetScreenHeight())
 
-	g.camera.offset = rl.Vector2{ww / 2, wh / 2}
+	g.camera.rl_cam.offset = rl.Vector2{ww / 2, wh / 2}
 
 	dt := g.dt
-	if g.camera_shake_intensity > 0.05 {
-		g.camera_shake_intensity *= math.exp(-12.0 * dt)
+	if g.camera.shake_intensity > 0.05 {
+		g.camera.shake_intensity *= math.exp(-12.0 * dt)
 		angle := f32(rl.GetRandomValue(0, 360)) * (math.PI / 180.0)
-		shake_offset := rl.Vector2{math.cos(angle), math.sin(angle)} * g.camera_shake_intensity
-		g.camera.offset += shake_offset
+		shake_offset := rl.Vector2{math.cos(angle), math.sin(angle)} * g.camera.shake_intensity
+		g.camera.rl_cam.offset += shake_offset
 	} else {
-		g.camera_shake_intensity = 0.0
+		g.camera.shake_intensity = 0.0
 	}
 
 	// If slingshot is active, add some vibration and exit.
@@ -37,7 +37,7 @@ sys_camera :: proc(g: ^Game) {
 		if vibration > 0.05 {
 			angle := f32(rl.GetRandomValue(0, 360)) * (math.PI / 180.0)
 			vib_offset := rl.Vector2{math.cos(angle), math.sin(angle)} * vibration
-			g.camera.offset += vib_offset
+			g.camera.rl_cam.offset += vib_offset
 		}
 
 		return
@@ -70,8 +70,9 @@ sys_camera :: proc(g: ^Game) {
 	target_zoom = clamp(target_zoom, g.params.camera.zoom_min, g.params.camera.zoom_max)
 
 	decay :=
-		target_zoom > g.camera.zoom ? g.params.camera.zoom_in_interpolation_decay : g.params.camera.zoom_out_interpolation_decay
+		target_zoom > g.camera.rl_cam.zoom ? g.params.camera.zoom_in_interpolation_decay : g.params.camera.zoom_out_interpolation_decay
 
 	t := f32(1.0) - math.exp_f32(-decay * dt)
-	g.camera.zoom = math.lerp(g.camera.zoom, target_zoom, t)
+	g.camera.rl_cam.zoom = math.lerp(g.camera.rl_cam.zoom, target_zoom, t)
 }
+

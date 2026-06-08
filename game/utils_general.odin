@@ -55,7 +55,7 @@ get_inspected_entity :: proc(g: ^Game) -> (Entity, bool) {
 		if !(.Celestial in e.sig) do continue
 		if e.celestial.type == .Star do continue // skip star
 
-		screen_pos := rl.GetWorldToScreen2D(e.pos.current, g.camera)
+		screen_pos := rl.GetWorldToScreen2D(e.pos.current, g.camera.rl_cam)
 		dist := rl.Vector2Distance(mouse_screen, screen_pos)
 
 		if dist < closest_dist {
@@ -67,3 +67,4 @@ get_inspected_entity :: proc(g: ^Game) -> (Entity, bool) {
 
 	return closest_id, found
 }
+

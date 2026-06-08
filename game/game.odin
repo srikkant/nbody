@@ -13,8 +13,8 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_RESIZABLE})
 	rl.InitWindow(params.w, params.h, "n-body forge")
 	rl.SetTargetFPS(60)
-	rl.HideCursor()
 	rl.SetExitKey(.KEY_NULL)
+	rl.HideCursor()
 
 	g := new(Game)
 
@@ -23,8 +23,8 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	assets_fonts_load(g)
 	assets_shaders_load(g)
 
-	params_init_defaults(&g.params)
-	theme_init_default(&g.theme)
+	params_init(&g.params)
+	theme_init(&g.theme)
 
 	sys_render_init(g)
 	sys_camera_init(g)
@@ -34,20 +34,9 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 		celestial = {type = .DwarfPlanet},
 	}
 
-	g.render.menu = Game_MenuState {
-		selected_mode      = .Normal,
-		selected_celestial = .DwarfPlanet,
-	}
-
-	g.available_objects = {.Asteroid, .Moonlet, .DwarfPlanet}
-
-	g.timers[.Score] = Timer {
-		interval = 1,
-	}
-
-	g.timers[.Trail] = Timer {
-		interval = 0.05,
-	}
+	g.slingshot.available_objects = {.DwarfPlanet}
+	g.timers[.Score] = Timer{0, 1, false}
+	g.timers[.Trail] = Timer{0, 0.05, false}
 
 	g.debug = {
 		hover_celestial = -1,
@@ -66,7 +55,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 		},
 	)
 
-	g.state = .Menu
+	g.status = .Menu
 
 	return g
 }
@@ -80,18 +69,18 @@ game_reset :: proc(g: ^Game) {
 		g.entities[i].sig = {}
 	}
 
-	g.energy = 0
-	g.total_objects = 0
-	g.energy_rate_ticker = 0
+	g.score.energy = 0
+	g.score.total_objects = 0
+	g.score.energy_rate_ticker = 0
 	for i in 0 ..< AVG_CALC_TICKS {
-		g.energy_gains[i] = 0
-		g.energy_losses[i] = 0
+		g.score.energy_gains[i] = 0
+		g.score.energy_losses[i] = 0
 	}
 
 	sys_camera_init(g)
 
 	g.slingshot.active = false
-	g.slingshot_snap.active = false
+	g.slingshot.snap.active = false
 	for i in Game_TimerType {
 		g.timers[i].curr = 0
 	}
@@ -110,7 +99,6 @@ game_reset :: proc(g: ^Game) {
 }
 
 game_free :: proc(g: ^Game) {
-	sys_render_free(g)
 	assets_map_free(g)
 	free(g)
 
@@ -120,55 +108,33 @@ game_free :: proc(g: ^Game) {
 game_run :: proc(g: ^Game) {
 	g.dt = math.min(rl.GetFrameTime(), g.params.physics.max_delta_time_sec)
 	g.elapsed += g.dt
-
 	g.mouse_pos = input_mouse_pos(g)
-
-	// Centralized premium cursor visibility management
-	if g.state == .Menu || g.paused || g.draw_debug_panel {
-		rl.ShowCursor()
-	} else {
-		rl.HideCursor()
-	}
+	g.screenw = f32(rl.GetScreenWidth())
+	g.screenh = f32(rl.GetScreenHeight())
 
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
 
-	switch g.state {
+	switch g.status {
 	case .Menu:
-		{
-			sys_camera(g)
-			sys_render(g)
-			sys_render_menu_main(g)
-		}
-	case .Playing:
-		{}
-	}
-
-	if g.state == .Menu {
 		sys_camera(g)
 		sys_render(g)
 		sys_render_menu_main(g)
-	} else if g.state == .Playing {
-		if rl.IsKeyPressed(.ESCAPE) {
-			g.paused = !g.paused
-		}
-
-		if !g.paused {
-			sys_input(g)
-			sys_modifier(g)
-			sys_automation(g)
-			sys_physics(g)
-			sys_score(g)
-			sys_lifecycle(g)
-			sys_camera(g)
-			sys_render(g)
-		} else {
-			sys_render(g)
-			sys_render_menu_pause(g)
-		}
-
-		// Always allow debug panel tweaks
-		sys_debug(g)
+	case .Playing:
+		sys_input(g)
+		sys_modifier(g)
+		sys_automation(g)
+		sys_physics(g)
+		sys_score(g)
+		sys_lifecycle(g)
+		sys_camera(g)
+		sys_render(g)
+		sys_debug(g) // TODO: Figure out best way to handle this.
+	case .Paused:
+		sys_render(g)
+		sys_render_menu_pause(g)
+	case .Exit:
+	// Do nothing, the main loop will exit after this.
 	}
 
 	rl.EndDrawing()

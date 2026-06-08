@@ -1,7 +1,7 @@
 ((odin-mode . ((eval . (with-eval-after-load 'dape
                          (add-to-list 'dape-configs
                                       '(odin-codelldb
-                                        modes (odin-mode)
+                                        modes (odin-ts-mode)
                                         command "codelldb"
                                         command-args ("--port" :autoport)
                                         port :autoport

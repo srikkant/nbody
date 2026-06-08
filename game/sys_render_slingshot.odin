@@ -75,33 +75,33 @@ sys_render_slingshot :: proc(g: ^Game) {
 	dt := g.dt
 
 	// 1. Update and draw slingshot release snap animation
-	if g.slingshot_snap.active {
-		g.slingshot_snap.timer -= dt * 7.5 // snap over ~8 frames
-		if g.slingshot_snap.timer <= 0.0 {
-			g.slingshot_snap.active = false
+	if g.slingshot.snap.active {
+		g.slingshot.snap.timer -= dt * 7.5 // snap over ~8 frames
+		if g.slingshot.snap.timer <= 0.0 {
+			g.slingshot.snap.active = false
 		} else {
-			t := 1.0 - g.slingshot_snap.timer
-			drag := g.slingshot_snap.end_pos - g.slingshot_snap.start_pos
+			t := 1.0 - g.slingshot.snap.timer
+			drag := g.slingshot.snap.end_pos - g.slingshot.snap.start_pos
 
 			// Elastic recoil: shoot backward through the anchor and collapse
-			snap_start := g.slingshot_snap.start_pos - drag * t * f32(0.45)
-			snap_end := g.slingshot_snap.start_pos + drag * (f32(1.0) - t * f32(1.3))
+			snap_start := g.slingshot.snap.start_pos - drag * t * f32(0.45)
+			snap_end := g.slingshot.snap.start_pos + drag * (f32(1.0) - t * f32(1.3))
 
-			snap_color := g.slingshot_snap.color
-			snap_color.a = u8(g.slingshot_snap.timer * 220.0)
+			snap_color := g.slingshot.snap.color
+			snap_color.a = u8(g.slingshot.snap.timer * 220.0)
 
 			rl.DrawLineEx(snap_start, snap_end, 1.5, snap_color)
 
 			// Fade-out core pulse
-			pulse_color := g.slingshot_snap.color
-			pulse_color.a = u8(g.slingshot_snap.timer * 255.0)
-			rl.DrawCircleV(g.slingshot_snap.start_pos, 5.0 * g.slingshot_snap.timer, pulse_color)
+			pulse_color := g.slingshot.snap.color
+			pulse_color.a = u8(g.slingshot.snap.timer * 255.0)
+			rl.DrawCircleV(g.slingshot.snap.start_pos, 5.0 * g.slingshot.snap.timer, pulse_color)
 		}
 	}
 
 	// 2. Update and draw chromatic additive ring flashes
-	for i in 0 ..< len(g.ring_flashes) {
-		flash := &g.ring_flashes[i]
+	for i in 0 ..< len(g.slingshot.ring_flashes) {
+		flash := &g.slingshot.ring_flashes[i]
 		if !flash.active do continue
 
 		flash.life -= dt * 6.5 // rapid fade over ~10 frames
@@ -263,42 +263,38 @@ sys_render_slingshot :: proc(g: ^Game) {
 			total_cycle_time := math.max(total_sim_time, min_cycle_time_sim)
 
 			// Advance shimmer time by simulated delta time
-			g.slingshot_shimmer_time = math.mod(
-				g.slingshot_shimmer_time + dt * g.params.physics.simulation_rate_multiplier,
+			g.slingshot.shimmer_time = math.mod(
+				g.slingshot.shimmer_time + dt * g.params.physics.simulation_rate_multiplier,
 				total_cycle_time,
 			)
 
 			// Only render the shimmer pulse if it is within the active simulated path time
-			if g.slingshot_shimmer_time < total_sim_time {
+			if g.slingshot.shimmer_time < total_sim_time {
 				// Find closest preview point index in simulated time
 				shimmer_idx := 0
-				best_diff := math.abs(g.slingshot.preview_times[0] - g.slingshot_shimmer_time)
+				best_diff := math.abs(g.slingshot.preview_times[0] - g.slingshot.shimmer_time)
 				for i in 1 ..< actual_frames {
-					diff := math.abs(g.slingshot.preview_times[i] - g.slingshot_shimmer_time)
+					diff := math.abs(g.slingshot.preview_times[i] - g.slingshot.shimmer_time)
 					if diff < best_diff {
 						best_diff = diff
 						shimmer_idx = int(i)
 					}
 				}
 
-				// Render glowing energy comet trail in additive mode for intense brightness and 5% larger size
 				rl.BeginBlendMode(.ADDITIVE)
 				TRAIL_LEN :: 10
 				for k in 0 ..< TRAIL_LEN {
 					idx := shimmer_idx - k
-					// Loop or clamp: clamping provides a cleaner start-to-end flow
 					if idx >= 0 && idx < int(actual_frames) {
 						pt := g.slingshot.preview_points[idx]
 						trail_t := f32(k) / f32(TRAIL_LEN)
 
-						// Intense white-hot core and vibrant payload-themed outer glow
 						shimmer_alpha := u8(f32(255.0) * (f32(1.0) - trail_t))
 
 						shimmer_core_col := rl.Color{255, 255, 255, shimmer_alpha}
 						shimmer_glow_col := payload_color
 						shimmer_glow_col.a = shimmer_alpha
 
-						// Exactly 5% larger than usual (usual glow is 3.5, usual core is 1.8)
 						glow_radius := f32(3.675) * (f32(1.0) - trail_t * f32(0.35))
 						core_radius := f32(1.89) * (f32(1.0) - trail_t * f32(0.55))
 
@@ -311,3 +307,4 @@ sys_render_slingshot :: proc(g: ^Game) {
 		}
 	}
 }
+

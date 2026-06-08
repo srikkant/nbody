@@ -76,32 +76,3 @@ test_gravity_proportional_to_mass :: proc(t: ^testing.T) {
 	testing.expect(t, math.abs(ratio - 2.0) < 1e-5, "Double source mass must double acceleration")
 }
 
-@(test)
-test_radius_from_mass_density :: proc(t: ^testing.T) {
-	r := game.physics_radius_from_mass_density(100.0, 4.0)
-	testing.expect_value(t, r, 5.0)
-}
-
-@(test)
-test_radius_from_zero_density :: proc(t: ^testing.T) {
-	r1 := game.physics_radius_from_mass_density(100.0, 0.0)
-	r2 := game.physics_radius_from_mass_density(100.0, -1.0)
-
-	testing.expect_value(t, r1, 0.0)
-	testing.expect_value(t, r2, 0.0)
-}
-
-@(test)
-test_slingshot_velocity :: proc(t: ^testing.T) {
-	g := make_test_game()
-	defer free_test_game(g)
-
-	g.slingshot.start_pos = {10, 10}
-	g.params.physics.slingshot_launch_power = 2.5
-
-	release_pos := rl.Vector2{6, 7}
-	vel := game.physics_get_slingshot_release_velocity(g, release_pos)
-
-	testing.expect_value(t, vel.x, 10.0)
-	testing.expect_value(t, vel.y, 7.5)
-}

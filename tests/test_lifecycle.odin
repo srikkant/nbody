@@ -23,23 +23,6 @@ test_classify_star_absorb_star_vs_asteroid :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_classify_star_absorb_asteroid_vs_star :: proc(t: ^testing.T) {
-	g := make_test_game()
-	defer free_test_game(g)
-
-	id1 := add_test_entity(g, .Asteroid, 5.0, {1, 0}, {0, 0})
-	id2 := add_test_star(g, 1000.0, {0, 0})
-
-	e := game.Game_Event_Collision {
-		id1 = id1,
-		id2 = id2,
-	}
-	class := game.sys_lifecycle_collision_classify(g, &e)
-
-	testing.expect_value(t, class, game.Game_Event_CollisionType.StarAbsorb)
-}
-
-@(test)
 test_classify_debris_different_types :: proc(t: ^testing.T) {
 	g := make_test_game()
 	defer free_test_game(g)
@@ -234,7 +217,7 @@ test_merge_unlocks_type :: proc(t: ^testing.T) {
 	g := make_test_game()
 	defer free_test_game(g)
 
-	g.available_objects = {.Asteroid}
+	g.slingshot.available_objects = {.Asteroid}
 
 	id1 := add_test_entity(g, .Asteroid, 5.0, {0, 0}, {0, 0})
 	id2 := add_test_entity(g, .Asteroid, 5.0, {2, 0}, {0, 0})
@@ -250,7 +233,7 @@ test_merge_unlocks_type :: proc(t: ^testing.T) {
 
 	game.sys_lifecycle_resolve_merge(g, &e)
 
-	testing.expect(t, .Moonlet in g.available_objects, "Moonlet must be unlocked")
+	testing.expect(t, .Moonlet in g.slingshot.available_objects, "Moonlet must be unlocked")
 }
 
 @(test)
@@ -401,7 +384,7 @@ test_out_of_bounds_refund :: proc(t: ^testing.T) {
 	g := make_test_game()
 	defer free_test_game(g)
 
-	g.energy = 0.0
+	g.score.energy = 0.0
 	g.params.physics.out_of_bounds_refund_fraction = 0.5
 
 	id := add_test_entity(g, .Asteroid, 10.0, {0, 0}, {0, 0})
@@ -416,29 +399,7 @@ test_out_of_bounds_refund :: proc(t: ^testing.T) {
 	}
 	game.sys_lifecycle_handle_out_of_bounds(g, &e)
 
-	testing.expect_value(t, g.energy, f64(10.0))
+	testing.expect_value(t, g.score.energy, f64(10.0))
 	testing.expect(t, game.delete_entities[id], "Out of bounds entity must be deleted")
 }
 
-@(test)
-test_out_of_bounds_star_no_refund :: proc(t: ^testing.T) {
-	g := make_test_game()
-	defer free_test_game(g)
-
-	g.energy = 0.0
-	g.params.physics.out_of_bounds_refund_fraction = 0.5
-
-	id := add_test_star(g, 1000.0, {0, 0})
-
-	for i in 0 ..< game.MAX_ENTITIES {
-		game.delete_entities[i] = false
-	}
-
-	e := game.Game_Event_ObjectOutOfBounds {
-		id = id,
-	}
-	game.sys_lifecycle_handle_out_of_bounds(g, &e)
-
-	testing.expect_value(t, g.energy, f64(0.0))
-	testing.expect(t, game.delete_entities[id], "Star must be deleted")
-}

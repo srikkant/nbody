@@ -1,7 +1,6 @@
 package game
 
 sys_automation :: proc(g: ^Game) {
-	if g.paused do return
 	dt := g.dt
 
 	for i in 0 ..< g.entities_count {
@@ -12,7 +11,7 @@ sys_automation :: proc(g: ^Game) {
 
 			max_count_reached := false
 
-			if e.emitter.timer.done && g.energy >= e.emitter.base_cost {
+			if e.emitter.timer.done && g.score.energy >= e.emitter.base_cost {
 				push_event(
 					g,
 					Game_Event_ObjectSpawn {
@@ -38,3 +37,4 @@ sys_automation :: proc(g: ^Game) {
 		}
 	}
 }
+

@@ -7,30 +7,42 @@ assets_map_load :: proc(g: ^Game) {
 	blank_image := rl.GenImageColor(1, 1, rl.WHITE)
 	defer rl.UnloadImage(blank_image)
 
-	g.assets.textures[.Blank] = rl.LoadTextureFromImage(blank_image)
-	g.assets.textures[.Bg] = rl.LoadTexture("./assets/textures/bg.png")
-	g.assets.textures[.Atlas] = rl.LoadTexture("./assets/textures/atlas.png")
+	g.assets.assets_map.textures[.Blank] = rl.LoadTextureFromImage(blank_image)
+	g.assets.assets_map.textures[.Bg] = rl.LoadTexture("./assets/textures/bg.png")
+	g.assets.assets_map.textures[.Atlas] = rl.LoadTexture("./assets/textures/atlas.png")
 
-	g.assets.shaders[.Celestial_Debris] = rl.LoadShader(
+	g.assets.assets_map.shaders[.Celestial_Debris] = rl.LoadShader(
 		nil,
 		"./assets/shaders/celestial_debris.frag",
 	)
-	g.assets.shaders[.Vignette] = rl.LoadShader(nil, "./assets/shaders/vignette.frag")
-	g.assets.shaders[.Celestial_Terrestrial] = rl.LoadShader(
+	g.assets.assets_map.shaders[.Vignette] = rl.LoadShader(nil, "./assets/shaders/vignette.frag")
+	g.assets.assets_map.shaders[.Celestial_Terrestrial] = rl.LoadShader(
 		nil,
 		"./assets/shaders/celestial_terrestrial.frag",
 	)
-	g.assets.shaders[.Celestial_GasGiant] = rl.LoadShader(
+	g.assets.assets_map.shaders[.Celestial_GasGiant] = rl.LoadShader(
 		nil,
 		"./assets/shaders/celestial_gasgiant.frag",
 	)
-	g.assets.shaders[.Celestial_Star] = rl.LoadShader(nil, "./assets/shaders/celestial_star.frag")
-	g.assets.shaders[.BgGrid_Gravity] = rl.LoadShader(nil, "./assets/shaders/bg_grid_gravity.frag")
-	g.assets.shaders[.Energy_Shader] = rl.LoadShader(nil, "./assets/shaders/energy_glow.frag")
-	g.assets.shaders[.Vfx_Effects] = rl.LoadShader(nil, "./assets/shaders/vfx_effects.frag")
+	g.assets.assets_map.shaders[.Celestial_Star] = rl.LoadShader(
+		nil,
+		"./assets/shaders/celestial_star.frag",
+	)
+	g.assets.assets_map.shaders[.BgGrid_Gravity] = rl.LoadShader(
+		nil,
+		"./assets/shaders/bg_grid_gravity.frag",
+	)
+	g.assets.assets_map.shaders[.Energy_Shader] = rl.LoadShader(
+		nil,
+		"./assets/shaders/energy_glow.frag",
+	)
+	g.assets.assets_map.shaders[.Vfx_Effects] = rl.LoadShader(
+		nil,
+		"./assets/shaders/vfx_effects.frag",
+	)
 
-	g.assets.fonts[.Heading] = rl.LoadFontEx("./assets/fonts/heading.ttf", 18, nil, 0)
-	g.assets.fonts[.Body] = rl.LoadFontEx("./assets/fonts/body.ttf", 14, nil, 0)
+	g.assets.assets_map.fonts[.Heading] = rl.LoadFontEx("./assets/fonts/heading.ttf", 18, nil, 0)
+	g.assets.assets_map.fonts[.Body] = rl.LoadFontEx("./assets/fonts/body.ttf", 14, nil, 0)
 
 	/*
 	Procedural Starfield Textures
@@ -45,7 +57,6 @@ assets_map_load :: proc(g: ^Game) {
 		center_y := f32(height) / 2.0 - 0.5
 		max_radius := f32(width) / 2.0
 
-		// Higher values make the glow tighter around the core; lower values make it softer and wider.
 		glow_falloff_rate := f32(3.5)
 
 		for y in 0 ..< height {
@@ -62,7 +73,7 @@ assets_map_load :: proc(g: ^Game) {
 				}
 			}
 		}
-		g.assets.textures[.BgStarGlow] = rl.LoadTextureFromImage(img)
+		g.assets.assets_map.textures[.BgStarGlow] = rl.LoadTextureFromImage(img)
 		rl.UnloadImage(img)
 	}
 
@@ -106,118 +117,118 @@ assets_map_load :: proc(g: ^Game) {
 				}
 			}
 		}
-		g.assets.textures[.BgStarFlare] = rl.LoadTextureFromImage(img)
+		g.assets.assets_map.textures[.BgStarFlare] = rl.LoadTextureFromImage(img)
 		rl.UnloadImage(img)
 	}
 }
 
 assets_map_free :: proc(g: ^Game) {
-	rl.UnloadFont(g.assets.fonts[.Heading])
-	rl.UnloadFont(g.assets.fonts[.Body])
-	rl.UnloadTexture(g.assets.textures[.Bg])
-	rl.UnloadTexture(g.assets.textures[.Atlas])
-	rl.UnloadTexture(g.assets.textures[.Blank])
-	rl.UnloadShader(g.assets.shaders[.Celestial_Debris])
-	rl.UnloadShader(g.assets.shaders[.Vignette])
-	rl.UnloadShader(g.assets.shaders[.Celestial_Terrestrial])
-	rl.UnloadShader(g.assets.shaders[.Celestial_GasGiant])
-	rl.UnloadShader(g.assets.shaders[.Celestial_Star])
-	rl.UnloadShader(g.assets.shaders[.BgGrid_Gravity])
-	rl.UnloadShader(g.assets.shaders[.Energy_Shader])
-	rl.UnloadShader(g.assets.shaders[.Vfx_Effects])
-
-	rl.UnloadTexture(g.assets.textures[.BgStarGlow])
-	rl.UnloadTexture(g.assets.textures[.BgStarFlare])
+	rl.UnloadFont(g.assets.assets_map.fonts[.Heading])
+	rl.UnloadFont(g.assets.assets_map.fonts[.Body])
+	rl.UnloadTexture(g.assets.assets_map.textures[.Bg])
+	rl.UnloadTexture(g.assets.assets_map.textures[.Atlas])
+	rl.UnloadTexture(g.assets.assets_map.textures[.Blank])
+	rl.UnloadTexture(g.assets.assets_map.textures[.BgStarGlow])
+	rl.UnloadTexture(g.assets.assets_map.textures[.BgStarFlare])
+	rl.UnloadShader(g.assets.assets_map.shaders[.Celestial_Debris])
+	rl.UnloadShader(g.assets.assets_map.shaders[.Vignette])
+	rl.UnloadShader(g.assets.assets_map.shaders[.Celestial_Terrestrial])
+	rl.UnloadShader(g.assets.assets_map.shaders[.Celestial_GasGiant])
+	rl.UnloadShader(g.assets.assets_map.shaders[.Celestial_Star])
+	rl.UnloadShader(g.assets.assets_map.shaders[.BgGrid_Gravity])
+	rl.UnloadShader(g.assets.assets_map.shaders[.Energy_Shader])
+	rl.UnloadShader(g.assets.assets_map.shaders[.Vfx_Effects])
 }
 
 assets_fonts_load :: proc(g: ^Game) {
-	g.fonts[.Heading] = {
+	g.assets.fonts[.Heading] = {
 		font = .Heading,
 		size = 18,
 	}
 
-	g.fonts[.Body] = {
+	g.assets.fonts[.Body] = {
 		font = .Body,
 		size = 14,
 	}
 
-	g.fonts[.Menu_Label] = {
+	g.assets.fonts[.Menu_Label] = {
 		font = .Body,
 		size = 11,
 	}
 
-	g.fonts[.Title] = {
+	g.assets.fonts[.Title] = {
 		font = .Heading,
 		size = 36,
 	}
 }
 
 assets_textures_load :: proc(g: ^Game) {
-	g.textures[.Blank] = {
+	g.assets.textures[.Blank] = {
 		texture = .Blank,
 		rect    = rl.Rectangle{0, 0, 1, 1},
 	}
-	g.textures[.Objects_Celestial] = {
+	g.assets.textures[.Objects_Celestial] = {
 		texture = .Blank,
 		rect    = rl.Rectangle{0, 0, 1, 1},
 	}
-	g.textures[.Markers_OutOfBounds] = {
+	g.assets.textures[.Markers_OutOfBounds] = {
 		texture = .Blank,
 		rect    = rl.Rectangle{0, 0, 1, 1},
 	}
-	g.textures[.Objects_Emitter] = {
+	g.assets.textures[.Objects_Emitter] = {
 		texture = .Blank,
 		rect    = rl.Rectangle{0, 0, 1, 1},
 	}
-	g.textures[.Collectibles_Energy] = {
+	g.assets.textures[.Collectibles_Energy] = {
 		texture = .Blank,
 		rect    = rl.Rectangle{0, 0, 1, 1},
 	}
-	g.textures[.UI_Energy] = {
+	g.assets.textures[.UI_Energy] = {
 		texture = .Atlas,
 		rect    = rl.Rectangle{0, 0, 96, 96},
 	}
-	g.textures[.UI_ObjectCount] = {
+	g.assets.textures[.UI_ObjectCount] = {
 		texture = .Atlas,
 		rect    = rl.Rectangle{96, 0, 96, 96},
 	}
-	g.textures[.UI_EnergyAverage] = {
+	g.assets.textures[.UI_EnergyAverage] = {
 		texture = .Atlas,
 		rect    = rl.Rectangle{192, 0, 96, 96},
 	}
-	g.textures[.BgStarGlow] = {
+	g.assets.textures[.Bg_StarGlow] = {
 		texture = .BgStarGlow,
 		rect    = rl.Rectangle{0, 0, 32, 32},
 	}
-	g.textures[.BgStarFlare] = {
+	g.assets.textures[.Bg_StarFlare] = {
 		texture = .BgStarFlare,
 		rect    = rl.Rectangle{0, 0, 64, 64},
 	}
 }
 
 assets_shaders_load :: proc(g: ^Game) {
-	g.shaders[.Celestial_Debris_Layer] = {
+	g.assets.shaders[.Celestial_Debris_Layer] = {
 		shader = .Celestial_Debris,
 	}
-	g.shaders[.Celestial_Terrestrial_Layer] = {
+	g.assets.shaders[.Celestial_Terrestrial_Layer] = {
 		shader = .Celestial_Terrestrial,
 	}
-	g.shaders[.Celestial_GasGiant_Layer] = {
+	g.assets.shaders[.Celestial_GasGiant_Layer] = {
 		shader = .Celestial_GasGiant,
 	}
-	g.shaders[.Celestial_Star_Layer] = {
+	g.assets.shaders[.Celestial_Star_Layer] = {
 		shader = .Celestial_Star,
 	}
-	g.shaders[.Bg_Vignette] = {
+	g.assets.shaders[.Bg_Vignette] = {
 		shader = .Vignette,
 	}
-	g.shaders[.BgGrid_Shader] = {
+	g.assets.shaders[.BgGrid_Shader] = {
 		shader = .BgGrid_Gravity,
 	}
-	g.shaders[.Energy_Shader] = {
+	g.assets.shaders[.Energy_Shader] = {
 		shader = .Energy_Shader,
 	}
-	g.shaders[.Vfx_Shader] = {
+	g.assets.shaders[.Vfx_Shader] = {
 		shader = .Vfx_Effects,
 	}
 }
+

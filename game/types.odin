@@ -4,6 +4,67 @@ import rl "vendor:raylib"
 
 Entity :: distinct u64
 
+Assets_Font :: enum {
+	Heading,
+	Body,
+}
+
+Assets_Texture :: enum {
+	Blank,
+	Bg,
+	Atlas,
+	BgStarGlow,
+	BgStarFlare,
+}
+
+Assets_Shader :: enum {
+	Vignette,
+	Celestial_Debris,
+	Celestial_Terrestrial,
+	Celestial_GasGiant,
+	Celestial_Star,
+	BgGrid_Gravity,
+	Energy_Shader,
+	Vfx_Effects,
+}
+
+Assets_Map :: struct {
+	fonts:    [Assets_Font]rl.Font,
+	textures: [Assets_Texture]rl.Texture2D,
+	shaders:  [Assets_Shader]rl.Shader,
+}
+
+Game_TextureType :: enum {
+	Blank,
+	Objects_Celestial,
+	Objects_Emitter,
+	Markers_OutOfBounds,
+	Collectibles_Energy,
+	UI_Energy,
+	UI_EnergyAverage,
+	UI_ObjectCount,
+	Bg_StarGlow,
+	Bg_StarFlare,
+}
+
+Game_FontType :: enum {
+	Heading,
+	Body,
+	Menu_Label,
+	Title,
+}
+
+Game_ShaderType :: enum {
+	Bg_Vignette,
+	Celestial_Debris_Layer,
+	Celestial_Terrestrial_Layer,
+	Celestial_GasGiant_Layer,
+	Celestial_Star_Layer,
+	BgGrid_Shader,
+	Energy_Shader,
+	Vfx_Shader,
+}
+
 Timer :: struct {
 	curr:     f32,
 	interval: f32,
@@ -11,10 +72,8 @@ Timer :: struct {
 }
 
 ComponentType :: enum {
-	// Tag components
 	Celestial,
 	Emitter,
-	// General components
 	Position,
 	Orbit,
 	Velocity,
@@ -76,43 +135,6 @@ EmitterComponent :: struct {
 	base_cost:      f64,
 }
 
-CelestialType :: enum {
-	None,
-	Asteroid,
-	Moonlet,
-	DwarfPlanet,
-	SubEarth,
-	SuperEarth,
-	MegaEarth,
-	MiniNeptune,
-	SubNeptune,
-	SuperNeptune,
-	GiantPlanet,
-	SuperJupiter,
-	Star,
-}
-
-Game_VisualClass :: enum {
-	Debris, // Class 1: Asteroid, Moonlet
-	Terrestrial, // Class 2: DwarfPlanet → MegaEarth
-	GasGiant, // Class 3: MiniNeptune → SuperJupiter
-	Anchor, // Class 4: Star
-}
-
-Game_CelestialParams :: struct {
-	// Physics
-	density:          f32,
-	radius:           f32,
-	launch_cost:      f32,
-
-	// Visuals
-	color:            rl.Color,
-	visual_class:     Game_VisualClass,
-	quad_multiplier:  f32, // Render quad size = radius * quad_multiplier
-	trail_multiplier: f32, // Trail thickness scale (0 = no trail)
-	glow_intensity:   f32, // Shader glow envelope strength (0.0–1.0)
-}
-
 CelestialComponent :: struct {
 	type: CelestialType,
 }
@@ -142,6 +164,40 @@ ParticleBurstComponent :: struct {
 	particles:    #soa[MAX_PARTICLE_BURST_COUNT]ParticleBurst_Particle,
 }
 
+CelestialType :: enum {
+	None,
+	Asteroid,
+	Moonlet,
+	DwarfPlanet,
+	SubEarth,
+	SuperEarth,
+	MegaEarth,
+	MiniNeptune,
+	SubNeptune,
+	SuperNeptune,
+	GiantPlanet,
+	SuperJupiter,
+	Star,
+}
+
+Game_VisualClass :: enum {
+	Debris,
+	Terrestrial,
+	GasGiant,
+	Anchor,
+}
+
+Game_CelestialParams :: struct {
+	density:          f32,
+	radius:           f32,
+	launch_cost:      f32,
+	color:            rl.Color,
+	visual_class:     Game_VisualClass,
+	quad_multiplier:  f32, // Render quad size = radius * quad_multiplier
+	trail_multiplier: f32, // Trail thickness scale (0 = no trail)
+	glow_intensity:   f32, // Shader glow envelope strength (0.0–1.0)
+}
+
 Game_SlingshotOutput_Emitter :: struct {
 	emitter: EmitterComponent,
 }
@@ -159,30 +215,33 @@ Game_SlingshotSnap :: struct {
 	active:    bool,
 	start_pos: rl.Vector2,
 	end_pos:   rl.Vector2,
-	timer:     f32,
 	color:     rl.Color,
+	timer:     f32,
 }
 
-Game_RingFlash :: struct {
+Game_SlingshotRingFlash :: struct {
 	active:     bool,
 	pos:        rl.Vector2,
+	color:      rl.Color,
 	radius:     f32,
 	max_radius: f32,
-	color:      rl.Color,
 	life:       f32, // 1.0 down to 0.0
 }
 
-Game_Slingshot :: struct {
-	output:         Game_SlingshotOutput,
-	active:         bool,
-	can_launch:     bool,
-	start_pos:      rl.Vector2,
-	launch_power:   f32,
-	preview:        f32,
-	preview_points: [600]rl.Vector2,
-	preview_times:  [600]f32,
+Game_SlingshotState :: struct {
+	available_objects: bit_set[CelestialType],
+	output:            Game_SlingshotOutput,
+	active:            bool,
+	can_launch:        bool,
+	start_pos:         rl.Vector2,
+	shimmer_time:      f32,
+	launch_power:      f32,
+	preview:           f32,
+	preview_points:    [600]rl.Vector2,
+	preview_times:     [600]f32,
+	snap:              Game_SlingshotSnap,
+	ring_flashes:      [8]Game_SlingshotRingFlash,
 }
-
 
 Game_Event_ObjectSpawn :: struct {
 	pos:           rl.Vector2,
@@ -204,7 +263,9 @@ Game_Event_ObjectDestroyed :: struct {
 	id: Entity,
 }
 
-Game_Event_ApplyModifier :: Game_Modifier
+Game_Event_ApplyModifier :: struct {
+	modifier: Game_Modifier,
+}
 
 Game_Event_Collision :: struct {
 	id1: Entity,
@@ -235,71 +296,11 @@ Game_Entity :: struct {
 	particle_burst:     ParticleBurstComponent,
 }
 
-Assets_Font :: enum {
-	Heading,
-	Body,
-}
-
-Assets_Texture :: enum {
-	Blank,
-	Bg,
-	Atlas,
-	BgStarGlow,
-	BgStarFlare,
-}
-
-Assets_Shader :: enum {
-	Vignette,
-	Celestial_Debris,
-	Celestial_Terrestrial,
-	Celestial_GasGiant,
-	Celestial_Star,
-	BgGrid_Gravity,
-	Energy_Shader,
-	Vfx_Effects,
-}
-
-Assets_Map :: struct {
-	fonts:    [Assets_Font]rl.Font,
-	textures: [Assets_Texture]rl.Texture2D,
-	shaders:  [Assets_Shader]rl.Shader,
-}
-
-Game_TextureType :: enum {
-	Blank,
-	Objects_Celestial,
-	Objects_Emitter,
-	Markers_OutOfBounds,
-	Collectibles_Energy,
-	UI_Energy,
-	UI_EnergyAverage,
-	UI_ObjectCount,
-	BgStarGlow,
-	BgStarFlare,
-}
-
-Game_State :: enum {
+Game_Status :: enum {
 	Menu,
 	Playing,
-}
-
-Game_FontType :: enum {
-	Heading,
-	Body,
-	Menu_Label,
-	Title,
-}
-
-
-Game_ShaderType :: enum {
-	Bg_Vignette,
-	Celestial_Debris_Layer,
-	Celestial_Terrestrial_Layer,
-	Celestial_GasGiant_Layer,
-	Celestial_Star_Layer,
-	BgGrid_Shader,
-	Energy_Shader,
-	Vfx_Shader,
+	Paused,
+	Exit,
 }
 
 Game_Texture :: struct {
@@ -354,7 +355,7 @@ Game_Parameters_Physics :: struct {
 	max_delta_time_sec:                 f32,
 }
 
-Game_Parameters_Background :: struct {
+Game_Parameters_Bg :: struct {
 	grid_spacing:                         f32,
 	grid_line_width:                      f32,
 	grid_warp_strength:                   f32,
@@ -375,8 +376,6 @@ Game_Parameters_Background :: struct {
 	star_flare_size_multiplier:           f32,
 	star_flare_alpha_multiplier:          f32,
 	star_layer_alpha_clamp_configs:       [4][3]f32, // [layer][zoom_div, min, max]
-
-	// --- Nebulae ---
 	nebula_spawn_bounds_x:                f32,
 	nebula_spawn_bounds_y:                f32,
 	nebula_layer_depth:                   f32,
@@ -412,7 +411,6 @@ Game_Parameters_Camera :: struct {
 }
 
 Game_Parameters_VFX :: struct {
-	// --- Shockwaves & Particle Bursts ---
 	shockwave_radius_start:                 f32,
 	shockwave_duration_base_sec:            f32,
 	shockwave_duration_ln_coefficient:      f32,
@@ -447,8 +445,6 @@ Game_Parameters_VFX :: struct {
 	particle_burst_color_g3_base:           f32,
 	particle_burst_color_g3_range:          f32,
 	particle_burst_color_b3_range:          f32,
-
-	// --- Fragment Vacuum & Drift ---
 	fragments_count_min:                    i32,
 	fragments_count_base:                   i32,
 	fragments_count_speed_multiplier:       f32,
@@ -468,13 +464,12 @@ Game_Parameters_VFX :: struct {
 
 Game_Parameters :: struct {
 	physics:    Game_Parameters_Physics,
-	celestials: [CelestialType]Game_CelestialParams,
-	background: Game_Parameters_Background,
+	background: Game_Parameters_Bg,
 	ui:         Game_Parameters_UI,
 	camera:     Game_Parameters_Camera,
 	vfx:        Game_Parameters_VFX,
+	celestials: [CelestialType]Game_CelestialParams,
 }
-
 
 Game_RenderLayerType :: enum {
 	Debris,
@@ -497,29 +492,20 @@ Game_SlingshotMode :: enum {
 	Emitter,
 }
 
-Game_MenuState :: struct {
-	selected_mode:      Game_SlingshotMode,
-	selected_celestial: CelestialType,
-	scroll_offset:      f32,
-}
-
 Game_RenderState :: struct {
 	rect:                rl.Rectangle,
 	scale:               f32,
-
-	// Entity layers
 	layers:              [Game_RenderLayerType]Game_RenderLayer,
-
-	// Buffers for all text
+	show_orbits:         bool,
+	score_rect:          rl.Rectangle,
 	score_energy:        [128]byte,
 	score_objects_count: [128]byte,
 	score_avg_energy:    [128]byte,
-	score_rect:          rl.Rectangle,
-	menu:                Game_MenuState,
 }
 
 Game_Theme :: struct {
 	name:                          string,
+	camera_padding:                f32,
 	color_bg:                      rl.Color,
 	bg_grid_color:                 rl.Color,
 	bg_nebula_colors:              [4]rl.Color,
@@ -538,7 +524,6 @@ Game_Theme :: struct {
 	ui_menu_divider_color:         rl.Color, // section divider line
 	ui_out_of_bounds_margin:       f32,
 	bg_star_render_padding:        f32,
-	camera_padding:                f32,
 	bg_star_flare_layer:           int,
 	bg_star_blink_amp_base:        f32,
 	bg_star_blink_amp_scale:       f32,
@@ -595,81 +580,68 @@ Game_Debug_Section :: enum {
 	Telemetry,
 }
 
+Game_Assets :: struct {
+	assets_map: Assets_Map,
+	textures:   [Game_TextureType]Game_Texture,
+	shaders:    [Game_ShaderType]Game_Shader,
+	fonts:      [Game_FontType]Game_Font,
+}
+
 Game_DebugState :: struct {
-	initialized:     bool,
-	scroll_offset:   rl.Vector2,
-	scroll_bounds:   rl.Rectangle,
-	sections_open:   bit_set[Game_Debug_Section],
-	hover_mode:      int, // -1 = none, 0 = Normal, 1 = Emitter
-	hover_celestial: int, // -1 = none, or index into rendered list
+	initialized:                  bool,
+	draw_panel:                   bool,
+	input_blocked:                bool,
+	hover_mode:                   int, // -1 = none, 0 = Normal, 1 = Emitter
+	hover_celestial:              int, // -1 = none, or index into rendered list
+	sections_open:                bit_set[Game_Debug_Section],
+	scroll_offset:                rl.Vector2,
+	scroll_bounds:                rl.Rectangle,
+	selected_slingshot_mode:      Game_SlingshotMode,
+	selected_slingshot_celestial: CelestialType,
+}
+
+Game_CameraState :: struct {
+	rl_cam:          rl.Camera2D,
+	shake_dir:       rl.Vector2,
+	shake_intensity: f32,
+}
+
+Game_BgState :: struct {
+	stars:   [BG_STAR_COUNT]Game_BgStar,
+	nebulae: [BG_NEBULA_COUNT]Game_BgNebula,
+}
+
+Game_Score :: struct {
+	energy:             f64,
+	energy_rate_ticker: int,
+	total_objects:      int,
+	energy_gains:       [AVG_CALC_TICKS]f64,
+	energy_losses:      [AVG_CALC_TICKS]f64,
 }
 
 Game :: struct {
-	exit:                   bool,
-	elapsed:                f32,
-	dt:                     f32,
-	params:                 Game_Parameters,
-	mouse_pos:              rl.Vector2,
-
-	// Event queue
-	events:                 [MAX_ENTITIES]Game_Event,
-	events_count:           u64,
-
-	// Modifiers / Upgrades
-	modifiers:              [MAX_MODIFIERS]Game_Modifier,
-
-	// Render
-	theme:                  Game_Theme,
-	camera:                 rl.Camera2D,
-	render:                 Game_RenderState,
-	bg_stars:               [BG_STAR_COUNT]Game_BgStar,
-	bg_nebulae:             [BG_NEBULA_COUNT]Game_BgNebula,
-
-	// Assets
-	assets:                 Assets_Map,
-	textures:               [Game_TextureType]Game_Texture,
-	shaders:                [Game_ShaderType]Game_Shader,
-	fonts:                  [Game_FontType]Game_Font,
-
-	// Special render textures
-
-
-	// View options
-	show_orbits:            bool,
-
-	// Entities
-	entities:               #soa[MAX_ENTITIES]Game_Entity,
-	entities_count:         u64,
-	free_entities:          [MAX_ENTITIES]Entity,
-	free_entities_count:    u64,
-
-	// Input -> Slingshot
-	slingshot:              Game_Slingshot,
-	slingshot_snap:         Game_SlingshotSnap,
-	ring_flashes:           [8]Game_RingFlash,
-	camera_shake_intensity: f32,
-	camera_shake_dir:       rl.Vector2,
-	slingshot_shimmer_time: f32,
-	available_objects:      bit_set[CelestialType],
-
-	// Timers
-	// These are updated every frame
-	timers:                 [Game_TimerType]Timer,
-
-	// Score
-	energy:                 f64,
-	energy_rate_ticker:     int,
-	energy_gains:           [AVG_CALC_TICKS]f64,
-	energy_losses:          [AVG_CALC_TICKS]f64,
-	total_objects:          int,
-
-	// State & Pause
-	state:                  Game_State,
-	paused:                 bool,
-
-	// Debug
-	draw_debug_panel:       bool,
-	debug:                  Game_DebugState,
-	input_blocked:          bool,
+	elapsed:             f32, // Time elapsed since the start of the game, in seconds. Updated every frame.
+	dt:                  f32, // Last frame's delta time in seconds. Updated every frame.
+	mouse_pos:           rl.Vector2, // Current mouse position. Calculated at the beginning of each frame.
+	screenw:             f32,
+	screenh:             f32,
+	status:              Game_Status, // Current game status, controls the active systems.
+	theme:               Game_Theme,
+	params:              Game_Parameters,
+	assets:              Game_Assets,
+	debug:               Game_DebugState,
+	camera:              Game_CameraState,
+	render:              Game_RenderState,
+	bg:                  Game_BgState,
+	slingshot:           Game_SlingshotState,
+	score:               Game_Score,
+	timers:              [Game_TimerType]Timer, // These are updated every frame
+	entities:            #soa[MAX_ENTITIES]Game_Entity,
+	free_entities:       [MAX_ENTITIES]Entity,
+	events:              [MAX_ENTITIES]Game_Event,
+	modifiers:           [MAX_MODIFIERS]Game_Modifier,
+	events_count:        u64,
+	entities_count:      u64,
+	free_entities_count: u64,
 }
 

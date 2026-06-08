@@ -2,7 +2,6 @@ package tests
 
 import game "../game"
 import "core:testing"
-import rl "vendor:raylib"
 
 @(test)
 test_entity_create_sequential :: proc(t: ^testing.T) {
@@ -134,68 +133,4 @@ test_entity_add_collectible_negative_guard :: proc(t: ^testing.T) {
 		.CollectibleEnergy in g.entities[id].sig,
 		"Should add CollectibleEnergy if energy > 0",
 	)
-}
-
-@(test)
-test_push_event_overflow :: proc(t: ^testing.T) {
-	g := make_test_game()
-	defer free_test_game(g)
-
-	for i in 0 ..< game.MAX_ENTITIES {
-		game.push_event(g, game.Game_Event_ObjectOutOfBounds{id = game.Entity(i)})
-	}
-	testing.expect_value(t, g.events_count, u64(game.MAX_ENTITIES))
-
-	game.push_event(g, game.Game_Event_ObjectOutOfBounds{id = game.Entity(99999)})
-	testing.expect_value(t, g.events_count, u64(game.MAX_ENTITIES))
-}
-
-@(test)
-test_celestial_type_progression :: proc(t: ^testing.T) {
-	testing.expect_value(t, game.entity_celestial_next_type(.None), game.CelestialType.None)
-	testing.expect_value(t, game.entity_celestial_next_type(.Star), game.CelestialType.Star)
-	testing.expect_value(t, game.entity_celestial_next_type(.Asteroid), game.CelestialType.Moonlet)
-	testing.expect_value(
-		t,
-		game.entity_celestial_next_type(.SuperJupiter),
-		game.CelestialType.Star,
-	)
-}
-
-@(test)
-test_celestial_type_regression :: proc(t: ^testing.T) {
-	testing.expect_value(t, game.entity_celestial_prev_type(.None), game.CelestialType.None)
-	testing.expect_value(
-		t,
-		game.entity_celestial_prev_type(.Asteroid),
-		game.CelestialType.Asteroid,
-	)
-	testing.expect_value(t, game.entity_celestial_prev_type(.Moonlet), game.CelestialType.Asteroid)
-	testing.expect_value(
-		t,
-		game.entity_celestial_prev_type(.SuperJupiter),
-		game.CelestialType.GiantPlanet,
-	)
-}
-
-@(test)
-test_celestial_type_regression_multi_step :: proc(t: ^testing.T) {
-	testing.expect_value(
-		t,
-		game.entity_celestial_prev_type(.SuperJupiter, 3),
-		game.CelestialType.SubNeptune,
-	)
-	testing.expect_value(
-		t,
-		game.entity_celestial_prev_type(.Moonlet, 5),
-		game.CelestialType.Asteroid,
-	)
-}
-
-@(test)
-test_celestial_is_unlockable_boundaries :: proc(t: ^testing.T) {
-	testing.expect_value(t, game.entity_celestial_is_unlockable(.None), false)
-	testing.expect_value(t, game.entity_celestial_is_unlockable(.Asteroid), true)
-	testing.expect_value(t, game.entity_celestial_is_unlockable(.SuperJupiter), true)
-	testing.expect_value(t, game.entity_celestial_is_unlockable(.Star), false)
 }

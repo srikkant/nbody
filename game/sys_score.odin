@@ -1,10 +1,8 @@
 package game
 
 sys_score :: proc(g: ^Game) {
-	if g.paused do return
 	dt := g.dt
-
-	curr_energy := g.energy
+	curr_energy := g.score.energy
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
@@ -15,7 +13,7 @@ sys_score :: proc(g: ^Game) {
 			pos_score :=
 				1 / (g.params.physics.gravity_softening_factor + vec2_length_sq(e.pos.current))
 
-			g.energy += f64(
+			g.score.energy += f64(
 				g.params.physics.energy_gain_coefficient *
 				g.params.physics.energy_momentum_coefficient *
 				mass_score *
@@ -34,13 +32,14 @@ sys_score :: proc(g: ^Game) {
 			utils_math_update_timer(&e.energy_source.timer, dt)
 
 			if e.energy_source.timer.done {
-				g.energy += gain
+				g.score.energy += gain
 			}
 		}
 	}
 
 	if g.timers[.Score].done {
-		g.energy_gains[g.energy_rate_ticker] = (g.energy - curr_energy)
-		g.energy_rate_ticker = (g.energy_rate_ticker + 1) % AVG_CALC_TICKS
+		g.score.energy_gains[g.score.energy_rate_ticker] = (g.score.energy - curr_energy)
+		g.score.energy_rate_ticker = (g.score.energy_rate_ticker + 1) % AVG_CALC_TICKS
 	}
 }
+

@@ -4,7 +4,6 @@ import "core:math"
 import rl "vendor:raylib"
 
 sys_physics :: proc(g: ^Game) {
-	if g.paused do return
 	dt := g.dt * g.params.physics.simulation_rate_multiplier
 
 	for i in 0 ..< g.entities_count {
@@ -88,3 +87,4 @@ sys_physics :: proc(g: ^Game) {
 		}
 	}
 }
+
