@@ -241,6 +241,8 @@ Game_SlingshotState :: struct {
 	preview_times:     [600]f32,
 	snap:              Game_SlingshotSnap,
 	ring_flashes:      [8]Game_SlingshotRingFlash,
+	obj_color:         rl.Color,
+	obj_radius:        f32,
 }
 
 Game_Event_ObjectSpawn :: struct {
@@ -253,6 +255,10 @@ Game_Event_ObjectSpawn :: struct {
 	energy_source: EnergySourceComponent,
 	emitter:       EmitterComponent,
 	celestial:     CelestialComponent,
+}
+
+Game_Event_ObjectSpawn_Preview :: struct {
+	using _: Game_Event_ObjectSpawn,
 }
 
 Game_Event_ObjectOutOfBounds :: struct {

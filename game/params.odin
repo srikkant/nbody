@@ -314,6 +314,7 @@ params_init :: proc(p: ^Game_Parameters) {
 	p.vfx.fragments_drift_amplitude_x = 0.15
 	p.vfx.fragments_drift_amplitude_y = 0.15
 	p.vfx.energy_fragment_size = 2.0
+
 }
 
 theme_init :: proc(t: ^Game_Theme) {

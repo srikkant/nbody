@@ -1,6 +1,5 @@
 package game
 
-import "core:math"
 import rl "vendor:raylib"
 
 Game_InitParams :: struct {
@@ -79,6 +78,7 @@ game_reset :: proc(g: ^Game) {
 
 	sys_camera_init(g)
 
+	g.slingshot.preview = 1
 	g.slingshot.active = false
 	g.slingshot.snap.active = false
 	for i in Game_TimerType {
@@ -106,14 +106,11 @@ game_free :: proc(g: ^Game) {
 }
 
 game_run :: proc(g: ^Game) {
-	g.dt = math.min(rl.GetFrameTime(), g.params.physics.max_delta_time_sec)
-	g.elapsed += g.dt
-	g.mouse_pos = input_mouse_pos(g)
-	g.screenw = f32(rl.GetScreenWidth())
-	g.screenh = f32(rl.GetScreenHeight())
-
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
+
+	frame_setup(g)
+	input_process(g)
 
 	switch g.status {
 	case .Menu:
@@ -121,7 +118,7 @@ game_run :: proc(g: ^Game) {
 		sys_render(g)
 		sys_render_menu_main(g)
 	case .Playing:
-		sys_input(g)
+		sys_slingshot(g)
 		sys_modifier(g)
 		sys_automation(g)
 		sys_physics(g)
