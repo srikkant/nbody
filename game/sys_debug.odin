@@ -33,15 +33,13 @@ sys_debug_input :: proc(g: ^Game) {
 }
 
 debug_get_panel_rect :: proc(g: ^Game) -> rl.Rectangle {
-	ww := f32(rl.GetScreenWidth())
-	wh := f32(rl.GetScreenHeight())
 	width: f32 = 380
 	margin: f32 = 10
 	return rl.Rectangle {
-		x = ww - width - margin,
+		x = g.screenw - width - margin,
 		y = margin,
 		width = width,
-		height = wh - margin * 2,
+		height = g.screenh - margin * 2,
 	}
 }
 

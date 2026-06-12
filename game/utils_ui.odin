@@ -24,3 +24,9 @@ ui_draw_button :: proc(g: ^Game, text: cstring, rect: rl.Rectangle) -> bool {
 	return hover && rl.IsMouseButtonPressed(.LEFT)
 }
 
+// Draw a panel with a background and border using the theme colors.
+ui_draw_panel :: proc(g: ^Game, rect: rl.Rectangle) {
+	rl.DrawRectangleRounded(rect, 0.04, 4, g.theme.ui_menu_bg_color)
+	rl.DrawRectangleRoundedLines(rect, 0.04, 4, g.theme.ui_menu_accent_color)
+}
+

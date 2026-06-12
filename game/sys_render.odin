@@ -4,10 +4,8 @@ import "core:math"
 import rl "vendor:raylib"
 
 sys_render_init :: proc(g: ^Game) {
-	ww := f32(rl.GetScreenWidth())
-	wh := f32(rl.GetScreenHeight())
 
-	g.render.rect = rl.Rectangle{0, 0, ww, wh}
+	g.render.rect = rl.Rectangle{0, 0, g.screenw, g.screenh}
 	g.render.scale = 1.0
 
 	for i in 0 ..< BG_STAR_COUNT {
@@ -107,10 +105,8 @@ sys_render_init :: proc(g: ^Game) {
 sys_render_free :: proc(g: ^Game) {}
 
 sys_render :: proc(g: ^Game) {
-	ww := f32(rl.GetScreenWidth())
-	wh := f32(rl.GetScreenHeight())
 
-	g.render.rect = rl.Rectangle{0, 0, ww, wh}
+	g.render.rect = rl.Rectangle{0, 0, g.screenw, g.screenh}
 	g.render.scale = 1.0
 
 	sys_render_bg(g)
@@ -167,13 +163,11 @@ sys_render_get_entity_draw_info :: proc(
 	dest = rl.Rectangle{e.pos.current.x, e.pos.current.y, r * qm, r * qm}
 	texture = .Objects_Celestial
 
-	ww := f32(rl.GetScreenWidth())
-	wh := f32(rl.GetScreenHeight())
 	world_screen_rect := rl.Rectangle {
-		g.camera.rl_cam.target.x - (ww / 2) / g.camera.rl_cam.zoom,
-		g.camera.rl_cam.target.y - (wh / 2) / g.camera.rl_cam.zoom,
-		ww / g.camera.rl_cam.zoom,
-		wh / g.camera.rl_cam.zoom,
+		g.camera.rl_cam.target.x - (g.screenw / 2) / g.camera.rl_cam.zoom,
+		g.camera.rl_cam.target.y - (g.screenh / 2) / g.camera.rl_cam.zoom,
+		g.screenw / g.camera.rl_cam.zoom,
+		g.screenh / g.camera.rl_cam.zoom,
 	}
 
 	hit_pos, out_of_bounds := geometry_get_rectangle_intersection_point(
@@ -530,10 +524,8 @@ sys_render_entities :: proc(g: ^Game) {
 }
 
 sys_render_bg :: proc(g: ^Game) {
-	ww := f32(rl.GetScreenWidth())
-	wh := f32(rl.GetScreenHeight())
-	cx := ww / 2.0
-	cy := wh / 2.0
+	cx := g.screenw / 2.0
+	cy := g.screenh / 2.0
 
 	// Torus mapping bounds
 	L_x := g.params.background.parallax_torus_width
@@ -545,7 +537,7 @@ sys_render_bg :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Bg_Vignette)
 	rl.ClearBackground(rl.BLACK)
-	rl_texture_draw(g, .Blank, {0, 0, ww, wh}, tint = g.theme.color_bg)
+	rl_texture_draw(g, .Blank, {0, 0, g.screenw, g.screenh}, tint = g.theme.color_bg)
 	rl_end_shader(g)
 
 	// Render the nebulae
@@ -619,9 +611,9 @@ sys_render_bg :: proc(g: ^Game) {
 
 		padding := g.theme.bg_star_render_padding
 		if draw_x < -padding ||
-		   draw_x > ww + padding ||
+		   draw_x > g.screenw + padding ||
 		   draw_y < -padding ||
-		   draw_y > wh + padding {
+		   draw_y > g.screenh + padding {
 			continue
 		}
 
@@ -711,7 +703,7 @@ sys_render_bg :: proc(g: ^Game) {
 	loc_camera_zoom := rl.GetShaderLocation(shader, "camera_zoom")
 	rl.SetShaderValue(shader, loc_camera_zoom, &camera_zoom, .FLOAT)
 
-	screen_size := rl.Vector2{ww, wh}
+	screen_size := rl.Vector2{g.screenw, g.screenh}
 	loc_screen_size := rl.GetShaderLocation(shader, "screen_size")
 	rl.SetShaderValue(shader, loc_screen_size, &screen_size, .VEC2)
 
@@ -749,7 +741,7 @@ sys_render_bg :: proc(g: ^Game) {
 		rl.SetShaderValueV(shader, loc_wells, &wells[0], .VEC4, well_count)
 	}
 
-	rl_texture_draw(g, .Blank, {0, 0, ww, wh})
+	rl_texture_draw(g, .Blank, {0, 0, g.screenw, g.screenh})
 
 	rl_end_shader(g)
 }

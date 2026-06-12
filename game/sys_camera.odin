@@ -12,10 +12,7 @@ sys_camera_init :: proc(g: ^Game) {
 }
 
 sys_camera :: proc(g: ^Game) {
-	ww := f32(rl.GetScreenWidth())
-	wh := f32(rl.GetScreenHeight())
-
-	g.camera.rl_cam.offset = rl.Vector2{ww / 2, wh / 2}
+	g.camera.rl_cam.offset = rl.Vector2{g.screenw / 2, g.screenh / 2}
 
 	dt := g.dt
 	if g.camera.shake_intensity > 0.05 {
@@ -64,8 +61,8 @@ sys_camera :: proc(g: ^Game) {
 	total_w := max_x * 2 + padding
 	total_h := max_y * 2 + padding
 
-	zoom_x := ww / total_w
-	zoom_y := wh / total_h
+	zoom_x := g.screenw / total_w
+	zoom_y := g.screenh / total_h
 	target_zoom := min(zoom_x, zoom_y)
 	target_zoom = clamp(target_zoom, g.params.camera.zoom_min, g.params.camera.zoom_max)
 
