@@ -5,6 +5,7 @@ import rl "vendor:raylib"
 // Draws a button with the given text and rectangle.
 // Returns true if the button is hovered and clicked.
 ui_draw_button :: proc(g: ^Game, text: cstring, rect: rl.Rectangle) -> bool {
+	// TODO: Check if this can use our common util
 	mouse_pos := rl.GetMousePosition()
 	hover := rl.CheckCollisionPointRec(mouse_pos, rect)
 
@@ -21,7 +22,10 @@ ui_draw_button :: proc(g: ^Game, text: cstring, rect: rl.Rectangle) -> bool {
 	rl.DrawRectangleRoundedLines(rect, 0.2, 4, border_color)
 	rl_text_draw(g, .Body, text, text_pos, text_color)
 
-	return hover && rl.IsMouseButtonPressed(.LEFT)
+	click := hover && rl.IsMouseButtonPressed(.LEFT)
+	if click do g.input.ignore = true
+
+	return click
 }
 
 // Draw a panel with a background and border using the theme colors.

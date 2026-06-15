@@ -11,7 +11,6 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.SetTraceLogLevel(rl.TraceLogLevel.WARNING)
 	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_RESIZABLE})
 	rl.InitWindow(params.w, params.h, "n-body forge")
-	rl.SetTargetFPS(60)
 	rl.SetExitKey(.KEY_NULL)
 	rl.HideCursor()
 
@@ -79,8 +78,9 @@ game_reset :: proc(g: ^Game) {
 	sys_camera_init(g)
 
 	g.slingshot.preview = 1
-	g.slingshot.active = false
+	g.slingshot.status = .Inactive
 	g.slingshot.snap.active = false
+
 	for i in Game_TimerType {
 		g.timers[i].curr = 0
 	}

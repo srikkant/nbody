@@ -22,10 +22,10 @@ physics_check_preview_collision :: proc(g: ^Game, pos: rl.Vector2, radius: f32) 
 sys_render_slingshot_trigger :: proc(g: ^Game) {
 	star := &g.entities[Entity(0)]
 
-	drag := g.mouse_pos - g.slingshot.start_pos
+	drag := g.slingshot.end_pos - g.slingshot.start_pos
 	pull_dist := vec2_length(drag)
 	P0 := g.slingshot.start_pos
-	P2 := g.mouse_pos
+	P2 := g.slingshot.end_pos
 	mid := (P0 + P2) / 2.0
 
 	// Curve towards central star
@@ -66,7 +66,7 @@ sys_render_slingshot_preview :: proc(g: ^Game) {
 	if g.slingshot.preview == 0 || !g.slingshot.can_launch do return
 
 	pos := g.slingshot.start_pos
-	vel := physics_get_slingshot_release_velocity(g, g.mouse_pos)
+	vel := physics_get_slingshot_release_velocity(g)
 
 	frames := clamp(g.params.physics.slingshot_preview_length * i32(g.slingshot.preview), 1, 599)
 	g.slingshot.preview_points[0] = pos
@@ -147,7 +147,7 @@ sys_render_slingshot_preview :: proc(g: ^Game) {
 }
 
 sys_render_slingshot :: proc(g: ^Game) {
-	if !g.slingshot.active do return
+	if g.slingshot.status != .Active do return
 
 	sys_render_slingshot_trigger(g)
 	sys_render_slingshot_preview(g)

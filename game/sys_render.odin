@@ -128,17 +128,17 @@ sys_render :: proc(g: ^Game) {
 
 sys_render_cursor :: proc(g: ^Game) {
 	rl.DrawCircle(
-		i32(g.mouse_pos.x),
-		i32(g.mouse_pos.y),
+		i32(g.input.mouse_pos.x),
+		i32(g.input.mouse_pos.y),
 		g.params.ui.cursor_indicator_radius,
 		rl.WHITE,
 	)
 
-	if g.slingshot.active do return
+	if g.slingshot.status == .Active do return
 
 	rl.DrawCircle(
-		i32(g.mouse_pos.x),
-		i32(g.mouse_pos.y),
+		i32(g.input.mouse_pos.x),
+		i32(g.input.mouse_pos.y),
 		g.params.physics.energy_collect_distance,
 		rl.Color{255, 255, 255, g.theme.ui_collect_area_opacity},
 	)
@@ -783,7 +783,7 @@ sys_render_collect_gravity_wells :: proc(
 		temp_count += 1
 	}
 
-	if g.slingshot.active && temp_count < MAX_ENTITIES {
+	if g.slingshot.status == .Active && temp_count < MAX_ENTITIES {
 		launch_type: CelestialType
 		switch out in g.slingshot.output {
 		case Game_SlingshotOutput_Emitter:
@@ -794,7 +794,7 @@ sys_render_collect_gravity_wells :: proc(
 		density := g.params.celestials[launch_type].density
 		radius := g.params.celestials[launch_type].radius
 		payload_mass := density * (radius * radius)
-		pull_dist := rl.Vector2Distance(g.slingshot.start_pos, g.mouse_pos)
+		pull_dist := rl.Vector2Distance(g.slingshot.start_pos, g.slingshot.end_pos)
 
 		slingshot_well_mass := (payload_mass + 50.0) * (pull_dist / 100.0) * 1.5
 		slingshot_well_mass = clamp(slingshot_well_mass, 20.0, 1500.0)

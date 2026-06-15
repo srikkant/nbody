@@ -2,20 +2,9 @@ package game
 import "core:math"
 
 sys_slingshot :: proc(g: ^Game) {
-	if rl_is_mouse_button_pressed(g, .LEFT) {
-		g.slingshot.active = true
-		g.slingshot.start_pos = g.mouse_pos
-	}
+	if g.slingshot.status == .Inactive do return
 
-	if rl_is_mouse_button_released(g, .RIGHT) {
-		g.slingshot.active = false
-	}
-
-	// If slingshot is not active, skip the rest of the logic
-	if !g.slingshot.active do return
-
-	end := input_mouse_pos(g)
-	vel := physics_get_slingshot_release_velocity(g, end)
+	vel := physics_get_slingshot_release_velocity(g)
 
 	cost: f64
 	obj_type: ComponentType
@@ -63,8 +52,8 @@ sys_slingshot :: proc(g: ^Game) {
 
 	g.slingshot.can_launch = g.score.energy >= cost
 
-	if rl_is_mouse_button_released(g, .LEFT) {
-		g.slingshot.active = false
+	if g.slingshot.status == .Released {
+		g.slingshot.status = .Inactive
 
 		if g.slingshot.can_launch {
 			push_event(g, event)

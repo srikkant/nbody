@@ -228,12 +228,19 @@ Game_SlingshotRingFlash :: struct {
 	life:       f32, // 1.0 down to 0.0
 }
 
+Game_SlingshotStatus :: enum {
+	Inactive,
+	Active,
+	Released,
+}
+
 Game_SlingshotState :: struct {
 	available_objects: bit_set[CelestialType],
 	output:            Game_SlingshotOutput,
-	active:            bool,
+	status:            Game_SlingshotStatus,
 	can_launch:        bool,
 	start_pos:         rl.Vector2,
+	end_pos:           rl.Vector2,
 	shimmer_time:      f32,
 	launch_power:      f32,
 	preview:           f32,
@@ -625,16 +632,60 @@ Game_Score :: struct {
 	energy_losses:      [AVG_CALC_TICKS]f64,
 }
 
+Game_InputInteractionType :: enum {
+	Down,
+	Pressed,
+	Released,
+}
+
+Game_InputMatcherBase :: struct {
+	interaction: Game_InputInteractionType,
+	status:      Game_Status,
+}
+
+Game_InputMatcherMouse :: struct {
+	using base: Game_InputMatcherBase,
+	key:        rl.MouseButton,
+}
+
+Game_InputMatcherKeyboard :: struct {
+	using base: Game_InputMatcherBase,
+	key:        rl.KeyboardKey,
+}
+
+Game_InputMatcher :: union {
+	Game_InputMatcherMouse,
+	Game_InputMatcherKeyboard,
+}
+
+Game_InputAction :: enum {
+	None,
+	Game_Pause,
+	Game_Resume,
+	Slingshot_Activate,
+	Slingshot_Move,
+	Slingshot_Release,
+	Slingshot_Cancel,
+	View_ToggleOrbit,
+	Debug_ToggleMenu,
+}
+
+Game_InputState :: struct {
+	ignore:    bool,
+	mouse_pos: rl.Vector2, // Current mouse position. Calculated at the beginning of each frame.
+	action:    Game_InputAction,
+}
+
 Game :: struct {
 	elapsed:             f32, // Time elapsed since the start of the game, in seconds. Updated every frame.
 	dt:                  f32, // Last frame's delta time in seconds. Updated every frame.
-	mouse_pos:           rl.Vector2, // Current mouse position. Calculated at the beginning of each frame.
 	screenw:             f32,
 	screenh:             f32,
 	status:              Game_Status, // Current game status, controls the active systems.
 	theme:               Game_Theme,
 	params:              Game_Parameters,
 	assets:              Game_Assets,
+	input:               Game_InputState,
 	debug:               Game_DebugState,
 	camera:              Game_CameraState,
 	render:              Game_RenderState,

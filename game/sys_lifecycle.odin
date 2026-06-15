@@ -403,7 +403,7 @@ sys_lifecycle_handle_destroyed :: proc(g: ^Game, event: ^Game_Event_ObjectDestro
 }
 
 sys_lifecycle_handle_fragments :: proc(g: ^Game) {
-	cursor := &g.mouse_pos
+	cursor := &g.input.mouse_pos
 	dt := g.dt
 
 	for i in 0 ..< g.entities_count {

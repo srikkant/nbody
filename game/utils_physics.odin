@@ -27,8 +27,8 @@ physics_get_gravitational_acceleration :: proc(
 }
 
 
-physics_get_slingshot_release_velocity :: proc(g: ^Game, release_pos: rl.Vector2) -> rl.Vector2 {
-	return (g.slingshot.start_pos - release_pos) * g.params.physics.slingshot_launch_power
+physics_get_slingshot_release_velocity :: proc(g: ^Game) -> rl.Vector2 {
+	return (g.slingshot.start_pos - g.slingshot.end_pos) * g.params.physics.slingshot_launch_power
 }
 
 physics_radius_from_mass_density :: proc(mass: f32, density: f32) -> f32 {
