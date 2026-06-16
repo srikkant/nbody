@@ -1,6 +1,7 @@
 package game
 
 import "core:math"
+import "core:math/rand"
 import rl "vendor:raylib"
 
 CAMERA_SIG: Signature : {.Position}
@@ -17,7 +18,7 @@ sys_camera :: proc(g: ^Game) {
 	dt := g.dt
 	if g.camera.shake_intensity > 0.05 {
 		g.camera.shake_intensity *= math.exp(-12.0 * dt)
-		angle := f32(rl.GetRandomValue(0, 360)) * (math.PI / 180.0)
+		angle := rand.float32() * math.TAU
 		shake_offset := rl.Vector2{math.cos(angle), math.sin(angle)} * g.camera.shake_intensity
 		g.camera.rl_cam.offset += shake_offset
 	} else {
@@ -32,7 +33,7 @@ sys_camera :: proc(g: ^Game) {
 		// Scale vibration with pull distance
 		vibration := clamp(pull_dist * f32(0.012), f32(0.0), f32(3.5))
 		if vibration > 0.05 {
-			angle := f32(rl.GetRandomValue(0, 360)) * (math.PI / 180.0)
+			angle := rand.float32() * math.TAU
 			vib_offset := rl.Vector2{math.cos(angle), math.sin(angle)} * vibration
 			g.camera.rl_cam.offset += vib_offset
 		}

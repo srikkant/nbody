@@ -5,10 +5,10 @@ import rl "vendor:raylib"
 
 rl_text_measure :: proc(g: ^Game, type: Game_FontType, text: cstring) -> rl.Vector2 {
 	return rl.MeasureTextEx(
-		g.assets.assets_map.fonts[g.assets.fonts[type].font],
+		assets_get_font(g, type),
 		text,
-		g.assets.fonts[type].size,
-		g.assets.fonts[type].spacing,
+		assets_get_font_size(g, type),
+		assets_get_font_spacing(g, type),
 	)
 }
 
@@ -22,13 +22,13 @@ rl_text_draw :: proc(
 	rotation: f32 = 0,
 ) {
 	rl.DrawTextPro(
-		g.assets.assets_map.fonts[g.assets.fonts[type].font],
+		assets_get_font(g, type),
 		text,
 		pos,
 		origin,
 		rotation,
-		g.assets.fonts[type].size,
-		g.assets.fonts[type].spacing,
+		assets_get_font_size(g, type),
+		assets_get_font_spacing(g, type),
 		color,
 	)
 }
@@ -42,8 +42,8 @@ rl_texture_draw :: proc(
 	tint: rl.Color = rl.WHITE,
 ) {
 	rl.DrawTexturePro(
-		g.assets.assets_map.textures[g.assets.textures[type].texture],
-		g.assets.textures[type].rect,
+		assets_get_texture(g, type),
+		assets_get_texture_rect(g, type),
 		dest,
 		origin,
 		rotation,
@@ -52,7 +52,7 @@ rl_texture_draw :: proc(
 }
 
 rl_begin_shader :: proc(g: ^Game, type: Game_ShaderType) {
-	rl.BeginShaderMode(g.assets.assets_map.shaders[g.assets.shaders[type].shader])
+	rl.BeginShaderMode(assets_get_shader(g, type))
 }
 
 rl_end_shader :: proc(g: ^Game) {

@@ -1,57 +1,32 @@
 package game
 
 import "core:math"
+import "core:math/rand"
 import rl "vendor:raylib"
 
-sys_render_init :: proc(g: ^Game) {
-
-	g.render.rect = rl.Rectangle{0, 0, g.screenw, g.screenh}
-	g.render.scale = 1.0
+sys_render_generate_bg_stars :: proc(g: ^Game) {
+	p := &g.params.background
 
 	for i in 0 ..< BG_STAR_COUNT {
 		layer := 0
-		if i >= int(g.params.background.star_layer3_start_index) {
+		if i >= int(p.star_layer3_start_index) {
 			layer = 3
-		} else if i >= int(g.params.background.star_layer2_start_index) {
+		} else if i >= int(p.star_layer2_start_index) {
 			layer = 2
-		} else if i >= int(g.params.background.star_layer1_start_index) {
+		} else if i >= int(p.star_layer1_start_index) {
 			layer = 1
 		}
 
-		x :=
-			f32(
-				rl.GetRandomValue(
-					i32(-g.params.background.star_spawn_bounds_x * 10),
-					i32(g.params.background.star_spawn_bounds_x * 10),
-				),
-			) /
-			10.0
-		y :=
-			f32(
-				rl.GetRandomValue(
-					i32(-g.params.background.star_spawn_bounds_y * 10),
-					i32(g.params.background.star_spawn_bounds_y * 10),
-				),
-			) /
-			10.0
+		x := rand.float32_range(-p.star_spawn_bounds_x, p.star_spawn_bounds_x)
+		y := rand.float32_range(-p.star_spawn_bounds_y, p.star_spawn_bounds_y)
 
-		rand_val := f32(rl.GetRandomValue(0, 100)) / 100.0
-		size :=
-			g.params.background.star_sizes[layer][0] +
-			g.params.background.star_sizes[layer][1] * rand_val
+		rand_val := rand.float32()
+		size := p.star_sizes[layer][0] + p.star_sizes[layer][1] * rand_val
 
-		blink_speed :=
-			f32(
-				rl.GetRandomValue(
-					i32(g.params.background.star_blink_speed_min * 10),
-					i32(g.params.background.star_blink_speed_max * 10),
-				),
-			) /
-			10.0
-		blink_phase :=
-			f32(rl.GetRandomValue(0, i32(g.params.background.star_blink_phase_max * 100))) / 100.0
+		blink_speed := rand.float32_range(p.star_blink_speed_min, p.star_blink_speed_max)
+		blink_phase := rand.float32_range(0.0, p.star_blink_phase_max)
 
-		color := g.theme.star_colors[rl.GetRandomValue(0, 4)]
+		color := rand.choice(g.theme.star_colors[:])
 
 		g.bg.stars[i] = Game_BgStar {
 			pos         = rl.Vector2{x, y},
@@ -63,34 +38,23 @@ sys_render_init :: proc(g: ^Game) {
 		}
 	}
 
+}
+
+sys_render_generate_bg_nebulae :: proc(g: ^Game) {
+	p := &g.params.background
 	for i in 0 ..< BG_NEBULA_COUNT {
-		neb_x :=
-			f32(
-				rl.GetRandomValue(
-					i32(-g.params.background.nebula_spawn_bounds_x * 10),
-					i32(g.params.background.nebula_spawn_bounds_x * 10),
-				),
-			) /
-			10.0
-		neb_y :=
-			f32(
-				rl.GetRandomValue(
-					i32(-g.params.background.nebula_spawn_bounds_y * 10),
-					i32(g.params.background.nebula_spawn_bounds_y * 10),
-				),
-			) /
-			10.0
+		neb_x := rand.float32_range(-p.nebula_spawn_bounds_x, p.nebula_spawn_bounds_x)
+		neb_y := rand.float32_range(-p.nebula_spawn_bounds_y, p.nebula_spawn_bounds_y)
 
-		r_min := g.params.background.nebula_radius_ranges[i][0]
-		r_max := g.params.background.nebula_radius_ranges[i][1]
-		radius := f32(rl.GetRandomValue(i32(r_min), i32(r_max)))
+		r_min := p.nebula_radius_ranges[i][0]
+		r_max := p.nebula_radius_ranges[i][1]
+		radius := rand.float32_range(r_min, r_max)
 
-		s_min := g.params.background.nebula_drift_speed_ranges[i][0]
-		s_max := g.params.background.nebula_drift_speed_ranges[i][1]
-		drift_speed := f32(rl.GetRandomValue(i32(s_min * 10), i32(s_max * 10))) / 10.0
+		s_min := p.nebula_drift_speed_ranges[i][0]
+		s_max := p.nebula_drift_speed_ranges[i][1]
+		drift_speed := rand.float32_range(s_min, s_max)
 
-		drift_phase :=
-			f32(rl.GetRandomValue(0, i32(g.params.background.star_blink_phase_max * 100))) / 100.0
+		drift_phase := rand.float32_range(0.0, p.star_blink_phase_max)
 
 		g.bg.nebulae[i] = Game_BgNebula {
 			pos         = rl.Vector2{neb_x, neb_y},
@@ -102,10 +66,14 @@ sys_render_init :: proc(g: ^Game) {
 	}
 }
 
+sys_render_init :: proc(g: ^Game) {
+	sys_render_generate_bg_stars(g)
+	sys_render_generate_bg_nebulae(g)
+}
+
 sys_render_free :: proc(g: ^Game) {}
 
 sys_render :: proc(g: ^Game) {
-
 	g.render.rect = rl.Rectangle{0, 0, g.screenw, g.screenh}
 	g.render.scale = 1.0
 
@@ -205,7 +173,6 @@ sys_render_entities :: proc(g: ^Game) {
 
 		if RENDER_SIG <= e.sig {
 			if .Emitter in e.sig {
-				// Emitters always get their own layer (geometric render)
 				sys_add_entity_to_layer(g, id, .EmitterStations)
 			} else if .Celestial in e.sig {
 				cp := g.params.celestials[e.celestial.type]
@@ -250,8 +217,7 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Celestial_Terrestrial_Layer)
 
-	shader_terr :=
-		g.assets.assets_map.shaders[g.assets.shaders[.Celestial_Terrestrial_Layer].shader]
+	shader_terr := assets_get_shader(g, .Celestial_Terrestrial_Layer)
 	loc_glow_terr := rl.GetShaderLocation(shader_terr, "glow_intensity")
 
 	for i in 0 ..< g.render.layers[.Terrestrial].count {
@@ -269,7 +235,7 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Celestial_GasGiant_Layer)
 
-	shader_gas := g.assets.assets_map.shaders[g.assets.shaders[.Celestial_GasGiant_Layer].shader]
+	shader_gas := assets_get_shader(g, .Celestial_GasGiant_Layer)
 	loc_gas_sec := rl.GetShaderLocation(shader_gas, "seconds")
 	loc_glow_gas := rl.GetShaderLocation(shader_gas, "glow_intensity")
 	rl.SetShaderValue(shader_gas, loc_gas_sec, &g.elapsed, .FLOAT)
@@ -289,7 +255,7 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Celestial_Star_Layer)
 
-	shader_star := g.assets.assets_map.shaders[g.assets.shaders[.Celestial_Star_Layer].shader]
+	shader_star := assets_get_shader(g, .Celestial_Star_Layer)
 	loc_star_sec := rl.GetShaderLocation(shader_star, "seconds")
 	rl.SetShaderValue(shader_star, loc_star_sec, &g.elapsed, .FLOAT)
 
@@ -345,7 +311,7 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Energy_Shader)
 
-	energy_shader := g.assets.assets_map.shaders[g.assets.shaders[.Energy_Shader].shader]
+	energy_shader := assets_get_shader(g, .Energy_Shader)
 	energy_loc := rl.GetShaderLocation(energy_shader, "seconds")
 	rl.SetShaderValue(energy_shader, energy_loc, &g.elapsed, .FLOAT)
 
@@ -459,7 +425,7 @@ sys_render_entities :: proc(g: ^Game) {
 	}
 
 	rl_begin_shader(g, .Vfx_Shader)
-	vfx_shader := g.assets.assets_map.shaders[g.assets.shaders[.Vfx_Shader].shader]
+	vfx_shader := assets_get_shader(g, .Vfx_Shader)
 	loc_vfx_type := rl.GetShaderLocation(vfx_shader, "u_vfx_type")
 	loc_vfx_sec := rl.GetShaderLocation(vfx_shader, "seconds")
 	rl.SetShaderValue(vfx_shader, loc_vfx_sec, &g.elapsed, .FLOAT)
@@ -527,7 +493,6 @@ sys_render_bg :: proc(g: ^Game) {
 	cx := g.screenw / 2.0
 	cy := g.screenh / 2.0
 
-	// Torus mapping bounds
 	L_x := g.params.background.parallax_torus_width
 	L_y := g.params.background.parallax_torus_height
 
@@ -686,150 +651,5 @@ sys_render_bg :: proc(g: ^Game) {
 			}
 		}
 	}
-
-	// Gravity-distorted world grid overlay
-	rl_begin_shader(g, .BgGrid_Shader)
-
-	shader := g.assets.assets_map.shaders[g.assets.shaders[.BgGrid_Shader].shader]
-
-	loc_seconds := rl.GetShaderLocation(shader, "seconds")
-	rl.SetShaderValue(shader, loc_seconds, &g.elapsed, .FLOAT)
-
-	camera_target := g.camera.rl_cam.target
-	loc_camera_target := rl.GetShaderLocation(shader, "camera_target")
-	rl.SetShaderValue(shader, loc_camera_target, &camera_target, .VEC2)
-
-	camera_zoom := g.camera.rl_cam.zoom
-	loc_camera_zoom := rl.GetShaderLocation(shader, "camera_zoom")
-	rl.SetShaderValue(shader, loc_camera_zoom, &camera_zoom, .FLOAT)
-
-	screen_size := rl.Vector2{g.screenw, g.screenh}
-	loc_screen_size := rl.GetShaderLocation(shader, "screen_size")
-	rl.SetShaderValue(shader, loc_screen_size, &screen_size, .VEC2)
-
-	grid_spacing := g.params.background.grid_spacing
-	loc_grid_spacing := rl.GetShaderLocation(shader, "grid_spacing")
-	rl.SetShaderValue(shader, loc_grid_spacing, &grid_spacing, .FLOAT)
-
-	grid_line_width := g.params.background.grid_line_width
-	loc_grid_line_width := rl.GetShaderLocation(shader, "grid_line_width")
-	rl.SetShaderValue(shader, loc_grid_line_width, &grid_line_width, .FLOAT)
-
-	grid_col_normalized := rl.Vector4 {
-		f32(g.theme.bg_grid_color.r) / 255.0,
-		f32(g.theme.bg_grid_color.g) / 255.0,
-		f32(g.theme.bg_grid_color.b) / 255.0,
-		f32(g.theme.bg_grid_color.a) / 255.0,
-	}
-	loc_grid_color := rl.GetShaderLocation(shader, "grid_color")
-	rl.SetShaderValue(shader, loc_grid_color, &grid_col_normalized, .VEC4)
-
-	gravity_constant := g.params.physics.gravity_constant
-	loc_gravity_constant := rl.GetShaderLocation(shader, "gravity_constant")
-	rl.SetShaderValue(shader, loc_gravity_constant, &gravity_constant, .FLOAT)
-
-	warp_strength := g.params.background.grid_warp_strength
-	loc_warp_strength := rl.GetShaderLocation(shader, "warp_strength")
-	rl.SetShaderValue(shader, loc_warp_strength, &warp_strength, .FLOAT)
-
-	wells, well_count := sys_render_collect_gravity_wells(g)
-	loc_well_count := rl.GetShaderLocation(shader, "well_count")
-	rl.SetShaderValue(shader, loc_well_count, &well_count, .INT)
-
-	if well_count > 0 {
-		loc_wells := rl.GetShaderLocation(shader, "wells")
-		rl.SetShaderValueV(shader, loc_wells, &wells[0], .VEC4, well_count)
-	}
-
-	rl_texture_draw(g, .Blank, {0, 0, g.screenw, g.screenh})
-
-	rl_end_shader(g)
-}
-
-sys_render_collect_gravity_wells :: proc(
-	g: ^Game,
-) -> (
-	wells: [MAX_GRID_WELLS]rl.Vector4,
-	count: i32,
-) {
-	// A small struct for sorting
-	WellInfo :: struct {
-		pos:       rl.Vector2,
-		mass:      f32,
-		radius:    f32,
-		influence: f32,
-	}
-
-	temp_wells: [MAX_ENTITIES]WellInfo
-	temp_count := 0
-
-	for i in 0 ..< g.entities_count {
-		if temp_count >= MAX_ENTITIES do break
-
-		e := &g.entities[i]
-		if !(PHYSICS_SIG <= e.sig) do continue
-		if e.mass <= 0.0 do continue
-
-		diff := e.pos.current - g.camera.rl_cam.target
-		dist_sq := diff.x * diff.x + diff.y * diff.y
-		influence := e.mass / (dist_sq + 1.0)
-
-		temp_wells[temp_count] = WellInfo {
-			pos       = e.pos.current,
-			mass      = e.mass,
-			radius    = e.radius,
-			influence = influence,
-		}
-		temp_count += 1
-	}
-
-	if g.slingshot.status == .Active && temp_count < MAX_ENTITIES {
-		launch_type: CelestialType
-		switch out in g.slingshot.output {
-		case Game_SlingshotOutput_Emitter:
-			launch_type = out.emitter.emit_celestial.type
-		case Game_SlingshotOutput_Celestial:
-			launch_type = out.celestial.type
-		}
-		density := g.params.celestials[launch_type].density
-		radius := g.params.celestials[launch_type].radius
-		payload_mass := density * (radius * radius)
-		pull_dist := rl.Vector2Distance(g.slingshot.start_pos, g.slingshot.end_pos)
-
-		slingshot_well_mass := (payload_mass + 50.0) * (pull_dist / 100.0) * 1.5
-		slingshot_well_mass = clamp(slingshot_well_mass, 20.0, 1500.0)
-		slingshot_well_radius := radius * 2.5
-
-		diff := g.slingshot.start_pos - g.camera.rl_cam.target
-		dist_sq := diff.x * diff.x + diff.y * diff.y
-		influence := slingshot_well_mass / (dist_sq + 1.0)
-
-		temp_wells[temp_count] = WellInfo {
-			pos       = g.slingshot.start_pos,
-			mass      = slingshot_well_mass,
-			radius    = slingshot_well_radius,
-			influence = influence,
-		}
-		temp_count += 1
-	}
-
-	// Sort temp_wells by influence descending (simple insertion sort)
-	for i in 1 ..< temp_count {
-		key := temp_wells[i]
-		j := i - 1
-		for j >= 0 && temp_wells[j].influence < key.influence {
-			temp_wells[j + 1] = temp_wells[j]
-			j = j - 1
-		}
-		temp_wells[j + 1] = key
-	}
-
-	count = i32(min(temp_count, MAX_GRID_WELLS))
-	for i in 0 ..< count {
-		w := temp_wells[i]
-		wells[i] = rl.Vector4{w.pos.x, w.pos.y, w.mass, w.radius}
-	}
-
-	return wells, count
 }
 

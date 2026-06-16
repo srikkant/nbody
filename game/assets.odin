@@ -3,44 +3,28 @@ package game
 import "core:math"
 import rl "vendor:raylib"
 
+SHADER_PATHS: [Assets_Shader]cstring = {
+	.Vignette              = "./assets/shaders/vignette.frag",
+	.Celestial_Debris      = "./assets/shaders/celestial_debris.frag",
+	.Celestial_Terrestrial = "./assets/shaders/celestial_terrestrial.frag",
+	.Celestial_GasGiant    = "./assets/shaders/celestial_gasgiant.frag",
+	.Celestial_Star        = "./assets/shaders/celestial_star.frag",
+	.BgGrid_Gravity        = "./assets/shaders/bg_grid_gravity.frag",
+	.Energy_Shader         = "./assets/shaders/energy_glow.frag",
+	.Vfx_Effects           = "./assets/shaders/vfx_effects.frag",
+}
+
 assets_map_load :: proc(g: ^Game) {
 	blank_image := rl.GenImageColor(1, 1, rl.WHITE)
 	defer rl.UnloadImage(blank_image)
 
+	for s in Assets_Shader {
+		g.assets.assets_map.shaders[s] = rl.LoadShader(nil, SHADER_PATHS[s])
+	}
+
 	g.assets.assets_map.textures[.Blank] = rl.LoadTextureFromImage(blank_image)
 	g.assets.assets_map.textures[.Bg] = rl.LoadTexture("./assets/textures/bg.png")
 	g.assets.assets_map.textures[.Atlas] = rl.LoadTexture("./assets/textures/atlas.png")
-
-	g.assets.assets_map.shaders[.Celestial_Debris] = rl.LoadShader(
-		nil,
-		"./assets/shaders/celestial_debris.frag",
-	)
-	g.assets.assets_map.shaders[.Vignette] = rl.LoadShader(nil, "./assets/shaders/vignette.frag")
-	g.assets.assets_map.shaders[.Celestial_Terrestrial] = rl.LoadShader(
-		nil,
-		"./assets/shaders/celestial_terrestrial.frag",
-	)
-	g.assets.assets_map.shaders[.Celestial_GasGiant] = rl.LoadShader(
-		nil,
-		"./assets/shaders/celestial_gasgiant.frag",
-	)
-	g.assets.assets_map.shaders[.Celestial_Star] = rl.LoadShader(
-		nil,
-		"./assets/shaders/celestial_star.frag",
-	)
-	g.assets.assets_map.shaders[.BgGrid_Gravity] = rl.LoadShader(
-		nil,
-		"./assets/shaders/bg_grid_gravity.frag",
-	)
-	g.assets.assets_map.shaders[.Energy_Shader] = rl.LoadShader(
-		nil,
-		"./assets/shaders/energy_glow.frag",
-	)
-	g.assets.assets_map.shaders[.Vfx_Effects] = rl.LoadShader(
-		nil,
-		"./assets/shaders/vfx_effects.frag",
-	)
-
 	g.assets.assets_map.fonts[.Heading] = rl.LoadFontEx("./assets/fonts/heading.ttf", 18, nil, 0)
 	g.assets.assets_map.fonts[.Body] = rl.LoadFontEx("./assets/fonts/body.ttf", 14, nil, 0)
 
@@ -123,21 +107,17 @@ assets_map_load :: proc(g: ^Game) {
 }
 
 assets_map_free :: proc(g: ^Game) {
-	rl.UnloadFont(g.assets.assets_map.fonts[.Heading])
-	rl.UnloadFont(g.assets.assets_map.fonts[.Body])
-	rl.UnloadTexture(g.assets.assets_map.textures[.Bg])
-	rl.UnloadTexture(g.assets.assets_map.textures[.Atlas])
-	rl.UnloadTexture(g.assets.assets_map.textures[.Blank])
-	rl.UnloadTexture(g.assets.assets_map.textures[.BgStarGlow])
-	rl.UnloadTexture(g.assets.assets_map.textures[.BgStarFlare])
-	rl.UnloadShader(g.assets.assets_map.shaders[.Celestial_Debris])
-	rl.UnloadShader(g.assets.assets_map.shaders[.Vignette])
-	rl.UnloadShader(g.assets.assets_map.shaders[.Celestial_Terrestrial])
-	rl.UnloadShader(g.assets.assets_map.shaders[.Celestial_GasGiant])
-	rl.UnloadShader(g.assets.assets_map.shaders[.Celestial_Star])
-	rl.UnloadShader(g.assets.assets_map.shaders[.BgGrid_Gravity])
-	rl.UnloadShader(g.assets.assets_map.shaders[.Energy_Shader])
-	rl.UnloadShader(g.assets.assets_map.shaders[.Vfx_Effects])
+	for f in Assets_Font {
+		rl.UnloadFont(g.assets.assets_map.fonts[f])
+	}
+
+	for t in Assets_Texture {
+		rl.UnloadTexture(g.assets.assets_map.textures[t])
+	}
+
+	for s in Assets_Shader {
+		rl.UnloadShader(g.assets.assets_map.shaders[s])
+	}
 }
 
 assets_fonts_load :: proc(g: ^Game) {
@@ -231,4 +211,29 @@ assets_shaders_load :: proc(g: ^Game) {
 		shader = .Vfx_Effects,
 	}
 }
+
+assets_get_shader :: proc(g: ^Game, type: Game_ShaderType) -> rl.Shader {
+	return g.assets.assets_map.shaders[g.assets.shaders[type].shader]
+}
+
+assets_get_texture :: proc(g: ^Game, type: Game_TextureType) -> rl.Texture2D {
+	return g.assets.assets_map.textures[g.assets.textures[type].texture]
+}
+
+assets_get_texture_rect :: proc(g: ^Game, type: Game_TextureType) -> rl.Rectangle {
+	return g.assets.textures[type].rect
+}
+
+assets_get_font :: proc(g: ^Game, type: Game_FontType) -> rl.Font {
+	return g.assets.assets_map.fonts[g.assets.fonts[type].font]
+}
+
+assets_get_font_size :: proc(g: ^Game, type: Game_FontType) -> f32 {
+	return g.assets.fonts[type].size
+}
+
+assets_get_font_spacing :: proc(g: ^Game, type: Game_FontType) -> f32 {
+	return g.assets.fonts[type].spacing
+}
+
 

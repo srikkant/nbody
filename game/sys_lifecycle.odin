@@ -1,6 +1,7 @@
 package game
 
 import "core:math"
+import "core:math/rand"
 import rl "vendor:raylib"
 
 Game_Event_CollisionType :: enum {
@@ -113,26 +114,21 @@ sys_lifecycle_spawn_debris_particle_burst :: proc(g: ^Game, pos: rl.Vector2, ene
 
 	for j in 0 ..< active_count {
 		// Random direction
-		angle := f32(rl.GetRandomValue(0, 360)) * (math.PI / 180.0)
+		angle := rand.float32() * math.TAU
 		dir := rl.Vector2{math.cos(angle), math.sin(angle)}
 
 		base_speed := f32(
 			f64(g.params.vfx.particle_burst_speed_base) +
 			math.sqrt(energy) * f64(g.params.vfx.particle_burst_speed_sqrt_coefficient),
 		)
-		speed :=
-			base_speed *
-			(f32(
-						rl.GetRandomValue(
-							i32(g.params.vfx.particle_burst_speed_variance_min),
-							i32(g.params.vfx.particle_burst_speed_variance_max),
-						),
-					) /
-					100.0)
+		speed := base_speed * rand.float32_range(
+			g.params.vfx.particle_burst_speed_variance_min / 100.0,
+			g.params.vfx.particle_burst_speed_variance_max / 100.0,
+		)
 		vel := dir * speed
 		// Acceleration (drag: opposite to velocity, e.g. -vel * drag_factor)
 		accel := -vel * g.params.vfx.particle_burst_drag_coefficient
-		t := f32(rl.GetRandomValue(0, 100)) / 100.0
+		t := rand.float32()
 		color := rl.Color{255, 255, 255, 255}
 
 		t1 := g.params.vfx.particle_burst_color_t1
@@ -174,15 +170,10 @@ sys_lifecycle_spawn_debris_particle_burst :: proc(g: ^Game, pos: rl.Vector2, ene
 			f64(g.params.vfx.particle_burst_size_base) +
 			math.ln(energy + 1.0) * f64(g.params.vfx.particle_burst_size_ln_coefficient),
 		)
-		size :=
-			base_size *
-			(f32(
-						rl.GetRandomValue(
-							i32(g.params.vfx.particle_burst_size_variance_min),
-							i32(g.params.vfx.particle_burst_size_variance_max),
-						),
-					) /
-					100.0)
+		size := base_size * rand.float32_range(
+			g.params.vfx.particle_burst_size_variance_min / 100.0,
+			g.params.vfx.particle_burst_size_variance_max / 100.0,
+		)
 		size = clamp(
 			size,
 			g.params.vfx.particle_burst_size_min,

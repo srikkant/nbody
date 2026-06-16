@@ -8,6 +8,7 @@ package game
 import "core:c"
 import "core:fmt"
 import "core:math"
+import "core:math/rand"
 import rl "vendor:raylib"
 
 sys_debug :: proc(g: ^Game) {
@@ -239,9 +240,9 @@ draw_button :: proc(label: cstring, x: f32, y: ^f32, w: f32) -> bool {
 
 spawn_random_celestials :: proc(g: ^Game) {
 	for _ in 0 ..< 10 {
-		ct := CelestialType(rl.GetRandomValue(1, 11)) // Asteroid to SuperJupiter
-		pos := rl.Vector2{f32(rl.GetRandomValue(-600, 600)), f32(rl.GetRandomValue(-600, 600))}
-		vel := rl.Vector2{f32(rl.GetRandomValue(-80, 80)), f32(rl.GetRandomValue(-80, 80))}
+		ct := CelestialType(rand.int_range(1, 12)) // Asteroid to SuperJupiter
+		pos := rl.Vector2{rand.float32_range(-600.0, 600.0), rand.float32_range(-600.0, 600.0)}
+		vel := rl.Vector2{rand.float32_range(-80.0, 80.0), rand.float32_range(-80.0, 80.0)}
 		color := get_celestial_color(g, ct)
 		push_event(
 			g,
