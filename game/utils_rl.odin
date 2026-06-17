@@ -60,32 +60,26 @@ rl_end_shader :: proc(g: ^Game) {
 }
 
 rl_is_key_pressed :: proc(g: ^Game, key: rl.KeyboardKey) -> bool {
-	if g.debug.input_blocked do return false
 	return rl.IsKeyPressed(key)
 }
 
 rl_is_key_down :: proc(g: ^Game, key: rl.KeyboardKey) -> bool {
-	if g.debug.input_blocked do return false
 	return rl.IsKeyDown(key)
 }
 
 rl_is_key_released :: proc(g: ^Game, key: rl.KeyboardKey) -> bool {
-	if g.debug.input_blocked do return false
 	return rl.IsKeyReleased(key)
 }
 
 rl_is_mouse_button_pressed :: proc(g: ^Game, button: rl.MouseButton) -> bool {
-	if g.debug.input_blocked do return false
 	return rl.IsMouseButtonPressed(button)
 }
 
 rl_is_mouse_button_down :: proc(g: ^Game, button: rl.MouseButton) -> bool {
-	if g.debug.input_blocked do return false
 	return rl.IsMouseButtonDown(button)
 }
 
 rl_is_mouse_button_released :: proc(g: ^Game, button: rl.MouseButton) -> bool {
-	if g.debug.input_blocked do return false
 	return rl.IsMouseButtonReleased(button)
 }
 

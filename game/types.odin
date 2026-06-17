@@ -564,53 +564,12 @@ Game_BgStar :: struct {
 	color:       rl.Color,
 }
 
-Game_Debug_Section :: enum {
-	LaunchControls,
-	Diagnostics,
-	Physics,
-	Slingshot,
-	Energy,
-	Collision,
-	Celestials,
-	Celestial_Asteroid,
-	Celestial_Moonlet,
-	Celestial_DwarfPlanet,
-	Celestial_SubEarth,
-	Celestial_SuperEarth,
-	Celestial_MegaEarth,
-	Celestial_MiniNeptune,
-	Celestial_SubNeptune,
-	Celestial_SuperNeptune,
-	Celestial_GiantPlanet,
-	Celestial_SuperJupiter,
-	Star,
-	Camera,
-	VfxShockwaves,
-	VfxParticles,
-	VfxFragments,
-	Background,
-	Actions,
-	Telemetry,
-}
 
 Game_Assets :: struct {
 	assets_map: Assets_Map,
 	textures:   [Game_TextureType]Game_Texture,
 	shaders:    [Game_ShaderType]Game_Shader,
 	fonts:      [Game_FontType]Game_Font,
-}
-
-Game_DebugState :: struct {
-	initialized:                  bool,
-	draw_panel:                   bool,
-	input_blocked:                bool,
-	hover_mode:                   int, // -1 = none, 0 = Normal, 1 = Emitter
-	hover_celestial:              int, // -1 = none, or index into rendered list
-	sections_open:                bit_set[Game_Debug_Section],
-	scroll_offset:                rl.Vector2,
-	scroll_bounds:                rl.Rectangle,
-	selected_slingshot_mode:      Game_SlingshotMode,
-	selected_slingshot_celestial: CelestialType,
 }
 
 Game_CameraState :: struct {
@@ -667,7 +626,6 @@ Game_InputAction :: enum {
 	Slingshot_Release,
 	Slingshot_Cancel,
 	View_ToggleOrbit,
-	Debug_ToggleMenu,
 }
 
 Game_InputState :: struct {
@@ -686,7 +644,6 @@ Game :: struct {
 	params:              Game_Parameters,
 	assets:              Game_Assets,
 	input:               Game_InputState,
-	debug:               Game_DebugState,
 	camera:              Game_CameraState,
 	render:              Game_RenderState,
 	bg:                  Game_BgState,

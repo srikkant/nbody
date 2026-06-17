@@ -36,11 +36,6 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.timers[.Score] = Timer{0, 1, false}
 	g.timers[.Trail] = Timer{0, 0.05, false}
 
-	g.debug = {
-		hover_celestial = -1,
-		hover_mode      = -1,
-	}
-
 	push_event(
 		g,
 		Game_Event_ObjectSpawn {
@@ -126,7 +121,6 @@ game_run :: proc(g: ^Game) {
 		sys_lifecycle(g)
 		sys_camera(g)
 		sys_render(g)
-		sys_debug(g) // TODO: Figure out best way to handle this.
 	case .Paused:
 		sys_render(g)
 		sys_render_menu_pause(g)
