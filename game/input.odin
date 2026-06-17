@@ -11,6 +11,7 @@ DEFAULT_GAME_INPUTS: [Game_InputAction]Game_InputMatcher = {
 	.Slingshot_Release  = Game_InputMatcherMouse{{.Released, .Playing}, .LEFT},
 	.Slingshot_Cancel   = Game_InputMatcherKeyboard{{.Pressed, .Playing}, .C},
 	.View_ToggleOrbit   = Game_InputMatcherKeyboard{{.Pressed, .Playing}, .T},
+	.Demolish_Object    = Game_InputMatcherMouse{{.Pressed, .Playing}, .RIGHT},
 }
 
 input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
@@ -91,6 +92,8 @@ input_handle_action :: proc(g: ^Game) {
 		g.slingshot.status = .Inactive
 	case .View_ToggleOrbit:
 		g.render.show_orbits = !g.render.show_orbits
+	case .Demolish_Object:
+		push_event(g, Game_Event_ObjectDemolish{})
 	}
 
 	g.input.action = .None

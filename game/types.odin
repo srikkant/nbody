@@ -276,6 +276,8 @@ Game_Event_ObjectDestroyed :: struct {
 	id: Entity,
 }
 
+Game_Event_ObjectDemolish :: struct {}
+
 Game_Event_ApplyModifier :: struct {
 	modifier: Game_Modifier,
 }
@@ -290,6 +292,7 @@ Game_Event :: union {
 	Game_Event_Collision,
 	Game_Event_ObjectOutOfBounds,
 	Game_Event_ObjectDestroyed,
+	Game_Event_ObjectDemolish,
 }
 
 Game_Entity :: struct {
@@ -355,10 +358,10 @@ Game_Parameters_Physics :: struct {
 	collision_mass_scaling_factor:      f32,
 	shatter_base_energy:                f32,
 	debris_mass_loss_fraction:          f32,
-	out_of_bounds_refund_fraction:      f32,
+	destroy_refund_fraction:            f32,
 	star_energy_multiplier:             f32,
-	energy_collect_distance:            f32,
-	energy_collect_distance_squared:    f32,
+	cursor_distance:                    f32,
+	cursor_distance_squared:            f32,
 	collision_debris_max_loss_fraction: f32,
 	collision_debris_speed_coefficient: f32,
 	spawn_invincibility_duration_sec:   f32,
@@ -626,6 +629,7 @@ Game_InputAction :: enum {
 	Slingshot_Release,
 	Slingshot_Cancel,
 	View_ToggleOrbit,
+	Demolish_Object,
 }
 
 Game_InputState :: struct {

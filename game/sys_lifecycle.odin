@@ -383,10 +383,41 @@ sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^Game_Event_Collision) {
 sys_lifecycle_handle_out_of_bounds :: proc(g: ^Game, event: ^Game_Event_ObjectOutOfBounds) {
 	e := &g.entities[event.id]
 	if e.celestial.type != .Star && e.mass > 0 {
-		refund := f64(g.params.physics.out_of_bounds_refund_fraction * e.mass * e.radius)
+		refund := f64(g.params.physics.destroy_refund_fraction * e.mass * e.radius)
 		g.score.energy += refund
 	}
 	delete_entities[event.id] = true
+}
+
+sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^Game_Event_ObjectDemolish) {
+	closest_id: Entity
+	closest_dist := f32(1e9)
+	found := false
+
+	for i in 0 ..< g.entities_count {
+		if delete_entities[i] do continue
+		e := &g.entities[i]
+		if PHYSICS_SIG <= e.sig && e.celestial.type != .Star {
+			dist := rl.Vector2Distance(e.pos.current, g.input.mouse_pos)
+			click_radius := g.params.physics.cursor_distance
+
+			if dist <= click_radius && dist < closest_dist {
+				closest_dist = dist
+				closest_id = Entity(i)
+				found = true
+			}
+		}
+	}
+
+	if found {
+		e := &g.entities[closest_id]
+		if e.mass > 0 {
+			refund := f64(g.params.physics.destroy_refund_fraction * e.mass * e.radius)
+			g.score.energy += refund
+			sys_lifecycle_spawn_shockwave(g, e.pos.current, f64(e.mass))
+		}
+		delete_entities[closest_id] = true
+	}
 }
 
 sys_lifecycle_handle_destroyed :: proc(g: ^Game, event: ^Game_Event_ObjectDestroyed) {
@@ -407,7 +438,7 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 		dist_sq := dx * dx + dy * dy
 
 		pull_dist :=
-			g.params.physics.energy_collect_distance *
+			g.params.physics.cursor_distance *
 			g.params.vfx.fragments_pull_distance_multiplier
 		if dist_sq < pull_dist * pull_dist {
 			dist := math.sqrt(dist_sq)
@@ -427,7 +458,7 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 				g.params.vfx.fragments_drift_amplitude_y
 		}
 
-		if dist_sq < g.params.physics.energy_collect_distance_squared {
+		if dist_sq < g.params.physics.cursor_distance_squared {
 			g.score.energy += e.collectible_energy.energy
 			delete_entities[i] = true
 		}
@@ -507,6 +538,8 @@ sys_lifecycle :: proc(g: ^Game) {
 			sys_lifecycle_handle_out_of_bounds(g, &event)
 		case Game_Event_ObjectDestroyed:
 			sys_lifecycle_handle_destroyed(g, &event)
+		case Game_Event_ObjectDemolish:
+			sys_lifecycle_handle_demolish(g, &event)
 		}
 	}
 

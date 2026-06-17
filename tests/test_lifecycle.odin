@@ -385,7 +385,7 @@ test_out_of_bounds_refund :: proc(t: ^testing.T) {
 	defer free_test_game(g)
 
 	g.score.energy = 0.0
-	g.params.physics.out_of_bounds_refund_fraction = 0.5
+	g.params.physics.destroy_refund_fraction = 0.5
 
 	id := add_test_entity(g, .Asteroid, 10.0, {0, 0}, {0, 0})
 	g.entities[id].radius = 2.0

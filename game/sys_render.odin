@@ -107,7 +107,7 @@ sys_render_cursor :: proc(g: ^Game) {
 	rl.DrawCircle(
 		i32(g.input.mouse_pos.x),
 		i32(g.input.mouse_pos.y),
-		g.params.physics.energy_collect_distance,
+		g.params.physics.cursor_distance,
 		rl.Color{255, 255, 255, g.theme.ui_collect_area_opacity},
 	)
 }

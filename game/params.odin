@@ -157,11 +157,11 @@ params_init :: proc(p: ^Game_Parameters) {
 	p.physics.collision_mass_scaling_factor = 3.0
 	p.physics.shatter_base_energy = 50.0
 	p.physics.debris_mass_loss_fraction = 0.25
-	p.physics.out_of_bounds_refund_fraction = 0.1
+	p.physics.destroy_refund_fraction = 0.1
 	p.physics.star_energy_multiplier = 0.05
-	p.physics.energy_collect_distance = 50.0
-	p.physics.energy_collect_distance_squared =
-		p.physics.energy_collect_distance * p.physics.energy_collect_distance
+	p.physics.cursor_distance = 50.0
+	p.physics.cursor_distance_squared =
+		p.physics.cursor_distance * p.physics.cursor_distance
 
 	p.physics.collision_debris_max_loss_fraction = 0.4
 	p.physics.collision_debris_speed_coefficient = 0.01
