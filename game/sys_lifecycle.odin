@@ -236,7 +236,7 @@ sys_lifecycle_collision_classify :: proc(
 		g.params.physics.shatter_base_energy *
 		((e1.mass + e2.mass) / math.max(e1.radius + e2.radius, 1.0))
 
-	rel_speed_sq := vec2_length_sq(e1.velocity.current - e2.velocity.current)
+	rel_speed_sq := math_vec2_length_sq(e1.velocity.current - e2.velocity.current)
 	if rel_speed_sq > shatter_threshold_sq do return .Shatter
 
 	return .Merge
@@ -289,7 +289,7 @@ sys_lifecycle_resolve_shatter :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	e1 := &g.entities[e.id1]
 	e2 := &g.entities[e.id2]
 
-	rel_speed := vec2_length(e1.velocity.current - e2.velocity.current)
+	rel_speed := math_vec2_length(e1.velocity.current - e2.velocity.current)
 	impact_point := (e1.pos.current + e2.pos.current) * 0.5
 
 	mass := f64(e1.mass + e2.mass) * 0.5
@@ -326,7 +326,7 @@ sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^GameEvent_Collision) {
 
 	delete_entities[small_id] = true
 
-	rel_speed := vec2_length(e1.velocity.current - e2.velocity.current)
+	rel_speed := math_vec2_length(e1.velocity.current - e2.velocity.current)
 	loss := math.min(
 		big_mass * g.params.physics.collision_debris_max_loss_fraction,
 		small_mass *
@@ -481,7 +481,7 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 		e := &g.entities[i]
 
 		if .Life in e.sig && e.life.remaining.interval != 0 {
-			utils_math_update_timer(&e.life.remaining, dt)
+			math_update_timer(&e.life.remaining, dt)
 			if e.life.remaining.done {
 				entity_free(g, Entity_Id(i))
 				continue

@@ -30,7 +30,7 @@ sys_render_slingshot_trigger :: proc(g: ^Game) {
 	star := &g.entities[Entity_Id(0)]
 
 	drag := g.slingshot.end_pos - g.slingshot.start_pos
-	pull_dist := vec2_length(drag)
+	pull_dist := math_vec2_length(drag)
 	P0 := g.slingshot.start_pos
 	P2 := g.slingshot.end_pos
 	mid := (P0 + P2) / 2.0

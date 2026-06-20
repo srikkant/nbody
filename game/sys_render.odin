@@ -1,74 +1,9 @@
 package game
 
 import "core:math"
-import "core:math/rand"
 import rl "vendor:raylib"
 
-sys_render_generate_bg_stars :: proc(g: ^Game) {
-	p := &g.params.background
-
-	for i in 0 ..< BG_STAR_COUNT {
-		layer := 0
-		if i >= int(p.star_layer3_start_index) {
-			layer = 3
-		} else if i >= int(p.star_layer2_start_index) {
-			layer = 2
-		} else if i >= int(p.star_layer1_start_index) {
-			layer = 1
-		}
-
-		x := rand.float32_range(-p.star_spawn_bounds_x, p.star_spawn_bounds_x)
-		y := rand.float32_range(-p.star_spawn_bounds_y, p.star_spawn_bounds_y)
-
-		rand_val := rand.float32()
-		size := p.star_sizes[layer][0] + p.star_sizes[layer][1] * rand_val
-
-		blink_speed := rand.float32_range(p.star_blink_speed_min, p.star_blink_speed_max)
-		blink_phase := rand.float32_range(0.0, p.star_blink_phase_max)
-
-		color := rand.choice(g.theme.star_colors[:])
-
-		g.render.bg.stars[i] = Render_Background_Star {
-			pos         = rl.Vector2{x, y},
-			layer       = layer,
-			size        = size,
-			blink_speed = blink_speed,
-			blink_phase = blink_phase,
-			color       = color,
-		}
-	}
-
-}
-
-sys_render_generate_bg_nebulae :: proc(g: ^Game) {
-	p := &g.params.background
-	for i in 0 ..< BG_NEBULA_COUNT {
-		neb_x := rand.float32_range(-p.nebula_spawn_bounds_x, p.nebula_spawn_bounds_x)
-		neb_y := rand.float32_range(-p.nebula_spawn_bounds_y, p.nebula_spawn_bounds_y)
-
-		r_min := p.nebula_radius_ranges[i][0]
-		r_max := p.nebula_radius_ranges[i][1]
-		radius := rand.float32_range(r_min, r_max)
-
-		s_min := p.nebula_drift_speed_ranges[i][0]
-		s_max := p.nebula_drift_speed_ranges[i][1]
-		drift_speed := rand.float32_range(s_min, s_max)
-
-		drift_phase := rand.float32_range(0.0, p.star_blink_phase_max)
-
-		g.render.bg.nebulae[i] = Render_Background_Nebula {
-			pos         = rl.Vector2{neb_x, neb_y},
-			color       = g.theme.bg_nebula_colors[i],
-			radius      = radius,
-			drift_speed = drift_speed,
-			drift_phase = drift_phase,
-		}
-	}
-}
-
 sys_render_init :: proc(g: ^Game) {
-	sys_render_generate_bg_stars(g)
-	sys_render_generate_bg_nebulae(g)
 }
 
 sys_render_free :: proc(g: ^Game) {}
@@ -76,8 +11,6 @@ sys_render_free :: proc(g: ^Game) {}
 sys_render :: proc(g: ^Game) {
 	g.render.rect = rl.Rectangle{0, 0, g.screenw, g.screenh}
 	g.render.scale = 1.0
-
-	sys_render_bg(g)
 
 	rl.BeginMode2D(g.camera.rl_cam)
 
@@ -152,18 +85,6 @@ sys_render_get_entity_draw_info :: proc(
 	}
 
 	return
-}
-
-catmull_rom :: proc(p0, p1, p2, p3: rl.Vector2, t: f32) -> rl.Vector2 {
-	t2 := t * t
-	t3 := t2 * t
-	return(
-		0.5 *
-		((2.0 * p1) +
-				(-p0 + p2) * t +
-				(2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 +
-				(-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3) \
-	)
 }
 
 sys_render_entities :: proc(g: ^Game) {
@@ -381,7 +302,7 @@ sys_render_entities :: proc(g: ^Game) {
 				i2 := min(seg + 1, valid_count - 1)
 				i3 := min(seg + 2, valid_count - 1)
 
-				curr_pt := catmull_rom(
+				curr_pt := math_catmull_rom(
 					valid_pts[i0],
 					valid_pts[i1],
 					valid_pts[i2],
@@ -487,169 +408,5 @@ sys_render_entities :: proc(g: ^Game) {
 	}
 
 	rl_end_shader(g)
-}
-
-sys_render_bg :: proc(g: ^Game) {
-	cx := g.screenw / 2.0
-	cy := g.screenh / 2.0
-
-	L_x := g.params.background.parallax_torus_width
-	L_y := g.params.background.parallax_torus_height
-
-	depths := g.params.background.parallax_layer_depths
-	zoom_scales := g.params.background.parallax_layer_zoom_multipliers
-	size_zoom_scales := g.params.background.parallax_layer_size_zoom_multipliers
-
-	rl_begin_shader(g, .Bg_Vignette)
-	rl.ClearBackground(rl.BLACK)
-	rl_texture_draw(g, .Blank, {0, 0, g.screenw, g.screenh}, tint = g.theme.color_bg)
-	rl_end_shader(g)
-
-	// Render the nebulae
-	for i in 0 ..< BG_NEBULA_COUNT {
-		neb := g.render.bg.nebulae[i]
-
-		depth := g.params.background.nebula_layer_depth
-		zoom_scale := g.params.background.nebula_zoom_multiplier
-
-		dx := neb.pos.x - g.camera.rl_cam.target.x / depth
-		dy := neb.pos.y - g.camera.rl_cam.target.y / depth
-
-		dx_wrapped := math.mod(dx + L_x / 2.0, L_x)
-		if dx_wrapped < 0 do dx_wrapped += L_x
-		dx_wrapped -= L_x / 2.0
-
-		dy_wrapped := math.mod(dy + L_y / 2.0, L_y)
-		if dy_wrapped < 0 do dy_wrapped += L_y
-		dy_wrapped -= L_y / 2.0
-
-		draw_x := cx + dx_wrapped * (1.0 + (g.camera.rl_cam.zoom - 1.0) * zoom_scale)
-		draw_y := cy + dy_wrapped * (1.0 + (g.camera.rl_cam.zoom - 1.0) * zoom_scale)
-
-		breath :=
-			g.params.background.nebula_pulsation_base +
-			g.params.background.nebula_pulsation_amplitude *
-				math.sin(g.elapsed * neb.drift_speed + neb.drift_phase)
-		draw_radius :=
-			neb.radius *
-			breath *
-			(1.0 +
-					(g.camera.rl_cam.zoom - 1.0) *
-						g.params.background.nebula_zoom_radius_multiplier)
-
-		alpha_scale := clamp(
-			g.params.background.nebula_alpha_zoom_numerator / g.camera.rl_cam.zoom,
-			g.params.background.nebula_alpha_zoom_min,
-			g.params.background.nebula_alpha_zoom_max,
-		)
-
-		color_inner := neb.color
-		color_inner.a = u8(f32(neb.color.a) * alpha_scale)
-		color_outer := neb.color
-		color_outer.a = 0
-
-		rl.DrawCircleGradient(i32(draw_x), i32(draw_y), draw_radius, color_inner, color_outer)
-	}
-
-	// Render the Starfield
-	for i in 0 ..< BG_STAR_COUNT {
-		star := g.render.bg.stars[i]
-
-		depth := depths[star.layer]
-		zoom_scale := zoom_scales[star.layer]
-		size_zoom_scale := size_zoom_scales[star.layer]
-
-		// Compute parallax relative to camera target
-		dx := star.pos.x - g.camera.rl_cam.target.x / depth
-		dy := star.pos.y - g.camera.rl_cam.target.y / depth
-
-		dx_wrapped := math.mod(dx + L_x / 2.0, L_x)
-		if dx_wrapped < 0 do dx_wrapped += L_x
-		dx_wrapped -= L_x / 2.0
-
-		dy_wrapped := math.mod(dy + L_y / 2.0, L_y)
-		if dy_wrapped < 0 do dy_wrapped += L_y
-		dy_wrapped -= L_y / 2.0
-
-		draw_x := cx + dx_wrapped * (1.0 + (g.camera.rl_cam.zoom - 1.0) * zoom_scale)
-		draw_y := cy + dy_wrapped * (1.0 + (g.camera.rl_cam.zoom - 1.0) * zoom_scale)
-
-		padding := g.theme.bg_star_render_padding
-		if draw_x < -padding ||
-		   draw_x > g.screenw + padding ||
-		   draw_y < -padding ||
-		   draw_y > g.screenh + padding {
-			continue
-		}
-
-		draw_size := star.size * (1.0 + (g.camera.rl_cam.zoom - 1.0) * size_zoom_scale)
-		draw_size = clamp(
-			draw_size,
-			g.params.background.star_size_min,
-			g.params.background.star_size_max,
-		)
-		blink :=
-			g.theme.bg_star_blink_amp_base +
-			g.theme.bg_star_blink_amp_scale *
-				math.sin(g.elapsed * star.blink_speed + star.blink_phase)
-
-		alpha_scale: f32 = 1.0
-		switch star.layer {
-		case 0:
-			alpha_scale = clamp(
-				g.params.background.star_layer_alpha_clamp_configs[0][0] / g.camera.rl_cam.zoom,
-				g.params.background.star_layer_alpha_clamp_configs[0][1],
-				g.params.background.star_layer_alpha_clamp_configs[0][2],
-			)
-		case 1:
-			alpha_scale = clamp(
-				g.params.background.star_layer_alpha_clamp_configs[1][0] / g.camera.rl_cam.zoom,
-				g.params.background.star_layer_alpha_clamp_configs[1][1],
-				g.params.background.star_layer_alpha_clamp_configs[1][2],
-			)
-		case 2:
-			alpha_scale = clamp(
-				g.camera.rl_cam.zoom * g.params.background.star_layer_alpha_clamp_configs[2][0],
-				g.params.background.star_layer_alpha_clamp_configs[2][1],
-				g.params.background.star_layer_alpha_clamp_configs[2][2],
-			)
-		case 3:
-			alpha_scale = clamp(
-				(g.camera.rl_cam.zoom - g.params.background.star_layer_alpha_clamp_configs[3][0]) /
-				g.params.background.star_layer_alpha_clamp_configs[3][0],
-				g.params.background.star_layer_alpha_clamp_configs[3][1],
-				g.params.background.star_layer_alpha_clamp_configs[3][2],
-			)
-		}
-
-		color := star.color
-		color.a = u8(f32(color.a) * blink * alpha_scale)
-
-		if color.a == 0 do continue
-
-		tex_type: Assets_TextureType = star.layer == 3 ? .Bg_StarFlare : .Bg_StarGlow
-
-		radius := draw_size
-		dest_rect := rl.Rectangle{draw_x, draw_y, radius * 2.0, radius * 2.0}
-		origin := rl.Vector2{radius, radius}
-
-		rotation := f32(0.0)
-		if star.layer == 3 {
-			rotation = star.blink_phase * 25.0
-		}
-
-		rl_texture_draw(g, tex_type, dest_rect, origin, rotation, color)
-
-		if star.layer >= 2 {
-			core_radius := radius * 0.28
-			if core_radius >= 0.5 {
-				core_col := rl.WHITE
-				core_col.a = u8(f32(color.a) * 0.92)
-				core_rect := rl.Rectangle{draw_x, draw_y, core_radius * 2.0, core_radius * 2.0}
-				core_origin := rl.Vector2{core_radius, core_radius}
-				rl_texture_draw(g, .Bg_StarGlow, core_rect, core_origin, 0.0, core_col)
-			}
-		}
-	}
 }
 

@@ -21,13 +21,14 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	assets_fonts_load(g)
 	assets_shaders_load(g)
 
-	params_init(&g.params)
-	theme_init(&g.theme)
+	params_init(g)
+	theme_init(g)
 
 	sys_render_init(g)
 	sys_camera_init(g)
 	sys_lifecycle_init(g)
 	input_init(g)
+	background_init(g)
 
 	g.slingshot.output = Slingshot_Output_Celestial {
 		celestial = {type = .DwarfPlanet},
@@ -96,6 +97,8 @@ game_run :: proc(g: ^Game) {
 	frame_setup(g)
 	input_process(g)
 
+	background_draw(g)
+
 	switch g.status {
 	case .Playing:
 		sys_slingshot(g)
@@ -112,8 +115,6 @@ game_run :: proc(g: ^Game) {
 	case .Exit:
 	// Do nothing, the main loop will exit after this.
 	}
-
-	tutorial_draw(g)
 
 	rl.EndDrawing()
 }

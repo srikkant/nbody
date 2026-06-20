@@ -34,7 +34,7 @@ sys_camera :: proc(g: ^Game) {
 	// If slingshot is active, add some vibration and exit.
 	if g.slingshot.status == .Active {
 		drag := g.slingshot.end_pos - g.slingshot.start_pos
-		pull_dist := vec2_length(drag)
+		pull_dist := math_vec2_length(drag)
 
 		// Scale vibration with pull distance
 		vibration := clamp(pull_dist * f32(0.012), f32(0.0), f32(3.5))

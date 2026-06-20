@@ -6,8 +6,8 @@ sys_automation :: proc(g: ^Game) {
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
 		if EMITTER_SIG <= e.sig {
-			utils_math_update_timer(&e.emitter.timer, dt)
-			utils_math_update_timer(&e.emitter.destroy_timer, dt)
+			math_update_timer(&e.emitter.timer, dt)
+			math_update_timer(&e.emitter.destroy_timer, dt)
 
 			max_count_reached := false
 

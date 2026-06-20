@@ -73,13 +73,13 @@ sys_physics :: proc(g: ^Game) {
 				}
 			}
 
-			curr_dist_sq := vec2_length_sq(e.pos.current)
+			curr_dist_sq := math_vec2_length_sq(e.pos.current)
 			if curr_dist_sq > e.orbit.max_distance_sq {
 				e.orbit.max_distance_sq = curr_dist_sq
 			}
 		}
 
-		dist_sq := vec2_length_sq(e.pos.current)
+		dist_sq := math_vec2_length_sq(e.pos.current)
 		if dist_sq > g.params.physics.world_radius_squared {
 			push_event(g, GameEvent_Object_OutOfBounds{id = Entity_Id(i)})
 		}

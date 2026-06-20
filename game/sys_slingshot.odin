@@ -25,7 +25,7 @@ sys_slingshot :: proc(g: ^Game) {
 		event.emitter.emit_density = g.params.celestials[out.emitter.emit_celestial.type].density
 		event.emitter.emit_radius = g.params.celestials[out.emitter.emit_celestial.type].radius
 		event.emitter.emit_color = get_celestial_color(g, out.emitter.emit_celestial.type)
-		cost = f64(event.density * event.radius * event.radius * vec2_length_sq(vel))
+		cost = f64(event.density * event.radius * event.radius * math_vec2_length_sq(vel))
 
 		g.slingshot.obj_radius = event.radius
 		g.slingshot.obj_color = event.emitter.emit_color
@@ -40,7 +40,7 @@ sys_slingshot :: proc(g: ^Game) {
 		event.renderable = Component_Renderable{color}
 		cost = f64(
 			g.params.celestials[out.celestial.type].launch_cost +
-			(event.density * event.radius * event.radius * vec2_length_sq(vel)),
+			(event.density * event.radius * event.radius * math_vec2_length_sq(vel)),
 		)
 
 		g.slingshot.obj_radius = event.radius

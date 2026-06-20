@@ -60,45 +60,6 @@ Parameters_Physics :: struct {
 	world_radius:                       f32,
 	world_radius_squared:               f32,
 	gravity_softening_factor:           f32,
-	max_delta_time_sec:                 f32,
-}
-
-Game_Parameters_Bg :: struct {
-	grid_spacing:                         f32,
-	grid_line_width:                      f32,
-	grid_warp_strength:                   f32,
-	star_spawn_bounds_x:                  f32,
-	star_spawn_bounds_y:                  f32,
-	star_blink_speed_min:                 f32,
-	star_blink_speed_max:                 f32,
-	star_blink_phase_max:                 f32,
-	star_sizes:                           [4][2]f32, // [layer][base, range]
-	parallax_torus_width:                 f32,
-	parallax_torus_height:                f32,
-	parallax_layer_depths:                [4]f32,
-	parallax_layer_zoom_multipliers:      [4]f32,
-	parallax_layer_size_zoom_multipliers: [4]f32,
-	star_size_min:                        f32,
-	star_size_max:                        f32,
-	star_flare_threshold:                 f32,
-	star_flare_size_multiplier:           f32,
-	star_flare_alpha_multiplier:          f32,
-	star_layer_alpha_clamp_configs:       [4][3]f32, // [layer][zoom_div, min, max]
-	nebula_spawn_bounds_x:                f32,
-	nebula_spawn_bounds_y:                f32,
-	nebula_layer_depth:                   f32,
-	nebula_zoom_multiplier:               f32,
-	nebula_pulsation_base:                f32,
-	nebula_pulsation_amplitude:           f32,
-	nebula_zoom_radius_multiplier:        f32,
-	nebula_alpha_zoom_numerator:          f32,
-	nebula_alpha_zoom_min:                f32,
-	nebula_alpha_zoom_max:                f32,
-	nebula_radius_ranges:                 [4][2]f32, // [index][min, max]
-	nebula_drift_speed_ranges:            [4][2]f32, // [index][min, max]
-	star_layer1_start_index:              i32,
-	star_layer2_start_index:              i32,
-	star_layer3_start_index:              i32,
 }
 
 Game_Parameters_UI :: struct {
@@ -186,15 +147,13 @@ GameParameters :: struct {
 	economy:    Parameters_Economy,
 	physics:    Parameters_Physics,
 	slingshot:  Parameters_Slingshot,
-
-	//
-	background: Game_Parameters_Bg,
 	ui:         Game_Parameters_UI,
 	camera:     Game_Parameters_Camera,
 	vfx:        Game_Parameters_VFX,
 }
 
-params_init :: proc(p: ^GameParameters) {
+params_init :: proc(g: ^Game) {
+	p := &g.params
 
 	// ==========================================
 	// PER-CELESTIAL-TYPE PARAMETERS
@@ -382,74 +341,6 @@ params_init :: proc(p: ^GameParameters) {
 	p.physics.world_radius = 10000.0
 	p.physics.world_radius_squared = p.physics.world_radius * p.physics.world_radius
 	p.physics.gravity_softening_factor = 2.0
-	p.physics.max_delta_time_sec = 0.05
-
-	// ==========================================
-	// BACKGROUND & PARALLAX PARAMETERS
-	// ==========================================
-	p.background.grid_spacing = 20.0
-	p.background.grid_line_width = 1.0
-	p.background.grid_warp_strength = 1.0
-
-	p.background.star_spawn_bounds_x = 2000.0
-	p.background.star_spawn_bounds_y = 1500.0
-	p.background.star_blink_speed_min = 1.0
-	p.background.star_blink_speed_max = 3.5
-	p.background.star_blink_phase_max = 6.28
-
-	p.background.star_layer1_start_index = BG_STAR_COUNT * 55 / 100
-	p.background.star_layer2_start_index = BG_STAR_COUNT * 80 / 100
-	p.background.star_layer3_start_index = BG_STAR_COUNT * 95 / 100
-
-	// Star size configurations: [layer][base, range]
-	p.background.star_sizes[0] = {0.8, 0.6}
-	p.background.star_sizes[1] = {1.3, 0.7}
-	p.background.star_sizes[2] = {1.9, 0.9}
-	p.background.star_sizes[3] = {2.6, 1.2}
-
-	p.background.parallax_torus_width = 4000.0
-	p.background.parallax_torus_height = 3000.0
-
-	p.background.parallax_layer_depths = {12.0, 5.0, 2.0, 0.8}
-	p.background.parallax_layer_zoom_multipliers = {0.05, 0.25, 0.6, 1.0}
-	p.background.parallax_layer_size_zoom_multipliers = {0.0, 0.15, 0.4, 0.8}
-
-	p.background.star_size_min = 0.4
-	p.background.star_size_max = 6.0
-
-	p.background.star_flare_threshold = 2.2
-	p.background.star_flare_size_multiplier = 2.5
-	p.background.star_flare_alpha_multiplier = 0.35
-
-	// Star alpha clamp configs: [layer][zoom_div/multiplier/offset, min, max]
-	p.background.star_layer_alpha_clamp_configs[0] = {1.5, 0.45, 0.7}
-	p.background.star_layer_alpha_clamp_configs[1] = {1.0, 0.55, 0.5}
-	p.background.star_layer_alpha_clamp_configs[2] = {5.0, 0.3, 0.5}
-	p.background.star_layer_alpha_clamp_configs[3] = {0.15, 0.2, 0.5}
-
-	// --- Nebulae ---
-	p.background.nebula_spawn_bounds_x = 600.0
-	p.background.nebula_spawn_bounds_y = 400.0
-	p.background.nebula_layer_depth = 10.0
-	p.background.nebula_zoom_multiplier = 0.08
-	p.background.nebula_pulsation_base = 0.9
-	p.background.nebula_pulsation_amplitude = 0.1
-	p.background.nebula_zoom_radius_multiplier = 0.05
-	p.background.nebula_alpha_zoom_numerator = 1.2
-	p.background.nebula_alpha_zoom_min = 0.3
-	p.background.nebula_alpha_zoom_max = 1.0
-
-	// Radius ranges: [index][min, max]
-	p.background.nebula_radius_ranges[0] = {850.0, 1200.0}
-	p.background.nebula_radius_ranges[1] = {800.0, 1100.0}
-	p.background.nebula_radius_ranges[2] = {850.0, 1200.0}
-	p.background.nebula_radius_ranges[3] = {700.0, 1000.0}
-
-	// Drift speed ranges: [index][min, max]
-	p.background.nebula_drift_speed_ranges[0] = {0.3, 0.8}
-	p.background.nebula_drift_speed_ranges[1] = {0.4, 0.9}
-	p.background.nebula_drift_speed_ranges[2] = {0.2, 0.6}
-	p.background.nebula_drift_speed_ranges[3] = {0.5, 1.0}
 
 	// ==========================================
 	// UI PARAMETERS
@@ -529,10 +420,11 @@ params_init :: proc(p: ^GameParameters) {
 
 }
 
-theme_init :: proc(t: ^Theme) {
+theme_init :: proc(g: ^Game) {
+	t := &g.theme
+
 	t.name = "nbody: Default"
 	t.color_bg = rl.Color{12, 12, 24, 255}
-	t.bg_grid_color = rl.Color{0, 183, 255, 60}
 
 	t.bg_nebula_colors[0] = rl.Color{10, 150, 180, 20}
 	t.bg_nebula_colors[1] = rl.Color{200, 30, 140, 16}
@@ -560,8 +452,5 @@ theme_init :: proc(t: ^Theme) {
 	t.ui_out_of_bounds_margin = 40.0
 	t.bg_star_render_padding = 40.0
 	t.camera_padding = 200.0
-	t.bg_star_flare_layer = 3
-	t.bg_star_blink_amp_base = 0.5
-	t.bg_star_blink_amp_scale = 0.35
 }
 

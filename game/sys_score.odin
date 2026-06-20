@@ -18,15 +18,16 @@ sys_score :: proc(g: ^Game) {
 
 		if g.timers[.Score].done && KE_SCORE_SIG <= e.sig {
 			mass_score := e.mass
-			vel_score := vec2_length_sq(e.velocity.current)
+			vel_score := math_vec2_length_sq(e.velocity.current)
 			pos_score :=
-				1 / (g.params.physics.gravity_softening_factor + vec2_length_sq(e.pos.current))
+				1 /
+				(g.params.physics.gravity_softening_factor + math_vec2_length_sq(e.pos.current))
 
 			g.score.energy += f64(gain_fac * mass_score * vel_score * pos_score)
 		}
 
 		if ENERGY_SOURCE_SIG <= e.sig {
-			utils_math_update_timer(&e.energy_source.timer, dt)
+			math_update_timer(&e.energy_source.timer, dt)
 			if e.energy_source.timer.done {
 				g.score.energy += f64(gain_fac * (e.energy_source.output + (e.radius * e.radius)))
 			}
