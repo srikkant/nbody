@@ -313,7 +313,6 @@ Game_Entity :: struct {
 }
 
 Game_Status :: enum {
-	Menu,
 	Playing,
 	Paused,
 	Exit,
@@ -348,7 +347,7 @@ Game_Modifier :: struct {
 Game_Parameters_Physics :: struct {
 	gravity_constant:                   f32,
 	slingshot_launch_power:             f32,
-	slingshot_preview_length:           i32,
+	slingshot_preview_duration:         f32,
 	simulation_rate_multiplier:         f32,
 	energy_gain_coefficient:            f32,
 	energy_loss_coefficient:            f32,

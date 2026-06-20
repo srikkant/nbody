@@ -146,7 +146,7 @@ params_init :: proc(p: ^Game_Parameters) {
 	}
 
 	p.physics.slingshot_launch_power = 1.0
-	p.physics.slingshot_preview_length = 30
+	p.physics.slingshot_preview_duration = 1.0
 	p.physics.simulation_rate_multiplier = 10.0
 
 	p.physics.energy_gain_coefficient = 0.01

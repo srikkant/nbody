@@ -36,19 +36,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.timers[.Score] = Timer{0, 1, false}
 	g.timers[.Trail] = Timer{0, 0.05, false}
 
-	push_event(
-		g,
-		Game_Event_ObjectSpawn {
-			pos = rl.Vector2(0),
-			celestial = {.Star},
-			density = g.params.celestials[.Star].density,
-			radius = g.params.celestials[.Star].radius,
-			energy_source = {output = 10, timer = {interval = 1}},
-			renderable = {g.params.celestials[.Star].color},
-		},
-	)
-
-	g.status = .Menu
+	game_reset(g)
 
 	return g
 }
@@ -108,10 +96,6 @@ game_run :: proc(g: ^Game) {
 	input_process(g)
 
 	switch g.status {
-	case .Menu:
-		sys_camera(g)
-		sys_render(g)
-		sys_render_menu_main(g)
 	case .Playing:
 		sys_slingshot(g)
 		sys_modifier(g)

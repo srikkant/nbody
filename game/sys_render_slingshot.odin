@@ -68,23 +68,29 @@ sys_render_slingshot_preview :: proc(g: ^Game) {
 	pos := g.slingshot.start_pos
 	vel := physics_get_slingshot_release_velocity(g)
 
-	frames := clamp(g.params.physics.slingshot_preview_length * i32(g.slingshot.preview), 1, 599)
+	target_sim_duration :=
+		g.params.physics.slingshot_preview_duration *
+		g.slingshot.preview *
+		g.params.physics.simulation_rate_multiplier
 	g.slingshot.preview_points[0] = pos
 	g.slingshot.preview_times[0] = 0.0
 	actual_frames: i32 = 0
-	base_dt := g.dt * g.params.physics.simulation_rate_multiplier
+	base_dt := (1.0 / 30.0) * g.params.physics.simulation_rate_multiplier
 	accumulated_t: f32 = 0.0
 
-	// TODO: Update preview computation. This is vibe coded now
-	for idx in 1 ..< frames {
+	for idx in 1 ..< 600 {
+		if accumulated_t >= target_sim_duration do break
+
 		dist := rl.Vector2Distance(pos, star.pos.current)
 		scale := clamp(dist / f32(380.0), f32(0.12), f32(3.5))
 		step_dt := base_dt * scale * f32(2.8)
 
 		// Check collision with any celestial
+		// TODO(perf): Potential for improvement here.
+		// Right now, this iterates through all entities 600 times essentially.
 		collision, _ := physics_check_preview_collision(g, pos, g.slingshot.obj_radius)
 		if collision {
-			actual_frames = idx
+			actual_frames = i32(idx)
 			break
 		}
 
@@ -93,7 +99,7 @@ sys_render_slingshot_preview :: proc(g: ^Game) {
 
 		g.slingshot.preview_points[idx] = pos
 		g.slingshot.preview_times[idx] = accumulated_t
-		actual_frames = idx
+		actual_frames = i32(idx)
 	}
 
 	// Draw base preview
@@ -107,41 +113,43 @@ sys_render_slingshot_preview :: proc(g: ^Game) {
 	}
 
 	// Shimmer for the preview
-	total_sim_time := g.slingshot.preview_times[actual_frames - 1]
-	if total_sim_time > 0.0 {
-		g.slingshot.shimmer_time = math.mod(
-			g.slingshot.shimmer_time + g.dt * g.params.physics.simulation_rate_multiplier,
-			total_sim_time,
-		)
+	if actual_frames > 0 {
+		total_sim_time := g.slingshot.preview_times[actual_frames - 1]
+		if total_sim_time > 0.0 {
+			g.slingshot.shimmer_time = math.mod(
+				g.slingshot.shimmer_time + g.dt * g.params.physics.simulation_rate_multiplier,
+				total_sim_time,
+			)
 
-		if g.slingshot.shimmer_time < total_sim_time {
-			shimmer_idx := 0
-			best_diff := math.abs(g.slingshot.preview_times[0] - g.slingshot.shimmer_time)
-			for i in 1 ..< actual_frames {
-				diff := math.abs(g.slingshot.preview_times[i] - g.slingshot.shimmer_time)
-				if diff < best_diff {
-					best_diff = diff
-					shimmer_idx = int(i)
+			if g.slingshot.shimmer_time < total_sim_time {
+				shimmer_idx := 0
+				best_diff := math.abs(g.slingshot.preview_times[0] - g.slingshot.shimmer_time)
+				for i in 1 ..< actual_frames {
+					diff := math.abs(g.slingshot.preview_times[i] - g.slingshot.shimmer_time)
+					if diff < best_diff {
+						best_diff = diff
+						shimmer_idx = int(i)
+					}
 				}
-			}
 
-			rl.BeginBlendMode(.ADDITIVE)
+				rl.BeginBlendMode(.ADDITIVE)
 
-			TRAIL_LEN :: 10 // points to draw for the shimmer
-			for k in 0 ..< TRAIL_LEN {
-				idx := shimmer_idx - k
-				if idx >= 0 && idx < int(actual_frames) {
-					pt := g.slingshot.preview_points[idx]
-					trail_t := f32(k) / f32(TRAIL_LEN)
+				TRAIL_LEN :: 10 // points to draw for the shimmer
+				for k in 0 ..< TRAIL_LEN {
+					idx := shimmer_idx - k
+					if idx >= 0 && idx < int(actual_frames) {
+						pt := g.slingshot.preview_points[idx]
+						trail_t := f32(k) / f32(TRAIL_LEN)
 
-					shimmer_glow_col := g.slingshot.obj_color
-					shimmer_glow_col.a = u8(f32(255.0) * (f32(1.0) - trail_t))
+						shimmer_glow_col := g.slingshot.obj_color
+						shimmer_glow_col.a = u8(f32(255.0) * (f32(1.0) - trail_t))
 
-					rl.DrawCircleV(pt, g.slingshot.obj_radius, shimmer_glow_col)
+						rl.DrawCircleV(pt, g.slingshot.obj_radius, shimmer_glow_col)
+					}
 				}
-			}
 
-			rl.EndBlendMode()
+				rl.EndBlendMode()
+			}
 		}
 	}
 }

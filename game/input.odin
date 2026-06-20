@@ -100,6 +100,11 @@ input_handle_action :: proc(g: ^Game) {
 }
 
 input_process :: proc(g: ^Game) {
+	if rl.WindowShouldClose() {
+		g.status = .Exit
+		return
+	}
+
 	g.input.action = .None
 	g.input.mouse_pos = input_mouse_pos(g)
 
