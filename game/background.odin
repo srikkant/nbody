@@ -68,18 +68,10 @@ background_draw :: proc(g: ^Game) {
 		dx := neb.pos.x - g.camera.rl_cam.target.x / BG_NEBULA_LAYER_DEPTH
 		dy := neb.pos.y - g.camera.rl_cam.target.y / BG_NEBULA_LAYER_DEPTH
 
-		dx_wrapped := math.mod(dx + BG_PARALLAX_TORUS_WIDTH / 2.0, BG_PARALLAX_TORUS_WIDTH)
-		if dx_wrapped < 0 do dx_wrapped += BG_PARALLAX_TORUS_WIDTH
-		dx_wrapped -= BG_PARALLAX_TORUS_WIDTH / 2.0
-
-		dy_wrapped := math.mod(dy + BG_PARALLAX_TORUS_HEIGHT / 2.0, BG_PARALLAX_TORUS_HEIGHT)
-		if dy_wrapped < 0 do dy_wrapped += BG_PARALLAX_TORUS_HEIGHT
-		dy_wrapped -= BG_PARALLAX_TORUS_HEIGHT / 2.0
-
 		draw_x :=
-			cx + dx_wrapped * (1.0 + (g.camera.rl_cam.zoom - 1.0) * BG_NEBULA_ZOOM_MULTIPLIER)
+			cx + dx * (1.0 + (g.camera.rl_cam.zoom - 1.0) * BG_NEBULA_ZOOM_MULTIPLIER)
 		draw_y :=
-			cy + dy_wrapped * (1.0 + (g.camera.rl_cam.zoom - 1.0) * BG_NEBULA_ZOOM_MULTIPLIER)
+			cy + dy * (1.0 + (g.camera.rl_cam.zoom - 1.0) * BG_NEBULA_ZOOM_MULTIPLIER)
 
 		breath :=
 			BG_NEBULA_PULSATION_BASE +
@@ -111,23 +103,15 @@ background_draw :: proc(g: ^Game) {
 		dx := star.pos.x - g.camera.rl_cam.target.x / BG_PARALLAX_LAYER_DEPTHS[star.layer]
 		dy := star.pos.y - g.camera.rl_cam.target.y / BG_PARALLAX_LAYER_DEPTHS[star.layer]
 
-		dx_wrapped := math.mod(dx + BG_PARALLAX_TORUS_WIDTH / 2.0, BG_PARALLAX_TORUS_WIDTH)
-		if dx_wrapped < 0 do dx_wrapped += BG_PARALLAX_TORUS_WIDTH
-		dx_wrapped -= BG_PARALLAX_TORUS_WIDTH / 2.0
-
-		dy_wrapped := math.mod(dy + BG_PARALLAX_TORUS_HEIGHT / 2.0, BG_PARALLAX_TORUS_HEIGHT)
-		if dy_wrapped < 0 do dy_wrapped += BG_PARALLAX_TORUS_HEIGHT
-		dy_wrapped -= BG_PARALLAX_TORUS_HEIGHT / 2.0
-
 		draw_x :=
 			cx +
-			dx_wrapped *
+			dx *
 				(1.0 +
 						(g.camera.rl_cam.zoom - 1.0) *
 							BG_PARALLAX_LAYER_ZOOM_MULTIPLIERS[star.layer])
 		draw_y :=
 			cy +
-			dy_wrapped *
+			dy *
 				(1.0 +
 						(g.camera.rl_cam.zoom - 1.0) *
 							BG_PARALLAX_LAYER_ZOOM_MULTIPLIERS[star.layer])
