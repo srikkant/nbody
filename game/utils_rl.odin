@@ -3,7 +3,7 @@ package game
 import "core:c"
 import rl "vendor:raylib"
 
-rl_text_measure :: proc(g: ^Game, type: Game_FontType, text: cstring) -> rl.Vector2 {
+rl_text_measure :: proc(g: ^Game, type: Assets_FontType, text: cstring) -> rl.Vector2 {
 	return rl.MeasureTextEx(
 		assets_get_font(g, type),
 		text,
@@ -14,7 +14,7 @@ rl_text_measure :: proc(g: ^Game, type: Game_FontType, text: cstring) -> rl.Vect
 
 rl_text_draw :: proc(
 	g: ^Game,
-	type: Game_FontType,
+	type: Assets_FontType,
 	text: cstring,
 	pos: rl.Vector2,
 	color: rl.Color = rl.WHITE,
@@ -35,7 +35,7 @@ rl_text_draw :: proc(
 
 rl_texture_draw :: proc(
 	g: ^Game,
-	type: Game_TextureType,
+	type: Assets_TextureType,
 	dest: rl.Rectangle,
 	origin: rl.Vector2 = rl.Vector2(0),
 	rotation: f32 = 0,
@@ -51,7 +51,7 @@ rl_texture_draw :: proc(
 	)
 }
 
-rl_begin_shader :: proc(g: ^Game, type: Game_ShaderType) {
+rl_begin_shader :: proc(g: ^Game, type: Assets_ShaderType) {
 	rl.BeginShaderMode(assets_get_shader(g, type))
 }
 

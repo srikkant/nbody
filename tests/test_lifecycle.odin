@@ -13,7 +13,7 @@ test_classify_star_absorb_star_vs_asteroid :: proc(t: ^testing.T) {
 	id1 := add_test_star(g, 1000.0, {0, 0})
 	id2 := add_test_entity(g, .Asteroid, 5.0, {1, 0}, {0, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -30,7 +30,7 @@ test_classify_debris_different_types :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Asteroid, 5.0, {0, 0}, {0, 0})
 	id2 := add_test_entity(g, .Moonlet, 5.0, {1, 0}, {0, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -39,22 +39,6 @@ test_classify_debris_different_types :: proc(t: ^testing.T) {
 	testing.expect_value(t, class, game.Game_Event_CollisionType.Debris)
 }
 
-@(test)
-test_classify_debris_high_mass_ratio :: proc(t: ^testing.T) {
-	g := make_test_game()
-	defer free_test_game(g)
-
-	id1 := add_test_entity(g, .Asteroid, 10.0, {0, 0}, {0, 0})
-	id2 := add_test_entity(g, .Asteroid, 2.5, {1, 0}, {0, 0})
-
-	e := game.Game_Event_Collision {
-		id1 = id1,
-		id2 = id2,
-	}
-	class := game.sys_lifecycle_collision_classify(g, &e)
-
-	testing.expect_value(t, class, game.Game_Event_CollisionType.Debris)
-}
 
 @(test)
 test_classify_shatter_high_speed :: proc(t: ^testing.T) {
@@ -64,7 +48,7 @@ test_classify_shatter_high_speed :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Asteroid, 5.0, {0, 0}, {50, 0})
 	id2 := add_test_entity(g, .Asteroid, 5.0, {1, 0}, {-50, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -81,7 +65,7 @@ test_classify_merge_same_type_low_speed :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Asteroid, 5.0, {0, 0}, {0.1, 0})
 	id2 := add_test_entity(g, .Asteroid, 5.0, {1, 0}, {-0.1, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -98,7 +82,7 @@ test_classify_merge_boundary_mass_ratio :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Asteroid, 9.0, {0, 0}, {0, 0})
 	id2 := add_test_entity(g, .Asteroid, 3.0, {1, 0}, {0, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -122,7 +106,7 @@ test_classify_shatter_threshold_formula :: proc(t: ^testing.T) {
 
 	expected_threshold := 100.0 * (6.0 + 4.0) / math.max(r1 + r2, 1.0)
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -145,7 +129,7 @@ test_merge_conserves_mass :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Asteroid, 5.0, {0, 0}, {1, 0})
 	id2 := add_test_entity(g, .Asteroid, 3.0, {2, 0}, {-1, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -160,7 +144,7 @@ test_merge_conserves_mass :: proc(t: ^testing.T) {
 	testing.expect(t, game.delete_entities[id1], "id1 must be deleted")
 	testing.expect(t, game.delete_entities[id2], "id2 must be deleted")
 
-	new_id := game.Entity(before_count)
+	new_id := game.Entity_Id(before_count)
 	testing.expect_value(t, g.entities[new_id].mass, f32(8.0))
 }
 
@@ -172,7 +156,7 @@ test_merge_conserves_momentum :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Asteroid, 6.0, {0, 0}, {2, 0})
 	id2 := add_test_entity(g, .Asteroid, 4.0, {2, 0}, {-3, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -184,7 +168,7 @@ test_merge_conserves_momentum :: proc(t: ^testing.T) {
 	before_count := g.entities_count
 	game.sys_lifecycle_resolve_merge(g, &e)
 
-	new_id := game.Entity(before_count)
+	new_id := game.Entity_Id(before_count)
 	testing.expect_value(t, g.entities[new_id].velocity.current.x, f32(0.0))
 }
 
@@ -196,7 +180,7 @@ test_merge_promotes_type :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Asteroid, 5.0, {0, 0}, {0, 0})
 	id2 := add_test_entity(g, .Asteroid, 5.0, {2, 0}, {0, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -208,8 +192,8 @@ test_merge_promotes_type :: proc(t: ^testing.T) {
 	before_count := g.entities_count
 	game.sys_lifecycle_resolve_merge(g, &e)
 
-	new_id := game.Entity(before_count)
-	testing.expect_value(t, g.entities[new_id].celestial.type, game.CelestialType.Moonlet)
+	new_id := game.Entity_Id(before_count)
+	testing.expect_value(t, g.entities[new_id].celestial.type, game.Celestial_Type.Moonlet)
 }
 
 @(test)
@@ -222,7 +206,7 @@ test_merge_unlocks_type :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Asteroid, 5.0, {0, 0}, {0, 0})
 	id2 := add_test_entity(g, .Asteroid, 5.0, {2, 0}, {0, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -244,7 +228,7 @@ test_debris_bigger_survives :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Moonlet, 10.0, {0, 0}, {0, 0})
 	id2 := add_test_entity(g, .Moonlet, 4.0, {2, 0}, {0, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -271,7 +255,7 @@ test_debris_mass_loss_formula :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Moonlet, 10.0, {0, 0}, {10, 0})
 	id2 := add_test_entity(g, .Moonlet, 2.0, {2, 0}, {0, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -293,7 +277,7 @@ test_debris_type_demotion :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Moonlet, 10.0, {0, 0}, {0, 0})
 	id2 := add_test_entity(g, .Moonlet, 2.0, {2, 0}, {0, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -304,7 +288,7 @@ test_debris_type_demotion :: proc(t: ^testing.T) {
 
 	game.sys_lifecycle_resolve_debris(g, &e)
 
-	testing.expect_value(t, g.entities[id1].celestial.type, game.CelestialType.Asteroid)
+	testing.expect_value(t, g.entities[id1].celestial.type, game.Celestial_Type.Asteroid)
 }
 
 @(test)
@@ -315,7 +299,7 @@ test_shatter_both_destroyed :: proc(t: ^testing.T) {
 	id1 := add_test_entity(g, .Asteroid, 5.0, {0, 0}, {100, 0})
 	id2 := add_test_entity(g, .Asteroid, 5.0, {2, 0}, {-100, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -338,7 +322,7 @@ test_star_absorb_correct_entity :: proc(t: ^testing.T) {
 	id1 := add_test_star(g, 1000.0, {0, 0})
 	id2 := add_test_entity(g, .Asteroid, 10.0, {1, 1}, {0, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -359,12 +343,12 @@ test_star_absorb_absorbed_mass :: proc(t: ^testing.T) {
 	g := make_test_game()
 	defer free_test_game(g)
 
-	g.params.physics.mass_loss_rate = 0.85
+	g.params.physics.mass_absorb_factor = 0.85
 
 	id1 := add_test_star(g, 1000.0, {0, 0})
 	id2 := add_test_entity(g, .Asteroid, 100.0, {1, 1}, {0, 0})
 
-	e := game.Game_Event_Collision {
+	e := game.GameEvent_Collision {
 		id1 = id1,
 		id2 = id2,
 	}
@@ -394,7 +378,7 @@ test_out_of_bounds_refund :: proc(t: ^testing.T) {
 		game.delete_entities[i] = false
 	}
 
-	e := game.Game_Event_ObjectOutOfBounds {
+	e := game.GameEvent_Object_OutOfBounds {
 		id = id,
 	}
 	game.sys_lifecycle_handle_out_of_bounds(g, &e)

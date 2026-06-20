@@ -3,6 +3,89 @@ package game
 import "core:math"
 import rl "vendor:raylib"
 
+Assets_Font :: enum {
+	Heading,
+	Body,
+}
+
+Assets_Texture :: enum {
+	Blank,
+	Bg,
+	Atlas,
+	BgStarGlow,
+	BgStarFlare,
+}
+
+Assets_Shader :: enum {
+	Vignette,
+	Celestial_Debris,
+	Celestial_Terrestrial,
+	Celestial_GasGiant,
+	Celestial_Star,
+	BgGrid_Gravity,
+	Energy_Shader,
+	Vfx_Effects,
+}
+
+Assets_Map :: struct {
+	fonts:    [Assets_Font]rl.Font,
+	textures: [Assets_Texture]rl.Texture2D,
+	shaders:  [Assets_Shader]rl.Shader,
+}
+
+Assets_TextureType :: enum {
+	Blank,
+	Objects_Celestial,
+	Objects_Emitter,
+	Markers_OutOfBounds,
+	Collectibles_Energy,
+	UI_Energy,
+	UI_EnergyAverage,
+	UI_ObjectCount,
+	Bg_StarGlow,
+	Bg_StarFlare,
+}
+
+Assets_FontType :: enum {
+	Heading,
+	Body,
+	Menu_Label,
+	Title,
+}
+
+Assets_ShaderType :: enum {
+	Bg_Vignette,
+	Celestial_Debris_Layer,
+	Celestial_Terrestrial_Layer,
+	Celestial_GasGiant_Layer,
+	Celestial_Star_Layer,
+	BgGrid_Shader,
+	Energy_Shader,
+	Vfx_Shader,
+}
+
+Game_Texture :: struct {
+	texture: Assets_Texture,
+	rect:    rl.Rectangle,
+}
+
+Game_Font :: struct {
+	font:    Assets_Font,
+	size:    f32,
+	spacing: f32,
+}
+
+Game_Shader :: struct {
+	shader: Assets_Shader,
+}
+
+Assets :: struct {
+	assets_map: Assets_Map,
+	textures:   [Assets_TextureType]Game_Texture,
+	shaders:    [Assets_ShaderType]Game_Shader,
+	fonts:      [Assets_FontType]Game_Font,
+}
+
 SHADER_PATHS: [Assets_Shader]cstring = {
 	.Vignette              = "./assets/shaders/vignette.frag",
 	.Celestial_Debris      = "./assets/shaders/celestial_debris.frag",
@@ -212,28 +295,27 @@ assets_shaders_load :: proc(g: ^Game) {
 	}
 }
 
-assets_get_shader :: proc(g: ^Game, type: Game_ShaderType) -> rl.Shader {
+assets_get_shader :: proc(g: ^Game, type: Assets_ShaderType) -> rl.Shader {
 	return g.assets.assets_map.shaders[g.assets.shaders[type].shader]
 }
 
-assets_get_texture :: proc(g: ^Game, type: Game_TextureType) -> rl.Texture2D {
+assets_get_texture :: proc(g: ^Game, type: Assets_TextureType) -> rl.Texture2D {
 	return g.assets.assets_map.textures[g.assets.textures[type].texture]
 }
 
-assets_get_texture_rect :: proc(g: ^Game, type: Game_TextureType) -> rl.Rectangle {
+assets_get_texture_rect :: proc(g: ^Game, type: Assets_TextureType) -> rl.Rectangle {
 	return g.assets.textures[type].rect
 }
 
-assets_get_font :: proc(g: ^Game, type: Game_FontType) -> rl.Font {
+assets_get_font :: proc(g: ^Game, type: Assets_FontType) -> rl.Font {
 	return g.assets.assets_map.fonts[g.assets.fonts[type].font]
 }
 
-assets_get_font_size :: proc(g: ^Game, type: Game_FontType) -> f32 {
+assets_get_font_size :: proc(g: ^Game, type: Assets_FontType) -> f32 {
 	return g.assets.fonts[type].size
 }
 
-assets_get_font_spacing :: proc(g: ^Game, type: Game_FontType) -> f32 {
+assets_get_font_spacing :: proc(g: ^Game, type: Assets_FontType) -> f32 {
 	return g.assets.fonts[type].spacing
 }
-
 

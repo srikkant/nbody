@@ -4,7 +4,14 @@ import "core:math"
 import rl "vendor:raylib"
 
 // TODO: This should be updated to only rely on the stars
-physics_check_preview_collision :: proc(g: ^Game, pos: rl.Vector2, radius: f32) -> (bool, Entity) {
+physics_check_preview_collision :: proc(
+	g: ^Game,
+	pos: rl.Vector2,
+	radius: f32,
+) -> (
+	bool,
+	Entity_Id,
+) {
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
 		if !(PHYSICS_SIG <= e.sig) do continue
@@ -13,14 +20,14 @@ physics_check_preview_collision :: proc(g: ^Game, pos: rl.Vector2, radius: f32) 
 		dist_sq := diff.x * diff.x + diff.y * diff.y
 		collision_radius := (radius + e.radius)
 		if dist_sq < collision_radius * collision_radius {
-			return true, Entity(i)
+			return true, Entity_Id(i)
 		}
 	}
 	return false, 0
 }
 
 sys_render_slingshot_trigger :: proc(g: ^Game) {
-	star := &g.entities[Entity(0)]
+	star := &g.entities[Entity_Id(0)]
 
 	drag := g.slingshot.end_pos - g.slingshot.start_pos
 	pull_dist := vec2_length(drag)
@@ -60,7 +67,7 @@ sys_render_slingshot_trigger :: proc(g: ^Game) {
 }
 
 sys_render_slingshot_preview :: proc(g: ^Game) {
-	star := &g.entities[Entity(0)]
+	star := &g.entities[Entity_Id(0)]
 
 	// No preview if the user cannot launch or has no preview level, to avoid confusion
 	if g.slingshot.preview == 0 || !g.slingshot.can_launch do return
@@ -68,18 +75,15 @@ sys_render_slingshot_preview :: proc(g: ^Game) {
 	pos := g.slingshot.start_pos
 	vel := physics_get_slingshot_release_velocity(g)
 
-	target_sim_duration :=
-		g.params.physics.slingshot_preview_duration *
-		g.slingshot.preview *
-		g.params.physics.simulation_rate_multiplier
 	g.slingshot.preview_points[0] = pos
 	g.slingshot.preview_times[0] = 0.0
+
 	actual_frames: i32 = 0
-	base_dt := (1.0 / 30.0) * g.params.physics.simulation_rate_multiplier
+	base_dt: f32 = (1.0 / 30.0)
 	accumulated_t: f32 = 0.0
 
 	for idx in 1 ..< 600 {
-		if accumulated_t >= target_sim_duration do break
+		if accumulated_t >= g.params.slingshot.preview_duration do break
 
 		dist := rl.Vector2Distance(pos, star.pos.current)
 		scale := clamp(dist / f32(380.0), f32(0.12), f32(3.5))
@@ -116,10 +120,7 @@ sys_render_slingshot_preview :: proc(g: ^Game) {
 	if actual_frames > 0 {
 		total_sim_time := g.slingshot.preview_times[actual_frames - 1]
 		if total_sim_time > 0.0 {
-			g.slingshot.shimmer_time = math.mod(
-				g.slingshot.shimmer_time + g.dt * g.params.physics.simulation_rate_multiplier,
-				total_sim_time,
-			)
+			g.slingshot.shimmer_time = math.mod(g.slingshot.shimmer_time + g.dt, total_sim_time)
 
 			if g.slingshot.shimmer_time < total_sim_time {
 				shimmer_idx := 0

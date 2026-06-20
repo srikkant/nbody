@@ -2,15 +2,15 @@ package game
 
 import rl "vendor:raylib"
 
-get_celestial_color :: proc(g: ^Game, ctype: CelestialType) -> rl.Color {
+get_celestial_color :: proc(g: ^Game, ctype: Celestial_Type) -> rl.Color {
 	return g.params.celestials[ctype].color
 }
 
-get_celestial_params :: proc(g: ^Game, ctype: CelestialType) -> Game_CelestialParams {
+get_celestial_params :: proc(g: ^Game, ctype: Celestial_Type) -> Parameters_Celestial {
 	return g.params.celestials[ctype]
 }
 
-get_celestial_display_name :: proc(ctype: CelestialType) -> cstring {
+get_celestial_display_name :: proc(ctype: Celestial_Type) -> cstring {
 	switch ctype {
 	case .None:
 		return "none"
@@ -42,8 +42,8 @@ get_celestial_display_name :: proc(ctype: CelestialType) -> cstring {
 	return "Unknown"
 }
 
-get_inspected_entity :: proc(g: ^Game) -> (Entity, bool) {
-	closest_id: Entity = 0
+get_inspected_entity :: proc(g: ^Game) -> (Entity_Id, bool) {
+	closest_id: Entity_Id = 0
 	closest_dist: f32 = 120.0 // screen-space lock threshold in pixels
 	found := false
 
@@ -60,7 +60,7 @@ get_inspected_entity :: proc(g: ^Game) -> (Entity, bool) {
 
 		if dist < closest_dist {
 			closest_dist = dist
-			closest_id = Entity(idx)
+			closest_id = Entity_Id(idx)
 			found = true
 		}
 	}

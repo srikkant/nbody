@@ -109,7 +109,7 @@ sys_lifecycle_spawn_debris_particle_burst :: proc(g: ^Game, pos: rl.Vector2, ene
 		MAX_PARTICLE_BURST_COUNT,
 	)
 
-	burst: ParticleBurstComponent
+	burst: Component_ParticleBurst
 	burst.active_count = active_count
 
 	for j in 0 ..< active_count {
@@ -121,10 +121,12 @@ sys_lifecycle_spawn_debris_particle_burst :: proc(g: ^Game, pos: rl.Vector2, ene
 			f64(g.params.vfx.particle_burst_speed_base) +
 			math.sqrt(energy) * f64(g.params.vfx.particle_burst_speed_sqrt_coefficient),
 		)
-		speed := base_speed * rand.float32_range(
-			g.params.vfx.particle_burst_speed_variance_min / 100.0,
-			g.params.vfx.particle_burst_speed_variance_max / 100.0,
-		)
+		speed :=
+			base_speed *
+			rand.float32_range(
+				g.params.vfx.particle_burst_speed_variance_min / 100.0,
+				g.params.vfx.particle_burst_speed_variance_max / 100.0,
+			)
 		vel := dir * speed
 		// Acceleration (drag: opposite to velocity, e.g. -vel * drag_factor)
 		accel := -vel * g.params.vfx.particle_burst_drag_coefficient
@@ -170,17 +172,19 @@ sys_lifecycle_spawn_debris_particle_burst :: proc(g: ^Game, pos: rl.Vector2, ene
 			f64(g.params.vfx.particle_burst_size_base) +
 			math.ln(energy + 1.0) * f64(g.params.vfx.particle_burst_size_ln_coefficient),
 		)
-		size := base_size * rand.float32_range(
-			g.params.vfx.particle_burst_size_variance_min / 100.0,
-			g.params.vfx.particle_burst_size_variance_max / 100.0,
-		)
+		size :=
+			base_size *
+			rand.float32_range(
+				g.params.vfx.particle_burst_size_variance_min / 100.0,
+				g.params.vfx.particle_burst_size_variance_max / 100.0,
+			)
 		size = clamp(
 			size,
 			g.params.vfx.particle_burst_size_min,
 			g.params.vfx.particle_burst_size_max,
 		)
 
-		burst.particles[j] = ParticleBurst_Particle {
+		burst.particles[j] = Component_ParticleBurst_Particle {
 			pos          = pos,
 			size         = size,
 			color        = color,
@@ -192,7 +196,7 @@ sys_lifecycle_spawn_debris_particle_burst :: proc(g: ^Game, pos: rl.Vector2, ene
 	entity_add_particle_burst(g, id, burst)
 }
 
-sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^Game_Event_ObjectSpawn) {
+sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^GameEvent_ObjectSpawn) {
 	id := entity_create(g)
 
 	mass := event.density * event.radius * event.radius
@@ -217,17 +221,17 @@ sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^Game_Event_ObjectSpawn) {
 
 sys_lifecycle_collision_classify :: proc(
 	g: ^Game,
-	e: ^Game_Event_Collision,
+	e: ^GameEvent_Collision,
 ) -> Game_Event_CollisionType {
 	e1 := &g.entities[e.id1]
 	e2 := &g.entities[e.id2]
 
+	// Stars always absord the other entity
 	if e1.celestial.type == .Star || e2.celestial.type == .Star do return .StarAbsorb
+	// For now, different celestial types result in debris
 	if e1.celestial.type != e2.celestial.type do return .Debris
-
-	mass_ratio := math.max(e1.mass, e2.mass) / math.min(e2.mass, e1.mass)
-	if mass_ratio > g.params.physics.collision_mass_scaling_factor do return .Debris
-
+	// Same celestial types will result in shatter or merge depending on
+	// relative velocity
 	shatter_threshold_sq :=
 		g.params.physics.shatter_base_energy *
 		((e1.mass + e2.mass) / math.max(e1.radius + e2.radius, 1.0))
@@ -238,7 +242,7 @@ sys_lifecycle_collision_classify :: proc(
 	return .Merge
 }
 
-sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^Game_Event_Collision) {
+sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	delete_entities[e.id1] = true
 	delete_entities[e.id2] = true
 
@@ -278,7 +282,7 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	}
 }
 
-sys_lifecycle_resolve_shatter :: proc(g: ^Game, e: ^Game_Event_Collision) {
+sys_lifecycle_resolve_shatter :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	delete_entities[e.id1] = true
 	delete_entities[e.id2] = true
 
@@ -296,7 +300,7 @@ sys_lifecycle_resolve_shatter :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	sys_lifecycle_spawn_debris_particle_burst(g, e1.pos.current, energy)
 }
 
-sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^Game_Event_Collision) {
+sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	e1 := &g.entities[e.id1]
 	e2 := &g.entities[e.id2]
 
@@ -345,7 +349,7 @@ sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	sys_lifecycle_spawn_debris_particle_burst(g, e1.pos.current, energy_loss)
 }
 
-sys_lifecycle_handle_star_absorb :: proc(g: ^Game, e: ^Game_Event_Collision) {
+sys_lifecycle_handle_star_absorb :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	star_id := e.id1
 	other_id := e.id2
 	other_mass := g.entities[e.id2].mass
@@ -357,11 +361,11 @@ sys_lifecycle_handle_star_absorb :: proc(g: ^Game, e: ^Game_Event_Collision) {
 	}
 
 	delete_entities[other_id] = true
-	absorbed := other_mass * g.params.physics.mass_loss_rate
+	absorbed := other_mass * g.params.physics.mass_absorb_factor
 	mass_delta[star_id] += absorbed
 }
 
-sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^Game_Event_Collision) {
+sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^GameEvent_Collision) {
 	if delete_entities[event.id1] || delete_entities[event.id2] {
 		return
 	}
@@ -380,7 +384,7 @@ sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^Game_Event_Collision) {
 	}
 }
 
-sys_lifecycle_handle_out_of_bounds :: proc(g: ^Game, event: ^Game_Event_ObjectOutOfBounds) {
+sys_lifecycle_handle_out_of_bounds :: proc(g: ^Game, event: ^GameEvent_Object_OutOfBounds) {
 	e := &g.entities[event.id]
 	if e.celestial.type != .Star && e.mass > 0 {
 		refund := f64(g.params.physics.destroy_refund_fraction * e.mass * e.radius)
@@ -389,8 +393,8 @@ sys_lifecycle_handle_out_of_bounds :: proc(g: ^Game, event: ^Game_Event_ObjectOu
 	delete_entities[event.id] = true
 }
 
-sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^Game_Event_ObjectDemolish) {
-	closest_id: Entity
+sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^GameEvent_Object_Demolish) {
+	closest_id: Entity_Id
 	closest_dist := f32(1e9)
 	found := false
 
@@ -403,7 +407,7 @@ sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^Game_Event_ObjectDemolis
 
 			if dist <= click_radius && dist < closest_dist {
 				closest_dist = dist
-				closest_id = Entity(i)
+				closest_id = Entity_Id(i)
 				found = true
 			}
 		}
@@ -420,7 +424,7 @@ sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^Game_Event_ObjectDemolis
 	}
 }
 
-sys_lifecycle_handle_destroyed :: proc(g: ^Game, event: ^Game_Event_ObjectDestroyed) {
+sys_lifecycle_handle_destroyed :: proc(g: ^Game, event: ^GameEvent_Object_Destroyed) {
 	delete_entities[event.id] = true
 }
 
@@ -438,8 +442,7 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 		dist_sq := dx * dx + dy * dy
 
 		pull_dist :=
-			g.params.physics.cursor_distance *
-			g.params.vfx.fragments_pull_distance_multiplier
+			g.params.physics.cursor_distance * g.params.vfx.fragments_pull_distance_multiplier
 		if dist_sq < pull_dist * pull_dist {
 			dist := math.sqrt(dist_sq)
 			if dist > g.params.vfx.fragments_pull_minimum_distance {
@@ -470,7 +473,7 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 
 	for i in 0 ..< MAX_ENTITIES {
 		if delete_entities[i] {
-			entity_free(g, Entity(i))
+			entity_free(g, Entity_Id(i))
 			delete_entities[i] = false
 			continue
 		}
@@ -480,7 +483,7 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 		if .Life in e.sig && e.life.remaining.interval != 0 {
 			utils_math_update_timer(&e.life.remaining, dt)
 			if e.life.remaining.done {
-				entity_free(g, Entity(i))
+				entity_free(g, Entity_Id(i))
 				continue
 			}
 		}
@@ -530,15 +533,15 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 sys_lifecycle :: proc(g: ^Game) {
 	for i in 0 ..< g.events_count {
 		switch &event in g.events[i] {
-		case Game_Event_ObjectSpawn:
+		case GameEvent_ObjectSpawn:
 			sys_lifecycle_handle_spawn(g, &event)
-		case Game_Event_Collision:
+		case GameEvent_Collision:
 			sys_lifecycle_handle_collision(g, &event)
-		case Game_Event_ObjectOutOfBounds:
+		case GameEvent_Object_OutOfBounds:
 			sys_lifecycle_handle_out_of_bounds(g, &event)
-		case Game_Event_ObjectDestroyed:
+		case GameEvent_Object_Destroyed:
 			sys_lifecycle_handle_destroyed(g, &event)
-		case Game_Event_ObjectDemolish:
+		case GameEvent_Object_Demolish:
 			sys_lifecycle_handle_demolish(g, &event)
 		}
 	}

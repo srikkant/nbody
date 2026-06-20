@@ -28,7 +28,7 @@ sys_render_generate_bg_stars :: proc(g: ^Game) {
 
 		color := rand.choice(g.theme.star_colors[:])
 
-		g.bg.stars[i] = Game_BgStar {
+		g.render.bg.stars[i] = Render_Background_Star {
 			pos         = rl.Vector2{x, y},
 			layer       = layer,
 			size        = size,
@@ -56,7 +56,7 @@ sys_render_generate_bg_nebulae :: proc(g: ^Game) {
 
 		drift_phase := rand.float32_range(0.0, p.star_blink_phase_max)
 
-		g.bg.nebulae[i] = Game_BgNebula {
+		g.render.bg.nebulae[i] = Render_Background_Nebula {
 			pos         = rl.Vector2{neb_x, neb_y},
 			color       = g.theme.bg_nebula_colors[i],
 			radius      = radius,
@@ -81,7 +81,7 @@ sys_render :: proc(g: ^Game) {
 
 	rl.BeginMode2D(g.camera.rl_cam)
 
-	for i in Game_RenderLayerType {
+	for i in Render_LayerType {
 		g.render.layers[i].count = 0
 	}
 
@@ -112,18 +112,18 @@ sys_render_cursor :: proc(g: ^Game) {
 	)
 }
 
-sys_add_entity_to_layer :: proc(g: ^Game, id: Entity, layer: Game_RenderLayerType) {
-	g.render.layers[layer].entities[g.render.layers[layer].count] = Entity(id)
+sys_add_entity_to_layer :: proc(g: ^Game, id: Entity_Id, layer: Render_LayerType) {
+	g.render.layers[layer].entities[g.render.layers[layer].count] = Entity_Id(id)
 	g.render.layers[layer].count += 1
 }
 
 sys_render_get_entity_draw_info :: proc(
 	g: ^Game,
-	id: Entity,
+	id: Entity_Id,
 	qm: f32,
 ) -> (
 	dest: rl.Rectangle,
-	texture: Game_TextureType,
+	texture: Assets_TextureType,
 	is_oob: bool,
 ) {
 	e := &g.entities[id]
@@ -168,7 +168,7 @@ catmull_rom :: proc(p0, p1, p2, p3: rl.Vector2, t: f32) -> rl.Vector2 {
 
 sys_render_entities :: proc(g: ^Game) {
 	for id in 0 ..< g.entities_count {
-		id := Entity(id)
+		id := Entity_Id(id)
 		e := g.entities[id]
 
 		if RENDER_SIG <= e.sig {
@@ -507,7 +507,7 @@ sys_render_bg :: proc(g: ^Game) {
 
 	// Render the nebulae
 	for i in 0 ..< BG_NEBULA_COUNT {
-		neb := g.bg.nebulae[i]
+		neb := g.render.bg.nebulae[i]
 
 		depth := g.params.background.nebula_layer_depth
 		zoom_scale := g.params.background.nebula_zoom_multiplier
@@ -553,7 +553,7 @@ sys_render_bg :: proc(g: ^Game) {
 
 	// Render the Starfield
 	for i in 0 ..< BG_STAR_COUNT {
-		star := g.bg.stars[i]
+		star := g.render.bg.stars[i]
 
 		depth := depths[star.layer]
 		zoom_scale := zoom_scales[star.layer]
@@ -627,7 +627,7 @@ sys_render_bg :: proc(g: ^Game) {
 
 		if color.a == 0 do continue
 
-		tex_type: Game_TextureType = star.layer == 3 ? .Bg_StarFlare : .Bg_StarGlow
+		tex_type: Assets_TextureType = star.layer == 3 ? .Bg_StarFlare : .Bg_StarGlow
 
 		radius := draw_size
 		dest_rect := rl.Rectangle{draw_x, draw_y, radius * 2.0, radius * 2.0}

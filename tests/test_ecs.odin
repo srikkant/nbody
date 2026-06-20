@@ -12,9 +12,9 @@ test_entity_create_sequential :: proc(t: ^testing.T) {
 	id2 := game.entity_create(g)
 	id3 := game.entity_create(g)
 
-	testing.expect_value(t, id1, game.Entity(0))
-	testing.expect_value(t, id2, game.Entity(1))
-	testing.expect_value(t, id3, game.Entity(2))
+	testing.expect_value(t, id1, game.Entity_Id(0))
+	testing.expect_value(t, id2, game.Entity_Id(1))
+	testing.expect_value(t, id3, game.Entity_Id(2))
 }
 
 @(test)
@@ -134,3 +134,4 @@ test_entity_add_collectible_negative_guard :: proc(t: ^testing.T) {
 		"Should add CollectibleEnergy if energy > 0",
 	)
 }
+

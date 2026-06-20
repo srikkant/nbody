@@ -33,11 +33,12 @@ MAX_GRID_WELLS :: 16
 Signatures used by different systems
 */
 
-EMITTER_SIG: Signature : {.Emitter, .Position}
-RENDER_SIG: Signature : {.Position, .Radius, .Renderable}
-PHYSICS_SIG: Signature : {.Position, .Velocity, .Mass, .Radius, .Celestial}
-ORBIT_SIG: Signature : {.Orbit}
-KE_SCORE_SIG: Signature : {.Position, .Velocity, .Radius, .Mass, .Life}
-ENERGY_SOURCE_SIG: Signature : {.EnergySource, .Radius}
-SHOCKWAVE_SIG: Signature : {.Position, .Radius, .Life, .Shockwave}
-PARTICLE_BURST_SIG: Signature : {.Position, .Life, .ParticleBurst}
+EMITTER_SIG: Entity_Signature : {.Emitter, .Position}
+RENDER_SIG: Entity_Signature : {.Position, .Radius, .Renderable}
+PHYSICS_SIG: Entity_Signature : {.Position, .Velocity, .Mass, .Radius, .Celestial}
+ORBIT_SIG: Entity_Signature : {.Orbit}
+KE_SCORE_SIG: Entity_Signature : {.Position, .Velocity, .Radius, .Mass, .Life}
+ENERGY_SOURCE_SIG: Entity_Signature : {.EnergySource, .Radius}
+SHOCKWAVE_SIG: Entity_Signature : {.Position, .Radius, .Life, .Shockwave}
+PARTICLE_BURST_SIG: Entity_Signature : {.Position, .Life, .ParticleBurst}
+

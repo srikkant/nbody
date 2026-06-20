@@ -17,11 +17,11 @@ free_test_game :: proc(g: ^game.Game) {
 
 add_test_entity :: proc(
 	g: ^game.Game,
-	type: game.CelestialType,
+	type: game.Celestial_Type,
 	mass: f32,
 	pos: rl.Vector2,
 	vel: rl.Vector2,
-) -> game.Entity {
+) -> game.Entity_Id {
 	id := game.entity_create(g)
 
 	game.entity_add_mass(g, id, mass)
@@ -43,7 +43,7 @@ add_test_entity :: proc(
 	return id
 }
 
-add_test_star :: proc(g: ^game.Game, mass: f32, pos: rl.Vector2) -> game.Entity {
+add_test_star :: proc(g: ^game.Game, mass: f32, pos: rl.Vector2) -> game.Entity_Id {
 	return add_test_entity(g, .Star, mass, pos, rl.Vector2{0, 0})
 }
 

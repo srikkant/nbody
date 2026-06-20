@@ -4,8 +4,6 @@ import "core:math"
 import rl "vendor:raylib"
 
 sys_physics :: proc(g: ^Game) {
-	dt := g.dt * g.params.physics.simulation_rate_multiplier
-
 	for i in 0 ..< g.entities_count {
 		e1 := &g.entities[i]
 
@@ -42,7 +40,7 @@ sys_physics :: proc(g: ^Game) {
 			invincible := (e1_is_new || e2_is_new) && !(e1_is_star || e2_is_star)
 
 			if collision && !invincible {
-				push_event(g, Game_Event_Collision{id1 = Entity(i), id2 = Entity(j)})
+				push_event(g, GameEvent_Collision{id1 = Entity_Id(i), id2 = Entity_Id(j)})
 			}
 		}
 
@@ -53,8 +51,8 @@ sys_physics :: proc(g: ^Game) {
 		e := &g.entities[i]
 		if !(PHYSICS_SIG <= e.sig) || e.celestial.type == .Star do continue
 
-		e.velocity.current += e.velocity.acceleration * dt
-		e.pos.current += e.velocity.current * dt
+		e.velocity.current += e.velocity.acceleration * g.dt
+		e.pos.current += e.velocity.current * g.dt
 
 		if g.timers[.Trail].done {
 			e.pos.trail[e.pos.trail_head] = e.pos.current
@@ -83,7 +81,7 @@ sys_physics :: proc(g: ^Game) {
 
 		dist_sq := vec2_length_sq(e.pos.current)
 		if dist_sq > g.params.physics.world_radius_squared {
-			push_event(g, Game_Event_ObjectOutOfBounds{id = Entity(i)})
+			push_event(g, GameEvent_Object_OutOfBounds{id = Entity_Id(i)})
 		}
 	}
 }

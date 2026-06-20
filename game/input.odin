@@ -2,16 +2,20 @@ package game
 
 import rl "vendor:raylib"
 
-DEFAULT_GAME_INPUTS: [Game_InputAction]Game_InputMatcher = {
+DEFAULT_GAME_INPUTS: [Input_Action]Input_Matcher = {
 	.None               = {},
-	.Game_Pause         = Game_InputMatcherKeyboard{{.Pressed, .Playing}, .ESCAPE},
-	.Game_Resume        = Game_InputMatcherKeyboard{{.Pressed, .Paused}, .ESCAPE},
-	.Slingshot_Activate = Game_InputMatcherMouse{{.Pressed, .Playing}, .LEFT},
-	.Slingshot_Move     = Game_InputMatcherMouse{{.Down, .Playing}, .LEFT},
-	.Slingshot_Release  = Game_InputMatcherMouse{{.Released, .Playing}, .LEFT},
-	.Slingshot_Cancel   = Game_InputMatcherKeyboard{{.Pressed, .Playing}, .C},
-	.View_ToggleOrbit   = Game_InputMatcherKeyboard{{.Pressed, .Playing}, .T},
-	.Demolish_Object    = Game_InputMatcherMouse{{.Pressed, .Playing}, .RIGHT},
+	.Game_Pause         = Input_Matcher_Keyboard{{.Pressed, .Playing}, .ESCAPE},
+	.Game_Resume        = Input_Matcher_Keyboard{{.Pressed, .Paused}, .ESCAPE},
+	.Slingshot_Activate = Input_Matcher_Mouse{{.Pressed, .Playing}, .LEFT},
+	.Slingshot_Move     = Input_Matcher_Mouse{{.Down, .Playing}, .LEFT},
+	.Slingshot_Release  = Input_Matcher_Mouse{{.Released, .Playing}, .LEFT},
+	.Slingshot_Cancel   = Input_Matcher_Keyboard{{.Pressed, .Playing}, .C},
+	.View_ToggleOrbit   = Input_Matcher_Keyboard{{.Pressed, .Playing}, .T},
+	.Demolish_Object    = Input_Matcher_Mouse{{.Pressed, .Playing}, .RIGHT},
+}
+
+input_init :: proc(g: ^Game) {
+	g.input.controls = DEFAULT_GAME_INPUTS
 }
 
 input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
@@ -20,8 +24,8 @@ input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
 
 input_action_match_mouse :: proc(
 	g: ^Game,
-	action: Game_InputAction,
-	matcher: ^Game_InputMatcherMouse,
+	action: Input_Action,
+	matcher: ^Input_Matcher_Mouse,
 ) -> bool {
 	if matcher.status != g.status do return false
 	switch matcher.interaction {
@@ -37,8 +41,8 @@ input_action_match_mouse :: proc(
 
 input_action_match_keyboard :: proc(
 	g: ^Game,
-	action: Game_InputAction,
-	matcher: ^Game_InputMatcherKeyboard,
+	action: Input_Action,
+	matcher: ^Input_Matcher_Keyboard,
 ) -> bool {
 	if matcher.status != g.status do return false
 	switch matcher.interaction {
@@ -56,13 +60,13 @@ input_action_match_keyboard :: proc(
 input_match_action :: proc(g: ^Game) {
 	if g.input.ignore do return
 
-	for action in Game_InputAction {
+	for action in Input_Action {
 		matched: bool
 
-		switch &matcher in DEFAULT_GAME_INPUTS[action] {
-		case Game_InputMatcherMouse:
+		switch &matcher in g.input.controls[action] {
+		case Input_Matcher_Mouse:
 			matched = input_action_match_mouse(g, action, &matcher)
-		case Game_InputMatcherKeyboard:
+		case Input_Matcher_Keyboard:
 			matched = input_action_match_keyboard(g, action, &matcher)
 		}
 
@@ -83,6 +87,7 @@ input_handle_action :: proc(g: ^Game) {
 	case .Slingshot_Activate:
 		g.slingshot.status = .Active
 		g.slingshot.start_pos = g.input.mouse_pos
+		g.slingshot.end_pos = g.input.mouse_pos
 	case .Slingshot_Move:
 		g.slingshot.end_pos = g.input.mouse_pos
 	case .Slingshot_Release:
@@ -93,7 +98,7 @@ input_handle_action :: proc(g: ^Game) {
 	case .View_ToggleOrbit:
 		g.render.show_orbits = !g.render.show_orbits
 	case .Demolish_Object:
-		push_event(g, Game_Event_ObjectDemolish{})
+		push_event(g, GameEvent_Object_Demolish{})
 	}
 
 	g.input.action = .None
@@ -107,6 +112,7 @@ input_process :: proc(g: ^Game) {
 
 	g.input.action = .None
 	g.input.mouse_pos = input_mouse_pos(g)
+	g.input.mouse_scroll_move = rl.GetMouseWheelMoveV()
 
 	input_match_action(g)
 	input_handle_action(g)

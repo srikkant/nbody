@@ -14,14 +14,14 @@ sys_automation :: proc(g: ^Game) {
 			if e.emitter.timer.done && g.score.energy >= e.emitter.base_cost {
 				push_event(
 					g,
-					Game_Event_ObjectSpawn {
+					GameEvent_ObjectSpawn {
 						pos = e.pos.current,
 						velocity = e.emitter.emit_vel,
 						density = e.emitter.emit_density,
 						radius = e.emitter.emit_radius,
 						show_orbit = true,
 						celestial = e.emitter.emit_celestial,
-						renderable = RenderableComponent{color = e.emitter.emit_color},
+						renderable = Component_Renderable{color = e.emitter.emit_color},
 					},
 				)
 
@@ -32,7 +32,7 @@ sys_automation :: proc(g: ^Game) {
 			}
 
 			if e.emitter.destroy_timer.done || max_count_reached {
-				push_event(g, Game_Event_ObjectDestroyed{Entity(i)})
+				push_event(g, GameEvent_Object_Destroyed{Entity_Id(i)})
 			}
 		}
 	}

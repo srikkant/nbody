@@ -27,8 +27,9 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	sys_render_init(g)
 	sys_camera_init(g)
 	sys_lifecycle_init(g)
+	input_init(g)
 
-	g.slingshot.output = Game_SlingshotOutput_Celestial {
+	g.slingshot.output = Slingshot_Output_Celestial {
 		celestial = {type = .DwarfPlanet},
 	}
 
@@ -64,13 +65,13 @@ game_reset :: proc(g: ^Game) {
 	g.slingshot.status = .Inactive
 	g.slingshot.snap.active = false
 
-	for i in Game_TimerType {
+	for i in Timer_BuiltIn {
 		g.timers[i].curr = 0
 	}
 
 	push_event(
 		g,
-		Game_Event_ObjectSpawn {
+		GameEvent_ObjectSpawn {
 			pos = rl.Vector2(0),
 			celestial = {.Star},
 			density = g.params.celestials[.Star].density,
@@ -111,6 +112,8 @@ game_run :: proc(g: ^Game) {
 	case .Exit:
 	// Do nothing, the main loop will exit after this.
 	}
+
+	tutorial_draw(g)
 
 	rl.EndDrawing()
 }

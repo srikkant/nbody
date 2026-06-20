@@ -1,8 +1,17 @@
 package game
 
+Score :: struct {
+	energy:             f64,
+	energy_rate_ticker: int,
+	total_objects:      int,
+	energy_gains:       [AVG_CALC_TICKS]f64,
+	energy_losses:      [AVG_CALC_TICKS]f64,
+}
+
 sys_score :: proc(g: ^Game) {
 	dt := g.dt
 	curr_energy := g.score.energy
+	gain_fac := g.params.economy.energy_gain_factor
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
@@ -13,26 +22,13 @@ sys_score :: proc(g: ^Game) {
 			pos_score :=
 				1 / (g.params.physics.gravity_softening_factor + vec2_length_sq(e.pos.current))
 
-			g.score.energy += f64(
-				g.params.physics.energy_gain_coefficient *
-				g.params.physics.energy_momentum_coefficient *
-				mass_score *
-				vel_score *
-				pos_score,
-			)
+			g.score.energy += f64(gain_fac * mass_score * vel_score * pos_score)
 		}
 
 		if ENERGY_SOURCE_SIG <= e.sig {
-			gain := f64(
-				g.params.physics.energy_gain_coefficient *
-				(e.energy_source.output +
-						(g.params.physics.energy_generation_coefficient * e.radius * e.radius)),
-			)
-
 			utils_math_update_timer(&e.energy_source.timer, dt)
-
 			if e.energy_source.timer.done {
-				g.score.energy += gain
+				g.score.energy += f64(gain_fac * (e.energy_source.output + (e.radius * e.radius)))
 			}
 		}
 	}

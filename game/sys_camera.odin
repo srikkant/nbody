@@ -4,7 +4,13 @@ import "core:math"
 import "core:math/rand"
 import rl "vendor:raylib"
 
-CAMERA_SIG: Signature : {.Position}
+Camera :: struct {
+	rl_cam:          rl.Camera2D,
+	shake_dir:       rl.Vector2,
+	shake_intensity: f32,
+}
+
+CAMERA_SIG: Entity_Signature : {.Position}
 
 sys_camera_init :: proc(g: ^Game) {
 	g.camera.rl_cam.zoom = 1

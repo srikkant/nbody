@@ -9,7 +9,7 @@ frame_setup :: proc(g: ^Game) {
 	g.screenw = f32(rl.GetScreenWidth())
 	g.screenh = f32(rl.GetScreenHeight())
 
-	for i in Game_TimerType {
+	for i in Timer_BuiltIn {
 		utils_math_update_timer(&g.timers[i], g.dt)
 	}
 }

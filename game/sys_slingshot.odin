@@ -1,4 +1,5 @@
 package game
+
 import "core:math"
 
 sys_slingshot :: proc(g: ^Game) {
@@ -7,15 +8,15 @@ sys_slingshot :: proc(g: ^Game) {
 	vel := physics_get_slingshot_release_velocity(g)
 
 	cost: f64
-	obj_type: ComponentType
-	launch_type: CelestialType
+	obj_type: Component_Type
+	launch_type: Celestial_Type
 
-	event := Game_Event_ObjectSpawn {
+	event := GameEvent_ObjectSpawn {
 		pos = g.slingshot.start_pos,
 	}
 
 	switch out in g.slingshot.output {
-	case Game_SlingshotOutput_Emitter:
+	case Slingshot_Output_Emitter:
 		launch_type = out.emitter.emit_celestial.type
 		obj_type = .Emitter
 		event.radius = g.params.celestials[out.emitter.emit_celestial.type].radius
@@ -24,14 +25,11 @@ sys_slingshot :: proc(g: ^Game) {
 		event.emitter.emit_density = g.params.celestials[out.emitter.emit_celestial.type].density
 		event.emitter.emit_radius = g.params.celestials[out.emitter.emit_celestial.type].radius
 		event.emitter.emit_color = get_celestial_color(g, out.emitter.emit_celestial.type)
-		cost = f64(
-			g.params.physics.energy_loss_coefficient *
-			(event.density * event.radius * event.radius * vec2_length_sq(vel)),
-		)
+		cost = f64(event.density * event.radius * event.radius * vec2_length_sq(vel))
 
 		g.slingshot.obj_radius = event.radius
 		g.slingshot.obj_color = event.emitter.emit_color
-	case Game_SlingshotOutput_Celestial:
+	case Slingshot_Output_Celestial:
 		launch_type = out.celestial.type
 		color := get_celestial_color(g, out.celestial.type)
 		event.celestial = out.celestial
@@ -39,11 +37,10 @@ sys_slingshot :: proc(g: ^Game) {
 		event.radius = g.params.celestials[out.celestial.type].radius
 		event.velocity = vel
 		event.show_orbit = true
-		event.renderable = RenderableComponent{color}
+		event.renderable = Component_Renderable{color}
 		cost = f64(
 			g.params.celestials[out.celestial.type].launch_cost +
-			g.params.physics.energy_loss_coefficient *
-				(event.density * event.radius * event.radius * vec2_length_sq(vel)),
+			(event.density * event.radius * event.radius * vec2_length_sq(vel)),
 		)
 
 		g.slingshot.obj_radius = event.radius
