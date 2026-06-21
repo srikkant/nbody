@@ -16,17 +16,11 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 
 	g := new(Game)
 
-	assets_map_load(g)
-	assets_textures_load(g)
-	assets_fonts_load(g)
-	assets_shaders_load(g)
-
 	params_init(g)
 	theme_init(g)
 
-	sys_render_init(g)
 	sys_camera_init(g)
-	sys_lifecycle_init(g)
+
 	input_init(g)
 	background_init(g)
 

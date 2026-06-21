@@ -97,6 +97,13 @@ SHADER_PATHS: [Assets_Shader]cstring = {
 	.Vfx_Effects           = "./assets/shaders/vfx_effects.frag",
 }
 
+assets_init :: proc(g: ^Game) {
+	assets_map_load(g)
+	assets_textures_load(g)
+	assets_fonts_load(g)
+	assets_shaders_load(g)
+}
+
 assets_map_load :: proc(g: ^Game) {
 	blank_image := rl.GenImageColor(1, 1, rl.WHITE)
 	defer rl.UnloadImage(blank_image)

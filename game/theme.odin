@@ -8,10 +8,10 @@ theme_init :: proc(g: ^Game) {
 	t.color_bg = rl.Color{12, 12, 24, 255}
     t.color_error = rl.RED
 
-	t.colors_bg_nebula[0] = rl.Color{10, 150, 180, 20}
-	t.colors_bg_nebula[1] = rl.Color{200, 30, 140, 16}
-	t.colors_bg_nebula[2] = rl.Color{110, 30, 200, 16}
-	t.colors_bg_nebula[3] = rl.Color{220, 120, 20, 12}
+	t.colors_bg_nebula[0] = rl.Color{10, 150, 180, 40}
+	t.colors_bg_nebula[1] = rl.Color{200, 30, 140, 32}
+	t.colors_bg_nebula[2] = rl.Color{110, 30, 200, 32}
+	t.colors_bg_nebula[3] = rl.Color{220, 120, 20, 24}
 
 	t.colors_bg_star[0] = rl.Color{255, 140, 80, 255}
 	t.colors_bg_star[1] = rl.Color{170, 220, 255, 255}

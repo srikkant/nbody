@@ -38,6 +38,10 @@ TRAIL_SUBDIVISIONS :: 4
  * Number of ticks between for calculating averages.
  */
 AVG_CALC_TICKS :: 10
+/*
+ * Use when we want to return an entity ID that wont match with anything
+ */
+ENTITY_ID_NONE: Entity_Id = MAX_ENTITIES + 1
 
 // ==========================================
 // Signatures used by different systems

@@ -13,10 +13,6 @@ Game_Event_CollisionType :: enum {
 delete_entities: [MAX_ENTITIES]bool
 mass_delta: [MAX_ENTITIES]f32
 
-sys_lifecycle_init :: proc(g: ^Game) {
-	g.events_count = 0
-}
-
 sys_lifecycle_spawn_fragments :: proc(g: ^Game, energy: f64, rel_speed: f32, pos: rl.Vector2) {
 	frag_count := ENERGY_FRAGMENTS_COUNT_BASE + rel_speed * ENERGY_FRAGMENTS_COUNT_SPEED_FACTOR
 	frag_energy_each := energy / f64(frag_count)

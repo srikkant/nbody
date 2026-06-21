@@ -87,3 +87,28 @@ physics_rk4_step :: proc(g: ^Game, pos: ^rl.Vector2, vel: ^rl.Vector2, dt: f32, 
 	vel^ += (k1_vel + k2_vel * 2.0 + k3_vel * 2.0 + k4_vel) * (dt / 6.0)
 }
 
+/*
+ * Check if a given position results in a collision with any entity
+ * Takes in an optional radius for proximity checks and a signature
+ * to filter entities out
+ */
+physics_check_collision :: proc(
+	g: ^Game,
+	pos: rl.Vector2,
+	dist: f32 = 0.0,
+	sig: Entity_Signature = {},
+) -> Maybe(Entity_Id) {
+	for i in 0 ..< g.entities_count {
+		e := &g.entities[i]
+		if !(sig <= e.sig) do continue
+
+		dist_sq := rl.Vector2DistanceSqrt(e.pos.current, pos)
+		hit_dist := (dist + e.radius)
+		if dist_sq < hit_dist * hit_dist {
+			return Entity_Id(i)
+		}
+	}
+
+	return nil
+}
+
