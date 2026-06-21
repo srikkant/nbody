@@ -38,15 +38,5 @@ void main() {
         vec3 hot_glow_color = fragColor.rgb * (1.0 + core_ring * 1.5 + glow_ring * 0.5);
 
         finalColor = vec4(hot_glow_color, alpha * fragColor.a);
-    } else {
-        // Particles
-        float core = 1.0 - smoothstep(0.0, 0.16, r);
-        float glow = 1.0 - smoothstep(0.0, 0.50, r);
-
-        float alpha = core + glow * 0.45;
-        alpha *= (1.0 - smoothstep(0.42, 0.50, r));
-
-        vec3 final_rgb = fragColor.rgb * (1.1 + core * 0.6);
-        finalColor = vec4(final_rgb, alpha * fragColor.a);
     }
 }

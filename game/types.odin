@@ -60,7 +60,6 @@ Entity :: struct {
 	renderable:         Component_Renderable,
 	collectible_energy: Component_CollectibleEnergy,
 	shockwave:          Component_Shockwave,
-	particle_burst:     Component_ParticleBurst,
 }
 
 /*
@@ -89,7 +88,6 @@ Component_Type :: enum {
 	Renderable,
 	CollectibleEnergy,
 	Shockwave,
-	ParticleBurst,
 }
 
 //
@@ -157,19 +155,6 @@ Component_CollectibleEnergy :: struct {
 
 Component_Shockwave :: struct {
 	growth_rate: f32,
-}
-
-Component_ParticleBurst_Particle :: struct {
-	pos:          rl.Vector2,
-	size:         f32,
-	color:        rl.Color,
-	velocity:     rl.Vector2,
-	accelaration: rl.Vector2,
-}
-
-Component_ParticleBurst :: struct {
-	active_count: int,
-	particles:    #soa[MAX_PARTICLE_BURST_COUNT]Component_ParticleBurst_Particle,
 }
 
 Celestial_Type :: enum {
@@ -351,6 +336,7 @@ Render_LaunchMenu :: struct {
 /*
  * Theme used in the game.
  * Right now, this is not structured very well and it's just a random collection of properties.
+ * @TODO Clean this up to a more structured token system
  */
 Theme :: struct {
 	name:                          string,
@@ -359,6 +345,7 @@ Theme :: struct {
 	bg_grid_color:                 rl.Color,
 	bg_nebula_colors:              [4]rl.Color,
 	star_colors:                   [5]rl.Color,
+	cursor_size:                   f32,
 	ui_collect_area_opacity:       u8,
 	ui_slingshot_preview_color:    rl.Color,
 	ui_slingshot_launch_ok_color:  rl.Color,

@@ -71,10 +71,10 @@ sys_camera :: proc(g: ^Game) {
 	zoom_x := g.screenw / total_w
 	zoom_y := g.screenh / total_h
 	target_zoom := min(zoom_x, zoom_y)
-	target_zoom = clamp(target_zoom, g.params.camera.zoom_min, g.params.camera.zoom_max)
+	target_zoom = clamp(target_zoom, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX)
 
-	decay :=
-		target_zoom > g.camera.rl_cam.zoom ? g.params.camera.zoom_in_interpolation_decay : g.params.camera.zoom_out_interpolation_decay
+	decay: f32 =
+		target_zoom > g.camera.rl_cam.zoom ? CAMERA_ZOOM_IN_INTERPOLATION_DECAY : CAMERA_ZOOM_OUT_INTERPOLATION_DECAY
 
 	t := f32(1.0) - math.exp_f32(-decay * dt)
 	g.camera.rl_cam.zoom = math.lerp(g.camera.rl_cam.zoom, target_zoom, t)

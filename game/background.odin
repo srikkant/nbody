@@ -68,10 +68,8 @@ background_draw :: proc(g: ^Game) {
 		dx := neb.pos.x - g.camera.rl_cam.target.x / BG_NEBULA_LAYER_DEPTH
 		dy := neb.pos.y - g.camera.rl_cam.target.y / BG_NEBULA_LAYER_DEPTH
 
-		draw_x :=
-			cx + dx * (1.0 + (g.camera.rl_cam.zoom - 1.0) * BG_NEBULA_ZOOM_MULTIPLIER)
-		draw_y :=
-			cy + dy * (1.0 + (g.camera.rl_cam.zoom - 1.0) * BG_NEBULA_ZOOM_MULTIPLIER)
+		draw_x := cx + dx * (1.0 + (g.camera.rl_cam.zoom - 1.0) * BG_NEBULA_ZOOM_MULTIPLIER)
+		draw_y := cy + dy * (1.0 + (g.camera.rl_cam.zoom - 1.0) * BG_NEBULA_ZOOM_MULTIPLIER)
 
 		breath :=
 			BG_NEBULA_PULSATION_BASE +
@@ -82,11 +80,7 @@ background_draw :: proc(g: ^Game) {
 			breath *
 			(1.0 + (g.camera.rl_cam.zoom - 1.0) * BG_NEBULA_ZOOM_RADIUS_MULTIPLIER)
 
-		alpha_scale := clamp(
-			BG_NEBULA_ALPHA_ZOOM_NUMERATOR / g.camera.rl_cam.zoom,
-			BG_NEBULA_ALPHA_ZOOM_MIN,
-			BG_NEBULA_ALPHA_ZOOM_MAX,
-		)
+		alpha_scale := clamp(1 / g.camera.rl_cam.zoom, BG_NEBULA_ALPHA_ZOOM_MIN, 1)
 
 		color_inner := neb.color
 		color_inner.a = u8(f32(neb.color.a) * alpha_scale)

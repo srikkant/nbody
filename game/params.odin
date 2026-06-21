@@ -19,19 +19,6 @@ Parameters_Slingshot :: struct {
 }
 
 /*
- * Parameters that control the economy of the game.
- * This includes the speed at which energy is gained, lost,
- * how it is related to celestial sizes etc.
- */
-Parameters_Economy :: struct {
-	/*
-     * Multiplier applied to energy gain computations
-     * @default 0.01
-     */
-	energy_gain_factor: f32,
-}
-
-/*
  * Parameters that control the universal physics laws
  */
 Parameters_Physics :: struct {
@@ -46,89 +33,61 @@ Parameters_Physics :: struct {
      * @default 0.5
      */
 	mass_absorb_factor:                 f32,
-
-	// @TODO: Cleanup
-	shatter_base_energy:                f32,
-	debris_mass_loss_fraction:          f32,
-	destroy_refund_fraction:            f32,
-	star_energy_multiplier:             f32,
-	cursor_distance:                    f32,
-	cursor_distance_squared:            f32,
-	collision_debris_max_loss_fraction: f32,
-	collision_debris_speed_coefficient: f32,
+    /*
+     * Multiplier applied to mass when collision occurs resulting in debris. This
+     * will be multiplied by the relative velocity
+     * @default 0.01
+     */
+	collision_mass_loss_factor: f32,
+    /*
+     * Multiplier applied to computation to decide whether a collision should be a shatter or a merge
+     * @default 50
+     */
+	collision_shatter_threshold_factor:  f32,
+    /*
+     * Duration after spawn when celestials are invincible in seconds
+     * @default 1
+     */
 	spawn_invincibility_duration_sec:   f32,
+    /*
+     * Cursor interaction distance
+     * @default 50
+     */
+	cursor_distance:                    f32,
+    /*
+     * Square of the cursor interaction distance, precomputed
+     * @default 50 * 50
+     */
+	cursor_distance_squared:            f32,
+    /*
+     * Radius of the world after which objects are considered out of bounds
+     * @default 10000
+     */
 	world_radius:                       f32,
+    /*
+     * Square of the world radius, precomputed
+     * @default 10000 * 10000
+     */
 	world_radius_squared:               f32,
-	gravity_softening_factor:           f32,
-}
+	
 
-Game_Parameters_UI :: struct {
-	cursor_indicator_radius: f32,
-	menu_border_rounding:    f32,
-	menu_segments:           i32,
-	menu_width:              f32,
-	menu_item_height:        f32,
-	menu_section_gap:        f32,
-	menu_inner_padding:      f32,
-}
-
-Game_Parameters_Camera :: struct {
-	zoom_min:                     f32,
-	zoom_max:                     f32,
-	zoom_in_interpolation_decay:  f32,
-	zoom_out_interpolation_decay: f32,
-}
-
-Game_Parameters_VFX :: struct {
-	shockwave_radius_start:                 f32,
-	shockwave_duration_base_sec:            f32,
-	shockwave_duration_ln_coefficient:      f32,
-	shockwave_growth_base:                  f32,
-	shockwave_growth_sqrt_coefficient:      f32,
-	shockwave_decel_start:                  f32,
-	shockwave_decel_decay:                  f32,
-	shockwave_quad_multiplier:              f32,
-	particle_quad_multiplier:               f32,
-	energy_quad_multiplier:                 f32,
-	particle_burst_duration_base_sec:       f32,
-	particle_burst_duration_ln_coefficient: f32,
-	particle_burst_count_sqrt_coefficient:  f32,
-	particle_burst_count_base:              i32,
-	particle_burst_speed_base:              f32,
-	particle_burst_speed_sqrt_coefficient:  f32,
-	particle_burst_speed_variance_min:      f32,
-	particle_burst_speed_variance_max:      f32,
-	particle_burst_drag_coefficient:        f32,
-	particle_burst_size_base:               f32,
-	particle_burst_size_ln_coefficient:     f32,
-	particle_burst_size_variance_min:       f32,
-	particle_burst_size_variance_max:       f32,
-	particle_burst_size_min:                f32,
-	particle_burst_size_max:                f32,
-	particle_burst_color_t1:                f32,
-	particle_burst_color_t2:                f32,
-	particle_burst_color_g1_base:           f32,
-	particle_burst_color_g1_range:          f32,
-	particle_burst_color_g2_base:           f32,
-	particle_burst_color_g2_range:          f32,
-	particle_burst_color_g3_base:           f32,
-	particle_burst_color_g3_range:          f32,
-	particle_burst_color_b3_range:          f32,
-	fragments_count_min:                    i32,
-	fragments_count_base:                   i32,
-	fragments_count_speed_multiplier:       f32,
-	fragments_count_mod:                    f32,
-	fragments_radius_mass_divisor:          f32,
-	fragments_radius_mass_max:              f32,
-	fragments_pull_distance_multiplier:     f32,
-	fragments_pull_minimum_distance:        f32,
-	fragments_pull_speed_base:              f32,
-	fragments_drift_phase_multiplier:       f32,
-	fragments_drift_frequency_x:            f32,
-	fragments_drift_frequency_y:            f32,
-	fragments_drift_amplitude_x:            f32,
-	fragments_drift_amplitude_y:            f32,
-	energy_fragment_size:                   f32,
+	/*
+     * Multiplier applied to energy gain computations
+     * This is related to economy more than physics
+     * @default 0.01
+     */
+	energy_gain_factor: f32,
+    /*
+     * Multiplier applied to the energy emitted by a source
+     * @default 0.05
+     */
+	energy_source_gain_factor:             f32,
+    /*
+     * Multiplier applied when calculating how much energy is refunded when
+     * object is destroyed, out of bounds etc.
+     * @default 0.1
+     */
+	energy_refund_factor:            f32,
 }
 
 Parameters_Celestial :: struct {
@@ -142,14 +101,15 @@ Parameters_Celestial :: struct {
 	glow_intensity:   f32, // Shader glow envelope strength (0.0–1.0)
 }
 
+/*
+ * Parameters that control the flow of the game
+ * These are typically modifiable through modifiers to change the game experience
+ * Modifications can be new game modes, through upgrade trees etc.
+ */
 GameParameters :: struct {
 	celestials: [Celestial_Type]Parameters_Celestial,
-	economy:    Parameters_Economy,
 	physics:    Parameters_Physics,
 	slingshot:  Parameters_Slingshot,
-	ui:         Game_Parameters_UI,
-	camera:     Game_Parameters_Camera,
-	vfx:        Game_Parameters_VFX,
 }
 
 params_init :: proc(g: ^Game) {
@@ -303,17 +263,23 @@ params_init :: proc(g: ^Game) {
 	}
 
 	// ==========================================
-	// ECONOMY
-	// ==========================================
-
-	p.economy.energy_gain_factor = 0.01
-
-	// ==========================================
 	// PHYSICS
 	// ==========================================
 
 	p.physics.gravity_constant = 1.0
 	p.physics.mass_absorb_factor = 0.5
+	p.physics.spawn_invincibility_duration_sec = 1.0
+	p.physics.cursor_distance = 50.0
+	p.physics.cursor_distance_squared = p.physics.cursor_distance * p.physics.cursor_distance
+	p.physics.world_radius = 10000.0
+	p.physics.world_radius_squared = p.physics.world_radius * p.physics.world_radius
+
+	p.physics.energy_gain_factor = 0.01
+	p.physics.energy_source_gain_factor = 0.05
+	p.physics.energy_refund_factor = 0.1
+
+	p.physics.collision_mass_loss_factor = 0.01
+	p.physics.collision_shatter_threshold_factor = 50.0
 
 	// ==========================================
 	// SLINGSHOT
@@ -321,103 +287,6 @@ params_init :: proc(g: ^Game) {
 
 	p.slingshot.launch_power = 1.0
 	p.slingshot.preview_duration = 1.0
-
-
-	//
-	// CLEAN BELOW
-	//
-
-	p.physics.shatter_base_energy = 50.0
-	p.physics.debris_mass_loss_fraction = 0.25
-	p.physics.destroy_refund_fraction = 0.1
-	p.physics.star_energy_multiplier = 0.05
-	p.physics.cursor_distance = 50.0
-	p.physics.cursor_distance_squared = p.physics.cursor_distance * p.physics.cursor_distance
-
-	p.physics.collision_debris_max_loss_fraction = 0.4
-	p.physics.collision_debris_speed_coefficient = 0.01
-
-	p.physics.spawn_invincibility_duration_sec = 1.0
-	p.physics.world_radius = 10000.0
-	p.physics.world_radius_squared = p.physics.world_radius * p.physics.world_radius
-	p.physics.gravity_softening_factor = 2.0
-
-	// ==========================================
-	// UI PARAMETERS
-	// ==========================================
-	p.ui.cursor_indicator_radius = 4.0
-	p.ui.menu_border_rounding = 0.2
-	p.ui.menu_segments = 1
-	p.ui.menu_width = 220.0
-	p.ui.menu_item_height = 28.0
-	p.ui.menu_section_gap = 12.0
-	p.ui.menu_inner_padding = 12.0
-
-	// ==========================================
-	// CAMERA PARAMETERS
-	// ==========================================
-	p.camera.zoom_min = 0.01
-	p.camera.zoom_max = 2.0
-	p.camera.zoom_in_interpolation_decay = 0.6
-	p.camera.zoom_out_interpolation_decay = 8.0
-
-	// ==========================================
-	// VFX PARAMETERS
-	// ==========================================
-	p.vfx.shockwave_radius_start = 1.0
-	p.vfx.shockwave_duration_base_sec = 0.48
-	p.vfx.shockwave_duration_ln_coefficient = 0.036
-	p.vfx.shockwave_growth_base = 72.0
-	p.vfx.shockwave_growth_sqrt_coefficient = 0.18
-	p.vfx.shockwave_decel_start = 2.2
-	p.vfx.shockwave_decel_decay = 1.95
-	p.vfx.shockwave_quad_multiplier = 2.4
-	p.vfx.particle_quad_multiplier = 2.4
-	p.vfx.energy_quad_multiplier = 8.0
-
-	p.vfx.particle_burst_duration_base_sec = 0.4
-	p.vfx.particle_burst_duration_ln_coefficient = 0.03
-	p.vfx.particle_burst_count_sqrt_coefficient = 0.6
-	p.vfx.particle_burst_count_base = 25
-	p.vfx.particle_burst_speed_base = 30.0
-	p.vfx.particle_burst_speed_sqrt_coefficient = 0.15
-	p.vfx.particle_burst_speed_variance_min = 50.0
-	p.vfx.particle_burst_speed_variance_max = 150.0
-	p.vfx.particle_burst_drag_coefficient = 2.5
-	p.vfx.particle_burst_size_base = 0.5
-	p.vfx.particle_burst_size_ln_coefficient = 0.03
-	p.vfx.particle_burst_size_variance_min = 50.0
-	p.vfx.particle_burst_size_variance_max = 150.0
-	p.vfx.particle_burst_size_min = 0.4
-	p.vfx.particle_burst_size_max = 1.2
-
-	p.vfx.particle_burst_color_t1 = 0.3
-	p.vfx.particle_burst_color_t2 = 0.7
-	p.vfx.particle_burst_color_g1_base = 30.0
-	p.vfx.particle_burst_color_g1_range = 90.0
-	p.vfx.particle_burst_color_g2_base = 120.0
-	p.vfx.particle_burst_color_g2_range = 90.0
-	p.vfx.particle_burst_color_g3_base = 210.0
-	p.vfx.particle_burst_color_g3_range = 45.0
-	p.vfx.particle_burst_color_b3_range = 230.0
-
-	// --- Fragment Vacuum & Drift ---
-	p.vfx.fragments_count_min = 6
-	p.vfx.fragments_count_base = 3
-	p.vfx.fragments_count_speed_multiplier = 0.7
-	p.vfx.fragments_count_mod = 4.0
-	p.vfx.fragments_radius_mass_divisor = 100.0
-	p.vfx.fragments_radius_mass_max = 5.0
-	p.vfx.fragments_pull_distance_multiplier = 3.0
-	p.vfx.fragments_pull_minimum_distance = 0.1
-	p.vfx.fragments_pull_speed_base = 240.0
-	p.vfx.fragments_drift_phase_multiplier = 0.73
-	p.vfx.fragments_drift_frequency_x = 1.5
-	p.vfx.fragments_drift_frequency_y = 1.8
-	p.vfx.fragments_drift_amplitude_x = 0.15
-	p.vfx.fragments_drift_amplitude_y = 0.15
-	p.vfx.energy_fragment_size = 2.0
-
 }
 
 theme_init :: proc(g: ^Game) {
@@ -425,6 +294,8 @@ theme_init :: proc(g: ^Game) {
 
 	t.name = "nbody: Default"
 	t.color_bg = rl.Color{12, 12, 24, 255}
+
+    t.cursor_size = 4
 
 	t.bg_nebula_colors[0] = rl.Color{10, 150, 180, 20}
 	t.bg_nebula_colors[1] = rl.Color{200, 30, 140, 16}

@@ -6,32 +6,42 @@ package game
 
 import "core:math"
 
-// Total number of background nebulae generated during initialization. Determines the array size in background data structures.
-BG_NEBULA_COUNT :: 4
-// Total number of background stars generated. Used to populate all starfield layers and define the backing array size.
-BG_STAR_COUNT :: 1600
-// The maximum number of entities in the game. Only matters during the initialization of the game.
-MAX_ENTITIES :: 4096
-// The maximum number of modifiers that can be applied to the game.
-MAX_MODIFIERS :: 10
-// Number of points to track for the orbit of each entity.
-MAX_ORBIT_LENGTH :: 100
-// Max particles during bursts (explosions etc.)
-MAX_PARTICLE_BURST_COUNT :: 120
-// Size of the position trail behind celestials
-POSITION_TRAIL_LENGTH :: 5
-// Number of ticks between for calculating averages.
-AVG_CALC_TICKS :: 10
-// Minimum angle between orbit points to ensure orbits always close
-ORBIT_POINTS_MIN_ANGLE :: (2 * math.PI) / (MAX_ORBIT_LENGTH - 1) // do a -1 so the orbit always closes
-// Subdivisions per trail segment for smoothing
-TRAIL_SUBDIVISIONS :: 4
-MAX_GRID_WELLS :: 16
-
-
 /*
-Signatures used by different systems
-*/
+ * Max frame time (used to limit impact when debugging).
+ */
+MAX_DT :: 0.05
+/*
+ * The maximum number of entities in the game. Only matters during the initialization of the game.
+ */
+MAX_ENTITIES :: 4096
+/*
+ * The maximum number of modifiers that can be applied to the game.
+ */
+MAX_MODIFIERS :: 10
+/*
+ * Number of points to track for the orbit of each entity.
+ */
+MAX_ORBIT_LENGTH :: 100
+/*
+ * Minimum angle between orbit points to ensure orbits always close
+ */
+ORBIT_POINTS_MIN_ANGLE :: (2 * math.PI) / (MAX_ORBIT_LENGTH - 1) // do a -1 so the orbit always closes
+/*
+ * Size of the position trail behind celestials
+ */
+POSITION_TRAIL_LENGTH :: 5
+/*
+ * Subdivisions per trail segment for smoothing
+ */
+TRAIL_SUBDIVISIONS :: 4
+/*
+ * Number of ticks between for calculating averages.
+ */
+AVG_CALC_TICKS :: 10
+
+// ==========================================
+// Signatures used by different systems
+// ==========================================
 
 EMITTER_SIG: Entity_Signature : {.Emitter, .Position}
 RENDER_SIG: Entity_Signature : {.Position, .Radius, .Renderable}
@@ -40,18 +50,18 @@ ORBIT_SIG: Entity_Signature : {.Orbit}
 KE_SCORE_SIG: Entity_Signature : {.Position, .Velocity, .Radius, .Mass, .Life}
 ENERGY_SOURCE_SIG: Entity_Signature : {.EnergySource, .Radius}
 SHOCKWAVE_SIG: Entity_Signature : {.Position, .Radius, .Life, .Shockwave}
-PARTICLE_BURST_SIG: Entity_Signature : {.Position, .Life, .ParticleBurst}
-
-/*
- * Max frame time (used to limit impact when debugging).
- */
-MAX_DT :: 0.05
-
 
 // ==========================================
 // BACKGROUND & PARALLAX CONSTANTS
 // ==========================================
-
+/*
+ * Total number of background nebulae generated during initialization.
+ */
+BG_NEBULA_COUNT :: 4
+/*
+ * Total number of background stars generated.
+ */
+BG_STAR_COUNT :: 1600
 /*
  * Total number of depth layers used for background rendering to create the 3D parallax field (deep space layers 0-2 and foreground layer 3).
  */
@@ -159,17 +169,9 @@ BG_NEBULA_PULSATION_AMPLITUDE :: 0.1
  */
 BG_NEBULA_ZOOM_RADIUS_MULTIPLIER :: 0.05
 /*
- * The scaling numerator used to compute inverse zoom opacity fading for nebulae: alpha_scale = clamp(numerator / zoom, min, max).
- */
-BG_NEBULA_ALPHA_ZOOM_NUMERATOR :: 1.2
-/*
  * Hard lower limit on a nebula's zoom-dependent transparency scale so it never fully disappears when highly zoomed in.
  */
 BG_NEBULA_ALPHA_ZOOM_MIN :: 0.3
-/*
- * Hard upper limit on a nebula's zoom-dependent transparency scale to prevent over-saturation under zoom out.
- */
-BG_NEBULA_ALPHA_ZOOM_MAX :: 1.0
 /*
  * Defines the random [min_radius, max_radius] ranges for each of the background nebulae during random generation.
  */
@@ -188,4 +190,64 @@ BG_NEBULA_DRIFT_SPEED_RANGES: [BG_NUM_LAYERS][2]f32 = {
 	{0.2, 0.6},
 	{0.5, 1.0},
 }
+
+
+// ==========================================
+// VFX RELATED PARAMETERS
+// ==========================================
+
+/*
+ * Start radius of the shockwave
+ */
+SHOCKWAVE_RADIUS_START :: 1.0
+SHOCKWAVE_DURATION_BASE_SEC :: 0.5
+SHOCKWAVE_DURATION_LN_COEFFICIENT :: 0.036
+SHOCKWAVE_GROWTH_BASE :: 72.0
+SHOCKWAVE_GROWTH_SQRT_COEFFICIENT :: 0.18
+SHOCKWAVE_DECEL_START :: 2.2
+SHOCKWAVE_DECEL_DECAY :: 1.95
+SHOCKWAVE_QUAD_MULTIPLIER :: 2.4
+/*
+ * Minimum number of energy fragments
+ */
+ENERGY_FRAGMENTS_COUNT_BASE :: 3
+/*
+ * Multiplier applied for deciding number of energy fragments after a collision.
+ */
+ENERGY_FRAGMENTS_COUNT_SPEED_FACTOR :: 0.3
+ENERGY_FRAGMENTS_RADIUS_MASS_DIVISOR :: 100.0
+ENERGY_FRAGMENTS_RADIUS_MASS_MAX :: 5.0
+ENERGY_FRAGMENTS_DRIFT_PHASE_MULTIPLIER :: 0.73
+ENERGY_FRAGMENTS_DRIFT_FREQUENCY_X :: 1.5
+ENERGY_FRAGMENTS_DRIFT_FREQUENCY_Y :: 1.8
+ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_X :: 0.15
+ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_Y :: 0.15
+/*
+ * Size of the energy fragments
+ * @TODO Should this be dynamic?
+ */
+ENERGY_FRAGMENTS_SIZE :: 2.0
+
+
+// ==========================================
+// CAMERA PARAMETERS
+// ==========================================
+
+/*
+ * Hard cap for min zoom level
+ */
+CAMERA_ZOOM_MIN :: 0.01
+/*
+ * Hard cap for max zoom level
+ */
+CAMERA_ZOOM_MAX :: 2.0
+/*
+ * How fast camera zooms in?
+ */
+CAMERA_ZOOM_IN_INTERPOLATION_DECAY :: 0.6
+/*
+ * How fast camera zooms out?
+ * We typically want zoom out to be way faster than zoom in
+ */
+CAMERA_ZOOM_OUT_INTERPOLATION_DECAY :: 8.0
 

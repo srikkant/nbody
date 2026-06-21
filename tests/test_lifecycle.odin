@@ -96,7 +96,7 @@ test_classify_shatter_threshold_formula :: proc(t: ^testing.T) {
 	g := make_test_game()
 	defer free_test_game(g)
 
-	g.params.physics.shatter_base_energy = 100.0
+	g.params.physics.collision_shatter_threshold_factor = 100.0
 
 	id1 := add_test_entity(g, .Asteroid, 6.0, {0, 0}, {0, 0})
 	id2 := add_test_entity(g, .Asteroid, 4.0, {0, 0}, {0, 0})
@@ -250,7 +250,7 @@ test_debris_mass_loss_formula :: proc(t: ^testing.T) {
 
 	g.params.physics.collision_debris_max_loss_fraction = 0.5
 	g.params.physics.debris_mass_loss_fraction = 0.1
-	g.params.physics.collision_debris_speed_coefficient = 0.01
+	g.params.physics.collision_mass_loss_factor = 0.01
 
 	id1 := add_test_entity(g, .Moonlet, 10.0, {0, 0}, {10, 0})
 	id2 := add_test_entity(g, .Moonlet, 2.0, {2, 0}, {0, 0})
@@ -369,7 +369,7 @@ test_out_of_bounds_refund :: proc(t: ^testing.T) {
 	defer free_test_game(g)
 
 	g.score.energy = 0.0
-	g.params.physics.destroy_refund_fraction = 0.5
+	g.params.physics.energy_refund_factor = 0.5
 
 	id := add_test_entity(g, .Asteroid, 10.0, {0, 0}, {0, 0})
 	g.entities[id].radius = 2.0

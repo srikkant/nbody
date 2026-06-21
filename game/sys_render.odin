@@ -31,7 +31,7 @@ sys_render_cursor :: proc(g: ^Game) {
 	rl.DrawCircle(
 		i32(g.input.mouse_pos.x),
 		i32(g.input.mouse_pos.y),
-		g.params.ui.cursor_indicator_radius,
+		g.theme.cursor_size,
 		rl.WHITE,
 	)
 
@@ -118,7 +118,7 @@ sys_render_entities :: proc(g: ^Game) {
 			}
 		}
 
-		if SHOCKWAVE_SIG <= e.sig || PARTICLE_BURST_SIG <= e.sig {
+		if SHOCKWAVE_SIG <= e.sig {
 			sys_add_entity_to_layer(g, id, .Effects)
 		}
 	}
@@ -242,13 +242,8 @@ sys_render_entities :: proc(g: ^Game) {
 		rl_texture_draw(
 			g,
 			.Collectibles_Energy,
-			rl.Rectangle {
-				e.pos.current.x,
-				e.pos.current.y,
-				e.radius * g.params.vfx.energy_quad_multiplier,
-				e.radius * g.params.vfx.energy_quad_multiplier,
-			},
-			rl.Vector2(e.radius * g.params.vfx.energy_quad_multiplier / 2.0),
+			rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius, e.radius},
+			rl.Vector2(e.radius / 2.0),
 			tint = rl.WHITE,
 		)
 	}
@@ -258,7 +253,6 @@ sys_render_entities :: proc(g: ^Game) {
 	for i in 0 ..< g.render.layers[.OrbitPoints].count {
 		e := &g.entities[g.render.layers[.OrbitPoints].entities[i]]
 
-		// Get trail multiplier — skip if 0 (no trail)
 		trail_mult: f32 = 1.0
 		if .Celestial in e.sig {
 			trail_mult = g.params.celestials[e.celestial.type].trail_multiplier
@@ -310,13 +304,8 @@ sys_render_entities :: proc(g: ^Game) {
 					local_t,
 				)
 
-				// Progress 0→1 from oldest to newest
 				progress := f32(step) / f32(total_steps)
-
-				// Width tapers continuously: thin at tail → thick at head
 				thickness := e.radius * 2.0 * progress * trail_mult
-
-				// Alpha also fades continuously
 				col := trail_col_base
 				col.a = u8(255.0 * progress * min(trail_mult, 1.0))
 
@@ -347,12 +336,9 @@ sys_render_entities :: proc(g: ^Game) {
 
 	rl_begin_shader(g, .Vfx_Shader)
 	vfx_shader := assets_get_shader(g, .Vfx_Shader)
-	loc_vfx_type := rl.GetShaderLocation(vfx_shader, "u_vfx_type")
 	loc_vfx_sec := rl.GetShaderLocation(vfx_shader, "seconds")
-	rl.SetShaderValue(vfx_shader, loc_vfx_sec, &g.elapsed, .FLOAT)
 
-	type_shockwave: f32 = 1.0
-	rl.SetShaderValue(vfx_shader, loc_vfx_type, &type_shockwave, .FLOAT)
+	rl.SetShaderValue(vfx_shader, loc_vfx_sec, &g.elapsed, .FLOAT)
 
 	for i in 0 ..< g.render.layers[.Effects].count {
 		id := g.render.layers[.Effects].entities[i]
@@ -366,47 +352,14 @@ sys_render_entities :: proc(g: ^Game) {
 			alpha := u8(fade * 255.0)
 			col := rl.Color{255, 255, 255, alpha}
 
-			size := e.radius * g.params.vfx.shockwave_quad_multiplier
 			rl_texture_draw(
 				g,
 				.Blank,
-				rl.Rectangle{e.pos.current.x, e.pos.current.y, size, size},
-				rl.Vector2(size / 2.0),
+				rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius, e.radius},
+				rl.Vector2(e.radius / 2.0),
 				tint = col,
 			)
 		}
 	}
-
-	type_particle: f32 = 0.0
-	rl.SetShaderValue(vfx_shader, loc_vfx_type, &type_particle, .FLOAT)
-
-	for i in 0 ..< g.render.layers[.Effects].count {
-		id := g.render.layers[.Effects].entities[i]
-		e := &g.entities[id]
-
-		if .ParticleBurst in e.sig {
-			t := e.life.remaining.curr
-			dur := e.life.remaining.interval
-			fade := dur > 0 ? (1.0 - (t / dur)) : 1.0
-			fade = math.clamp(fade, 0.0, 1.0)
-
-			for j in 0 ..< e.particle_burst.active_count {
-				p := &e.particle_burst.particles[j]
-				col := p.color
-				col.a = u8(f32(p.color.a) * fade)
-
-				size := p.size * g.params.vfx.particle_quad_multiplier
-				rl_texture_draw(
-					g,
-					.Blank,
-					rl.Rectangle{p.pos.x, p.pos.y, size, size},
-					rl.Vector2(size / 2.0),
-					tint = col,
-				)
-			}
-		}
-	}
-
-	rl_end_shader(g)
 }
 

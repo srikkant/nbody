@@ -99,11 +99,6 @@ entity_add_shockwave :: proc(g: ^Game, id: Entity_Id, es: Component_Shockwave) {
 	g.entities[id].sig += {.Shockwave}
 }
 
-entity_add_particle_burst :: proc(g: ^Game, id: Entity_Id, p: Component_ParticleBurst) {
-	g.entities[id].particle_burst = p
-	g.entities[id].sig += {.ParticleBurst}
-}
-
 push_event :: proc(g: ^Game, event: GameEvent) {
 	if g.events_count == MAX_ENTITIES do return
 
