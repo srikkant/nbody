@@ -23,6 +23,7 @@ physics_check_preview_collision :: proc(
 			return true, Entity_Id(i)
 		}
 	}
+
 	return false, 0
 }
 
@@ -58,7 +59,7 @@ sys_render_slingshot_trigger :: proc(g: ^Game) {
 			t_val * t_val * P2
 
 		line_col :=
-			g.slingshot.can_launch ? g.theme.ui_slingshot_launch_ok_color : g.theme.ui_slingshot_launch_err_color
+			g.slingshot.can_launch ? g.theme.color_slingshot_trail : g.theme.color_slingshot_trail_error
 		line_col.a = u8(math.lerp(f32(220.0), f32(90.0), t_val))
 
 		rl.DrawLineEx(prev_point, curr_point, 1.2, line_col)

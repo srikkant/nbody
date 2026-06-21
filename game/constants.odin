@@ -52,8 +52,15 @@ ENERGY_SOURCE_SIG: Entity_Signature : {.EnergySource, .Radius}
 SHOCKWAVE_SIG: Entity_Signature : {.Position, .Radius, .Life, .Shockwave}
 
 // ==========================================
+// UI
+// ==========================================
+
+CURSOR_POINTER_SIZE :: 4
+
+// ==========================================
 // BACKGROUND & PARALLAX CONSTANTS
 // ==========================================
+
 /*
  * Total number of background nebulae generated during initialization.
  */
@@ -200,13 +207,22 @@ BG_NEBULA_DRIFT_SPEED_RANGES: [BG_NUM_LAYERS][2]f32 = {
  * Start radius of the shockwave
  */
 SHOCKWAVE_RADIUS_START :: 1.0
+/*
+ * Base minimum duration of the shockwave
+ */
 SHOCKWAVE_DURATION_BASE_SEC :: 0.5
-SHOCKWAVE_DURATION_LN_COEFFICIENT :: 0.036
-SHOCKWAVE_GROWTH_BASE :: 72.0
-SHOCKWAVE_GROWTH_SQRT_COEFFICIENT :: 0.18
+/*
+ * Multiplier applied to the growth rate with energy
+ */
+SHOCKWAVE_GROWTH_FACTOR :: 1
+/*
+ * Starting deceleration of shockwaves
+ */
 SHOCKWAVE_DECEL_START :: 2.2
+/*
+ * Decay in the growth of shockwaves
+ */
 SHOCKWAVE_DECEL_DECAY :: 1.95
-SHOCKWAVE_QUAD_MULTIPLIER :: 2.4
 /*
  * Minimum number of energy fragments
  */
@@ -215,12 +231,21 @@ ENERGY_FRAGMENTS_COUNT_BASE :: 3
  * Multiplier applied for deciding number of energy fragments after a collision.
  */
 ENERGY_FRAGMENTS_COUNT_SPEED_FACTOR :: 0.3
-ENERGY_FRAGMENTS_RADIUS_MASS_DIVISOR :: 100.0
-ENERGY_FRAGMENTS_RADIUS_MASS_MAX :: 5.0
-ENERGY_FRAGMENTS_DRIFT_PHASE_MULTIPLIER :: 0.73
+/*
+ * Frequency drift in x
+ */
 ENERGY_FRAGMENTS_DRIFT_FREQUENCY_X :: 1.5
+/*
+ * Frequency drift in y
+ */
 ENERGY_FRAGMENTS_DRIFT_FREQUENCY_Y :: 1.8
+/*
+ * Amplitude of drift in x
+ */
 ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_X :: 0.15
+/*
+ * Amplitude of drift in y
+ */
 ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_Y :: 0.15
 /*
  * Size of the energy fragments

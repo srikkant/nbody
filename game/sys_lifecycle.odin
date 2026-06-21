@@ -45,20 +45,10 @@ sys_lifecycle_spawn_shockwave :: proc(g: ^Game, pos: rl.Vector2, energy: f64) {
 		id,
 		{
 			created_at = g.elapsed,
-			remaining = Timer {
-				interval = SHOCKWAVE_DURATION_BASE_SEC +
-				math.ln(f32(energy + 1.0)) * SHOCKWAVE_DURATION_LN_COEFFICIENT,
-			},
+			remaining = Timer{interval = SHOCKWAVE_DURATION_BASE_SEC + math.ln(f32(energy + 1.0))},
 		},
 	)
-	entity_add_shockwave(
-		g,
-		id,
-		{
-			growth_rate = SHOCKWAVE_GROWTH_BASE +
-			math.sqrt(f32(energy)) * SHOCKWAVE_GROWTH_SQRT_COEFFICIENT,
-		},
-	)
+	entity_add_shockwave(g, id, {growth_rate = math.sqrt(f32(energy)) * SHOCKWAVE_GROWTH_FACTOR})
 }
 
 sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^GameEvent_ObjectSpawn) {

@@ -28,12 +28,7 @@ sys_render :: proc(g: ^Game) {
 }
 
 sys_render_cursor :: proc(g: ^Game) {
-	rl.DrawCircle(
-		i32(g.input.mouse_pos.x),
-		i32(g.input.mouse_pos.y),
-		g.theme.cursor_size,
-		rl.WHITE,
-	)
+	rl.DrawCircleV(g.input.mouse_pos, CURSOR_POINTER_SIZE, rl.WHITE)
 
 	if g.slingshot.status == .Active do return
 
@@ -41,7 +36,7 @@ sys_render_cursor :: proc(g: ^Game) {
 		i32(g.input.mouse_pos.x),
 		i32(g.input.mouse_pos.y),
 		g.params.physics.cursor_distance,
-		rl.Color{255, 255, 255, g.theme.ui_collect_area_opacity},
+		g.theme.color_cursor_collector,
 	)
 }
 
@@ -185,28 +180,6 @@ sys_render_entities :: proc(g: ^Game) {
 	}
 
 	{
-		rl_begin_shader(g, .Energy_Shader)
-		defer rl_end_shader(g)
-
-		energy_shader := assets_get_shader(g, .Energy_Shader)
-		energy_loc := rl.GetShaderLocation(energy_shader, "seconds")
-		rl.SetShaderValue(energy_shader, energy_loc, &g.elapsed, .FLOAT)
-
-		layer := &g.render.layers[.Collectibles]
-		for id in layer.entities[:layer.count] {
-			e := &g.entities[id]
-
-			rl_texture_draw(
-				g,
-				.Collectibles_Energy,
-				rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius, e.radius},
-				rl.Vector2(e.radius / 2.0),
-				tint = rl.WHITE,
-			)
-		}
-	}
-
-	{
 		if g.render.show_orbits {
 			layer := &g.render.layers[.OrbitPoints]
 			for id in layer.entities[:layer.count] {
@@ -289,6 +262,27 @@ sys_render_entities :: proc(g: ^Game) {
 					rl.Fade(e.renderable.color, 0.35 * min(trail_mult, 1.0)),
 				)
 			}
+		}
+	}
+	{
+		rl_begin_shader(g, .Energy_Shader)
+		defer rl_end_shader(g)
+
+		energy_shader := assets_get_shader(g, .Energy_Shader)
+		energy_loc := rl.GetShaderLocation(energy_shader, "seconds")
+		rl.SetShaderValue(energy_shader, energy_loc, &g.elapsed, .FLOAT)
+
+		layer := &g.render.layers[.Collectibles]
+		for id in layer.entities[:layer.count] {
+			e := &g.entities[id]
+
+			rl_texture_draw(
+				g,
+				.Collectibles_Energy,
+				rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius, e.radius},
+				rl.Vector2(e.radius / 2.0),
+				tint = rl.WHITE,
+			)
 		}
 	}
 

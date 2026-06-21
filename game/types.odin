@@ -339,17 +339,35 @@ Render_LaunchMenu :: struct {
  * @TODO Clean this up to a more structured token system
  */
 Theme :: struct {
-	name:                          string,
-	color_bg:                      rl.Color,
-	bg_nebula_colors:              [4]rl.Color,
-	star_colors:                   [5]rl.Color,
-	cursor_size:                   f32,
-
-	// TODO: Clean up below
-	ui_collect_area_opacity:       u8,
-	ui_slingshot_preview_color:    rl.Color,
-	ui_slingshot_launch_ok_color:  rl.Color,
-	ui_slingshot_launch_err_color: rl.Color,
+	name:                        string,
+	/*
+     * Color of the background void
+     */
+	color_bg:                    rl.Color,
+	/*
+     * Color for error states
+     */
+	color_error:                 rl.Color,
+	/*
+     * Colors for the background nebula
+     */
+	colors_bg_nebula:            [4]rl.Color,
+	/*
+     * Colors for the background starfield stars
+     */
+	colors_bg_star:              [5]rl.Color,
+	/*
+     * Color of the collector around the cursor
+     */
+	color_cursor_collector:      rl.Color,
+	/*
+     * Color of the slingshot preview trail
+     */
+	color_slingshot_trail:       rl.Color,
+	/*
+     * Color of the slingshot preview trail in error state
+     */
+	color_slingshot_trail_error: rl.Color,
 }
 
 /*

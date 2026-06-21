@@ -14,7 +14,7 @@ background_generate_stars :: proc(g: ^Game) {
 
 		g.render.bg.stars[i] = Render_Background_Star {
 			layer       = layer,
-			color       = rand.choice(g.theme.star_colors[:]),
+			color       = rand.choice(g.theme.colors_bg_star[:]),
 			size        = BG_STAR_SIZES[layer][0] + BG_STAR_SIZES[layer][1] * rand.float32(),
 			blink_speed = rand.float32_range(BG_STAR_BLINK_SPEED_MIN, BG_STAR_BLINK_SPEED_MAX),
 			blink_phase = rand.float32_range(0.0, BG_STAR_BLINK_PHASE_MAX),
@@ -30,7 +30,7 @@ background_generate_stars :: proc(g: ^Game) {
 background_generate_nebulae :: proc(g: ^Game) {
 	for i in 0 ..< BG_NEBULA_COUNT {
 		g.render.bg.nebulae[i] = {
-			color       = g.theme.bg_nebula_colors[i],
+			color       = g.theme.colors_bg_nebula[i],
 			pos         = rl.Vector2 {
 				rand.float32_range(-BG_NEBULA_SPAWN_BOUNDS_X, BG_NEBULA_SPAWN_BOUNDS_X),
 				rand.float32_range(-BG_NEBULA_SPAWN_BOUNDS_Y, BG_NEBULA_SPAWN_BOUNDS_Y),
