@@ -234,6 +234,10 @@ ENERGY_FRAGMENTS_SIZE :: 2.0
 // ==========================================
 
 /*
+ * Padding around entities when positioning them inside camera
+ */
+CAMERA_PADDING :: 200
+/*
  * Hard cap for min zoom level
  */
 CAMERA_ZOOM_MIN :: 0.01

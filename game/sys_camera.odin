@@ -64,9 +64,8 @@ sys_camera :: proc(g: ^Game) {
 		}
 	}
 
-	padding := g.theme.camera_padding
-	total_w := max_x * 2 + padding
-	total_h := max_y * 2 + padding
+	total_w := max_x * 2 + CAMERA_PADDING
+	total_h := max_y * 2 + CAMERA_PADDING
 
 	zoom_x := g.screenw / total_w
 	zoom_y := g.screenh / total_h

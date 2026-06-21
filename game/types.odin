@@ -340,28 +340,16 @@ Render_LaunchMenu :: struct {
  */
 Theme :: struct {
 	name:                          string,
-	camera_padding:                f32,
 	color_bg:                      rl.Color,
-	bg_grid_color:                 rl.Color,
 	bg_nebula_colors:              [4]rl.Color,
 	star_colors:                   [5]rl.Color,
 	cursor_size:                   f32,
+
+	// TODO: Clean up below
 	ui_collect_area_opacity:       u8,
 	ui_slingshot_preview_color:    rl.Color,
 	ui_slingshot_launch_ok_color:  rl.Color,
 	ui_slingshot_launch_err_color: rl.Color,
-	ui_menu_bg_color:              rl.Color,
-	ui_menu_header_color:          rl.Color, // section header text
-	ui_menu_item_color:            rl.Color, // normal item text
-	ui_menu_item_hover_color:      rl.Color, // hovered item bg
-	ui_menu_item_selected_color:   rl.Color, // selected item accent
-	ui_menu_item_locked_color:     rl.Color, // locked/grayed out
-	ui_menu_accent_color:          rl.Color, // accent glow line
-	ui_menu_divider_color:         rl.Color, // section divider line
-	bg_star_render_padding:        f32,
-	bg_star_flare_layer:           int,
-	bg_star_blink_amp_base:        f32,
-	bg_star_blink_amp_scale:       f32,
 }
 
 /*
