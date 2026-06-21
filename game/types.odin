@@ -358,7 +358,6 @@ Theme :: struct {
 	ui_menu_item_locked_color:     rl.Color, // locked/grayed out
 	ui_menu_accent_color:          rl.Color, // accent glow line
 	ui_menu_divider_color:         rl.Color, // section divider line
-	ui_out_of_bounds_margin:       f32,
 	bg_star_render_padding:        f32,
 	bg_star_flare_layer:           int,
 	bg_star_blink_amp_base:        f32,
@@ -442,6 +441,114 @@ Slingshot_RingFlash :: struct {
 }
 
 /*
+ * Slingshot related parameters.
+ */
+Parameters_Slingshot :: struct {
+	/*
+     * Launch power multiplier applied to the slingshot's output velocity
+     * @default 1.0
+     */
+	launch_power:     f32,
+	/*
+     * Duration of the slingshot's preview in seconds
+     * @default 1.0
+     */
+	preview_duration: f32,
+}
+
+/*
+ * Parameters that control the universal physics laws
+ */
+Parameters_Physics :: struct {
+	/*
+     * Universal Gravity constant `G` used in standard newtonian formulae
+     * @default 1.0
+     */
+	gravity_constant:                   f32,
+	/*
+     * Multiplier applied to the mass when one celestial entity absorbs another
+     * The source entity gains the mass of the entity multiplied by this factor.
+     * @default 0.5
+     */
+	mass_absorb_factor:                 f32,
+	/*
+     * Multiplier applied to mass when collision occurs resulting in debris. This
+     * will be multiplied by the relative velocity
+     * @default 0.01
+     */
+	collision_mass_loss_factor:         f32,
+	/*
+     * Multiplier applied to computation to decide whether a collision should be a shatter or a merge
+     * @default 50
+     */
+	collision_shatter_threshold_factor: f32,
+	/*
+     * Duration after spawn when celestials are invincible in seconds
+     * @default 1
+     */
+	spawn_invincibility_duration_sec:   f32,
+	/*
+     * Cursor interaction distance
+     * @default 50
+     */
+	cursor_distance:                    f32,
+	/*
+     * Square of the cursor interaction distance, precomputed
+     * @default 50 * 50
+     */
+	cursor_distance_squared:            f32,
+	/*
+     * Radius of the world after which objects are considered out of bounds
+     * @default 10000
+     */
+	world_radius:                       f32,
+	/*
+     * Square of the world radius, precomputed
+     * @default 10000 * 10000
+     */
+	world_radius_squared:               f32,
+	/*
+     * Multiplier applied to energy gain computations
+     * This is related to economy more than physics
+     * @default 0.01
+     */
+	energy_gain_factor:                 f32,
+	/*
+     * Multiplier applied to the energy emitted by a source
+     * @default 0.05
+     */
+	energy_source_gain_factor:          f32,
+	/*
+     * Multiplier applied when calculating how much energy is refunded when
+     * object is destroyed, out of bounds etc.
+     * @default 0.1
+     */
+	energy_refund_factor:               f32,
+}
+
+Parameters_Celestial :: struct {
+	density:          f32,
+	radius:           f32,
+	launch_cost:      f32,
+	color:            rl.Color,
+	visual_class:     Celestial_Class,
+	quad_multiplier:  f32, // Render quad size = radius * quad_multiplier
+	trail_multiplier: f32, // Trail thickness scale (0 = no trail)
+	glow_intensity:   f32, // Shader glow envelope strength (0.0–1.0)
+}
+
+/*
+ * Parameters that control the flow of the game
+ * These are typically modifiable through modifiers to change the game experience
+ * Modifications can be new game modes, through upgrade trees etc.
+ */
+Parameters :: struct {
+	celestials: [Celestial_Type]Parameters_Celestial,
+	physics:    Parameters_Physics,
+	slingshot:  Parameters_Slingshot,
+}
+
+/*
  * Central data store that contains all the data required for the game to run.
  * A `Game` is created when the program runs and destroyed at the end.
  * This is passed around throughout for state management.
@@ -453,7 +560,7 @@ Game :: struct {
 	screenh:             f32,
 	status:              Status, // Current game status, controls the active systems.
 	theme:               Theme,
-	params:              GameParameters,
+	params:              Parameters,
 	assets:              Assets,
 	input:               Input,
 	tutorial:            Tutorial,
