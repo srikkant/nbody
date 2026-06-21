@@ -111,6 +111,7 @@ input_process :: proc(g: ^Game) {
 	}
 
 	g.input.action = .None
+	g.input.mouse_pos_screen = rl.GetMousePosition()
 	g.input.mouse_pos = input_mouse_pos(g)
 	g.input.mouse_scroll_move = rl.GetMouseWheelMoveV()
 

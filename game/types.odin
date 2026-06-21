@@ -42,6 +42,90 @@ Timer_BuiltIn :: enum {
 }
 
 /*
+ * Assets used by the game
+ */
+Assets :: struct {
+	assets_map: Assets_Map,
+	textures:   [Assets_TextureType]Assets_Texture,
+	shaders:    [Assets_ShaderType]Assets_Shader,
+	fonts:      [Assets_FontType]Assets_Font,
+}
+
+Assets_RawFont :: enum {
+	Heading,
+	Body,
+}
+
+Assets_RawTexture :: enum {
+	Blank,
+	Bg,
+	Atlas,
+	BgStarGlow,
+	BgStarFlare,
+}
+
+Assets_RawShader :: enum {
+	Vignette,
+	Celestial_Debris,
+	Celestial_Terrestrial,
+	Celestial_GasGiant,
+	Celestial_Star,
+	BgGrid_Gravity,
+	Energy_Shader,
+	Vfx_Effects,
+}
+
+Assets_Map :: struct {
+	fonts:    [Assets_RawFont]rl.Font,
+	textures: [Assets_RawTexture]rl.Texture2D,
+	shaders:  [Assets_RawShader]rl.Shader,
+}
+
+Assets_TextureType :: enum {
+	Blank,
+	Objects_Celestial,
+	Objects_Emitter,
+	Markers_OutOfBounds,
+	Collectibles_Energy,
+	UI_Energy,
+	UI_EnergyAverage,
+	UI_ObjectCount,
+	Bg_StarGlow,
+	Bg_StarFlare,
+}
+
+Assets_FontType :: enum {
+	Heading,
+	Body,
+}
+
+Assets_ShaderType :: enum {
+	Bg_Vignette,
+	Celestial_Debris_Layer,
+	Celestial_Terrestrial_Layer,
+	Celestial_GasGiant_Layer,
+	Celestial_Star_Layer,
+	BgGrid_Shader,
+	Energy_Shader,
+	Vfx_Shader,
+}
+
+Assets_Texture :: struct {
+	texture: Assets_RawTexture,
+	rect:    rl.Rectangle,
+}
+
+Assets_Font :: struct {
+	font:    Assets_RawFont,
+	size:    f32,
+	spacing: f32,
+}
+
+Assets_Shader :: struct {
+	shader: Assets_RawShader,
+}
+
+/*
  * Entity used in the ecs
  * Since the number of entities in game is only in the thousands,
  * preallocate everything
@@ -226,6 +310,8 @@ GameEvent_Collision :: struct {
 Input :: struct {
 	// Should the input be ignored in this frame?
 	ignore:            bool,
+	// Current mouse position in screen space.
+	mouse_pos_screen:  rl.Vector2,
 	// Current mouse position. Calculated at the beginning of each frame.
 	mouse_pos:         rl.Vector2,
 	// Current mouse scroll
@@ -340,22 +426,14 @@ Render_LaunchMenu :: struct {
  */
 Theme :: struct {
 	name:                        string,
-	/*
-     * Color of the background void
-     */
 	color_bg:                    rl.Color,
-	/*
-     * Color for error states
-     */
 	color_error:                 rl.Color,
-	/*
-     * Colors for the background nebula
-     */
 	colors_bg_nebula:            [4]rl.Color,
-	/*
-     * Colors for the background starfield stars
-     */
 	colors_bg_star:              [5]rl.Color,
+	spacing_s:                   f32,
+	spacing_m:                   f32,
+	spacing_l:                   f32,
+
 	/*
      * Color of the collector around the cursor
      */
@@ -368,6 +446,10 @@ Theme :: struct {
      * Color of the slingshot preview trail in error state
      */
 	color_slingshot_trail_error: rl.Color,
+	/*
+     * 
+     */
+	margin_top_bar:              f32,
 }
 
 /*

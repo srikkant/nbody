@@ -3,90 +3,7 @@ package game
 import "core:math"
 import rl "vendor:raylib"
 
-Assets_Font :: enum {
-	Heading,
-	Body,
-}
-
-Assets_Texture :: enum {
-	Blank,
-	Bg,
-	Atlas,
-	BgStarGlow,
-	BgStarFlare,
-}
-
-Assets_Shader :: enum {
-	Vignette,
-	Celestial_Debris,
-	Celestial_Terrestrial,
-	Celestial_GasGiant,
-	Celestial_Star,
-	BgGrid_Gravity,
-	Energy_Shader,
-	Vfx_Effects,
-}
-
-Assets_Map :: struct {
-	fonts:    [Assets_Font]rl.Font,
-	textures: [Assets_Texture]rl.Texture2D,
-	shaders:  [Assets_Shader]rl.Shader,
-}
-
-Assets_TextureType :: enum {
-	Blank,
-	Objects_Celestial,
-	Objects_Emitter,
-	Markers_OutOfBounds,
-	Collectibles_Energy,
-	UI_Energy,
-	UI_EnergyAverage,
-	UI_ObjectCount,
-	Bg_StarGlow,
-	Bg_StarFlare,
-}
-
-Assets_FontType :: enum {
-	Heading,
-	Body,
-	Menu_Label,
-	Title,
-}
-
-Assets_ShaderType :: enum {
-	Bg_Vignette,
-	Celestial_Debris_Layer,
-	Celestial_Terrestrial_Layer,
-	Celestial_GasGiant_Layer,
-	Celestial_Star_Layer,
-	BgGrid_Shader,
-	Energy_Shader,
-	Vfx_Shader,
-}
-
-Game_Texture :: struct {
-	texture: Assets_Texture,
-	rect:    rl.Rectangle,
-}
-
-Game_Font :: struct {
-	font:    Assets_Font,
-	size:    f32,
-	spacing: f32,
-}
-
-Game_Shader :: struct {
-	shader: Assets_Shader,
-}
-
-Assets :: struct {
-	assets_map: Assets_Map,
-	textures:   [Assets_TextureType]Game_Texture,
-	shaders:    [Assets_ShaderType]Game_Shader,
-	fonts:      [Assets_FontType]Game_Font,
-}
-
-SHADER_PATHS: [Assets_Shader]cstring = {
+SHADER_PATHS: [Assets_RawShader]cstring = {
 	.Vignette              = "./assets/shaders/vignette.frag",
 	.Celestial_Debris      = "./assets/shaders/celestial_debris.frag",
 	.Celestial_Terrestrial = "./assets/shaders/celestial_terrestrial.frag",
@@ -108,7 +25,7 @@ assets_map_load :: proc(g: ^Game) {
 	blank_image := rl.GenImageColor(1, 1, rl.WHITE)
 	defer rl.UnloadImage(blank_image)
 
-	for s in Assets_Shader {
+	for s in Assets_RawShader {
 		g.assets.assets_map.shaders[s] = rl.LoadShader(nil, SHADER_PATHS[s])
 	}
 
@@ -196,16 +113,16 @@ assets_map_load :: proc(g: ^Game) {
 	}
 }
 
-assets_map_free :: proc(g: ^Game) {
-	for f in Assets_Font {
+assets_free :: proc(g: ^Game) {
+	for f in Assets_RawFont {
 		rl.UnloadFont(g.assets.assets_map.fonts[f])
 	}
 
-	for t in Assets_Texture {
+	for t in Assets_RawTexture {
 		rl.UnloadTexture(g.assets.assets_map.textures[t])
 	}
 
-	for s in Assets_Shader {
+	for s in Assets_RawShader {
 		rl.UnloadShader(g.assets.assets_map.shaders[s])
 	}
 }
@@ -219,16 +136,6 @@ assets_fonts_load :: proc(g: ^Game) {
 	g.assets.fonts[.Body] = {
 		font = .Body,
 		size = 14,
-	}
-
-	g.assets.fonts[.Menu_Label] = {
-		font = .Body,
-		size = 11,
-	}
-
-	g.assets.fonts[.Title] = {
-		font = .Heading,
-		size = 36,
 	}
 }
 

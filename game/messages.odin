@@ -6,12 +6,18 @@ MSG_RESUME :: "resume"
 MSG_RESTART :: "restart"
 MSG_MAIN_MENU :: "main menu"
 
+MSG_PAUSED :: "paused"
+
+MSG_TUTORIAL_START :: "click & pull to launch"
+
 Messages :: enum {
 	NewGame,
 	Exit,
 	Resume,
 	Restart,
 	MainMenu,
+	Paused,
+	Tutorial_Start,
 }
 
 Messages_Language :: enum {
@@ -25,6 +31,8 @@ Messages_EN: [Messages_Language][Messages]string = {
 		.Resume = MSG_RESUME,
 		.Restart = MSG_RESTART,
 		.MainMenu = MSG_MAIN_MENU,
+		.Paused = MSG_PAUSED,
+		.Tutorial_Start = MSG_TUTORIAL_START,
 	},
 }
 

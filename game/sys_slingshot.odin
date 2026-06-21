@@ -53,6 +53,8 @@ sys_slingshot :: proc(g: ^Game) {
 		g.slingshot.status = .Inactive
 
 		if g.slingshot.can_launch {
+			g.tutorial.launch_done = true
+
 			push_event(g, event)
 			g.score.energy -= cost
 

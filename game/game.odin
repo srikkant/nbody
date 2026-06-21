@@ -16,6 +16,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 
 	g := new(Game)
 
+	assets_init(g)
 	params_init(g)
 	theme_init(g)
 
@@ -78,7 +79,7 @@ game_reset :: proc(g: ^Game) {
 }
 
 game_free :: proc(g: ^Game) {
-	assets_map_free(g)
+	assets_free(g)
 	free(g)
 
 	rl.CloseWindow()
@@ -105,10 +106,12 @@ game_run :: proc(g: ^Game) {
 		sys_render(g)
 	case .Paused:
 		sys_render(g)
-		sys_render_menu_pause(g)
 	case .Exit:
 	// Do nothing, the main loop will exit after this.
 	}
+
+	ui_draw(g)
+	tutorial_draw(g)
 
 	rl.EndDrawing()
 }
