@@ -32,8 +32,6 @@ assets_map_load :: proc(g: ^Game) {
 	g.assets.assets_map.textures[.Blank] = rl.LoadTextureFromImage(blank_image)
 	g.assets.assets_map.textures[.Bg] = rl.LoadTexture("./assets/textures/bg.png")
 	g.assets.assets_map.textures[.Atlas] = rl.LoadTexture("./assets/textures/atlas.png")
-	g.assets.assets_map.fonts[.Heading] = rl.LoadFontEx("./assets/fonts/heading.ttf", 18, nil, 0)
-	g.assets.assets_map.fonts[.Body] = rl.LoadFontEx("./assets/fonts/body.ttf", 14, nil, 0)
 
 	/*
 	Procedural Starfield Textures
@@ -114,8 +112,8 @@ assets_map_load :: proc(g: ^Game) {
 }
 
 assets_free :: proc(g: ^Game) {
-	for f in Assets_RawFont {
-		rl.UnloadFont(g.assets.assets_map.fonts[f])
+	for f in Assets_FontType {
+		rl.UnloadFont(g.assets.fonts[f].font)
 	}
 
 	for t in Assets_RawTexture {
@@ -128,13 +126,19 @@ assets_free :: proc(g: ^Game) {
 }
 
 assets_fonts_load :: proc(g: ^Game) {
-	g.assets.fonts[.Heading] = {
-		font = .Heading,
+	g.assets.fonts[.Title] = {
+		font    = rl.LoadFontEx("./assets/fonts/Syncopate-Bold.ttf", 32, nil, 0),
+		size    = 32,
+		spacing = 32,
+	}
+
+	g.assets.fonts[.Subtitle] = {
+		font = rl.LoadFontEx("./assets/fonts/Syncopate-Bold.ttf", 18, nil, 0),
 		size = 18,
 	}
 
 	g.assets.fonts[.Body] = {
-		font = .Body,
+		font = rl.LoadFontEx("./assets/fonts/Syncopate-Regular.ttf", 14, nil, 0),
 		size = 14,
 	}
 }
@@ -222,7 +226,7 @@ assets_get_texture_rect :: proc(g: ^Game, type: Assets_TextureType) -> rl.Rectan
 }
 
 assets_get_font :: proc(g: ^Game, type: Assets_FontType) -> rl.Font {
-	return g.assets.assets_map.fonts[g.assets.fonts[type].font]
+	return g.assets.fonts[type].font
 }
 
 assets_get_font_size :: proc(g: ^Game, type: Assets_FontType) -> f32 {

@@ -1,16 +1,19 @@
 package game
 
+MSG_TITLE :: "THE N:BODY FORGE"
+
 MSG_NEW_GAME :: "new game"
 MSG_EXIT :: "exit"
 MSG_RESUME :: "resume"
 MSG_RESTART :: "restart"
 MSG_MAIN_MENU :: "main menu"
 
-MSG_PAUSED :: "paused"
+MSG_PAUSED :: "PAUSED"
 
-MSG_TUTORIAL_START :: "click & pull to launch"
+MSG_TUTORIAL_START :: "DRAG AND RELASE TO LAUNCH YOUR FIRST ASTEROID"
 
 Messages :: enum {
+	Title,
 	NewGame,
 	Exit,
 	Resume,
@@ -26,6 +29,7 @@ Messages_Language :: enum {
 
 Messages_EN: [Messages_Language][Messages]string = {
 	.En = {
+		.Title = MSG_TITLE,
 		.NewGame = MSG_NEW_GAME,
 		.Exit = MSG_EXIT,
 		.Resume = MSG_RESUME,

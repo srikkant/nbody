@@ -52,8 +52,8 @@ Assets :: struct {
 }
 
 Assets_RawFont :: enum {
-	Heading,
-	Body,
+	SyncopateBold,
+	SyncopateRegular,
 }
 
 Assets_RawTexture :: enum {
@@ -95,7 +95,8 @@ Assets_TextureType :: enum {
 }
 
 Assets_FontType :: enum {
-	Heading,
+	Title,
+	Subtitle,
 	Body,
 }
 
@@ -116,7 +117,7 @@ Assets_Texture :: struct {
 }
 
 Assets_Font :: struct {
-	font:    Assets_RawFont,
+	font:    rl.Font,
 	size:    f32,
 	spacing: f32,
 }
@@ -433,23 +434,11 @@ Theme :: struct {
 	spacing_s:                   f32,
 	spacing_m:                   f32,
 	spacing_l:                   f32,
-
-	/*
-     * Color of the collector around the cursor
-     */
 	color_cursor_collector:      rl.Color,
-	/*
-     * Color of the slingshot preview trail
-     */
 	color_slingshot_trail:       rl.Color,
-	/*
-     * Color of the slingshot preview trail in error state
-     */
 	color_slingshot_trail_error: rl.Color,
-	/*
-     * 
-     */
 	margin_top_bar:              f32,
+	font_title:                  Assets_FontType,
 }
 
 /*

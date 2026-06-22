@@ -28,5 +28,7 @@ theme_init :: proc(g: ^Game) {
 	t.color_slingshot_trail_error = t.color_error
 
 	t.margin_top_bar = t.spacing_s
+
+	t.font_title = .Title
 }
 
