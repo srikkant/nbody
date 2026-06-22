@@ -128,18 +128,18 @@ assets_free :: proc(g: ^Game) {
 assets_fonts_load :: proc(g: ^Game) {
 	g.assets.fonts[.Title] = {
 		font    = rl.LoadFontEx("./assets/fonts/Syncopate-Bold.ttf", 32, nil, 0),
-		size    = 32,
-		spacing = 32,
+		size    = 32 * g.scale,
+		spacing = 32 * g.scale,
 	}
 
 	g.assets.fonts[.Subtitle] = {
 		font = rl.LoadFontEx("./assets/fonts/Syncopate-Bold.ttf", 18, nil, 0),
-		size = 18,
+		size = 18 * g.scale,
 	}
 
 	g.assets.fonts[.Body] = {
 		font = rl.LoadFontEx("./assets/fonts/Syncopate-Regular.ttf", 14, nil, 0),
-		size = 14,
+		size = 14 * g.scale,
 	}
 }
 

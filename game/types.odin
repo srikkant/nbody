@@ -635,6 +635,7 @@ Game :: struct {
 	dt:                  f32, // Last frame's delta time in seconds. Updated every frame.
 	screenw:             f32,
 	screenh:             f32,
+	scale:               f32,
 	status:              Status, // Current game status, controls the active systems.
 	theme:               Theme,
 	params:              Parameters,

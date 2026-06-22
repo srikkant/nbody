@@ -59,7 +59,18 @@ SHOCKWAVE_SIG: Entity_Signature : {.Position, .Radius, .Life, .Shockwave}
 // UI
 // ==========================================
 
+/*
+ * Size of the central pointer
+ */
 CURSOR_POINTER_SIZE :: 4
+/*
+ * Width used for the computation
+ */
+UI_BASE_WIDTH :: 1920
+/*
+ * Height used for computation
+ */
+UI_BASE_HEIGHT :: 1080
 
 // ==========================================
 // BACKGROUND & PARALLAX CONSTANTS
