@@ -20,8 +20,6 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	params_init(g)
 	theme_init(g)
 
-	sys_camera_init(g)
-
 	input_init(g)
 	background_init(g)
 
@@ -39,27 +37,28 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 }
 
 game_reset :: proc(g: ^Game) {
+	g.camera.rl_cam.zoom = 1
+	g.camera.rl_cam.offset = rl.Vector2{g.screenw / 2, g.screenh / 2}
+	g.camera.rl_cam.target = rl.Vector2(0)
+	g.slingshot.preview = 1
+	g.slingshot.status = .Inactive
+	g.slingshot.snap.active = false
 	g.entities_count = 0
 	g.free_entities_count = 0
 	g.events_count = 0
+
+	g.score.energy = 100000 // TODO: added for debugging.
+	g.score.total_objects = 0
+	g.score.energy_rate_ticker = 0
 
 	for i in 0 ..< MAX_ENTITIES {
 		g.entities[i].sig = {}
 	}
 
-	g.score.energy = 0
-	g.score.total_objects = 0
-	g.score.energy_rate_ticker = 0
 	for i in 0 ..< AVG_CALC_TICKS {
 		g.score.energy_gains[i] = 0
 		g.score.energy_losses[i] = 0
 	}
-
-	sys_camera_init(g)
-
-	g.slingshot.preview = 1
-	g.slingshot.status = .Inactive
-	g.slingshot.snap.active = false
 
 	for i in Timer_BuiltIn {
 		g.timers[i].curr = 0
@@ -111,7 +110,6 @@ game_run :: proc(g: ^Game) {
 	}
 
 	ui_draw(g)
-	tutorial_draw(g)
 
 	rl.EndDrawing()
 }

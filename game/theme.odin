@@ -8,9 +8,9 @@ theme_init :: proc(g: ^Game) {
 	t.color_bg = rl.Color{12, 12, 24, 255}
 	t.color_error = rl.RED
 
-	t.spacing_s = 16
-	t.spacing_m = 32
-	t.spacing_l = 48
+	t.spacing_s = 16 * g.scale
+	t.spacing_m = 32 * g.scale
+	t.spacing_l = 48 * g.scale
 
 	t.colors_bg_nebula[0] = rl.Color{10, 150, 180, 40}
 	t.colors_bg_nebula[1] = rl.Color{200, 30, 140, 32}
@@ -27,7 +27,7 @@ theme_init :: proc(g: ^Game) {
 	t.color_slingshot_trail = rl.GRAY
 	t.color_slingshot_trail_error = t.color_error
 
-	t.margin_top_bar = t.spacing_s
+	t.margin_top_bar = t.spacing_m
 
 	t.font_title = .Title
 }

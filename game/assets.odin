@@ -141,6 +141,11 @@ assets_fonts_load :: proc(g: ^Game) {
 		font = rl.LoadFontEx("./assets/fonts/Syncopate-Regular.ttf", 14, nil, 0),
 		size = 14 * g.scale,
 	}
+
+	g.assets.fonts[.BodyBold] = {
+		font = rl.LoadFontEx("./assets/fonts/Syncopate-Bold.ttf", 14, nil, 0),
+		size = 14 * g.scale,
+	}
 }
 
 assets_textures_load :: proc(g: ^Game) {

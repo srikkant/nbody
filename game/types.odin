@@ -98,6 +98,7 @@ Assets_FontType :: enum {
 	Title,
 	Subtitle,
 	Body,
+	BodyBold,
 }
 
 Assets_ShaderType :: enum {
@@ -442,9 +443,9 @@ Theme :: struct {
 }
 
 /*
- * Controls the state of the in game tutorials that show up based on the context.
+ * Controls the state of the in game help messages that show up based on the context.
  */
-Tutorial :: struct {
+Help :: struct {
 	launch_done: bool,
 }
 
@@ -641,7 +642,7 @@ Game :: struct {
 	params:              Parameters,
 	assets:              Assets,
 	input:               Input,
-	tutorial:            Tutorial,
+	help:                Help,
 	camera:              Camera,
 	render:              Render,
 	slingshot:           Slingshot,
