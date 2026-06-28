@@ -10,7 +10,7 @@ Game_InitParams :: struct {
 game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.SetTraceLogLevel(rl.TraceLogLevel.WARNING)
 	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_RESIZABLE})
-	rl.InitWindow(params.w, params.h, "n-body forge")
+	rl.InitWindow(params.w, params.h, "gigawatt galaxy")
 	rl.SetExitKey(.KEY_NULL)
 	rl.HideCursor()
 
@@ -80,7 +80,6 @@ game_reset :: proc(g: ^Game) {
 game_free :: proc(g: ^Game) {
 	assets_free(g)
 	free(g)
-
 	rl.CloseWindow()
 }
 
@@ -113,4 +112,3 @@ game_run :: proc(g: ^Game) {
 
 	rl.EndDrawing()
 }
-

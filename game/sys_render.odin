@@ -433,18 +433,17 @@ sys_render_entities :: proc(g: ^Game) {
 				dur := e.life.remaining.interval
 				fade := dur > 0 ? (1.0 - (t / dur)) : 1.0
 				fade = math.clamp(fade, 0.0, 1.0)
-				alpha := u8(fade * 255.0)
-				col := rl.Color{255, 255, 255, alpha}
+				col := e.shockwave.color
+				col.a = u8(fade * 255.0)
 
 				rl_texture_draw(
 					g,
 					.Blank,
-					rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius, e.radius},
-					rl.Vector2(e.radius / 2.0),
+					rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius * 2.0, e.radius * 2.0},
+					rl.Vector2(e.radius),
 					tint = col,
 				)
 			}
 		}
 	}
 }
-

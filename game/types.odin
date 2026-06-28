@@ -241,6 +241,7 @@ Component_CollectibleEnergy :: struct {
 
 Component_Shockwave :: struct {
 	growth_rate: f32,
+	color:       rl.Color,
 }
 
 Celestial_Type :: enum {
@@ -657,4 +658,3 @@ Game :: struct {
 	modifiers_count:     u64,
 	modifiers:           [MAX_MODIFIERS]Modifier,
 }
-

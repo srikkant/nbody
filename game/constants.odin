@@ -227,9 +227,17 @@ SHOCKWAVE_RADIUS_START :: 1.0
  */
 SHOCKWAVE_DURATION_BASE_SEC :: 0.5
 /*
+ * Minimum duration of the shockwave
+ */
+SHOCKWAVE_DURATION_MIN_SEC :: 0.35
+/*
+ * Maximum duration of the shockwave
+ */
+SHOCKWAVE_DURATION_MAX_SEC :: 1.2
+/*
  * Multiplier applied to the growth rate with energy
  */
-SHOCKWAVE_GROWTH_FACTOR :: 1
+SHOCKWAVE_GROWTH_FACTOR :: 5
 /*
  * Starting deceleration of shockwaves
  */
@@ -294,4 +302,3 @@ CAMERA_ZOOM_IN_INTERPOLATION_DECAY :: 0.6
  * We typically want zoom out to be way faster than zoom in
  */
 CAMERA_ZOOM_OUT_INTERPOLATION_DECAY :: 8.0
-

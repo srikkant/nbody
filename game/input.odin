@@ -120,4 +120,3 @@ input_process :: proc(g: ^Game) {
 
 	g.input.ignore = false
 }
-

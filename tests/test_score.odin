@@ -16,4 +16,3 @@ test_ke_score_proximity_bonus :: proc(t: ^testing.T) {
 test_energy_generation_radius_scaling :: proc(t: ^testing.T) {
 	// @TODO: Implement
 }
-

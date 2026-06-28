@@ -75,4 +75,3 @@ test_gravity_proportional_to_mass :: proc(t: ^testing.T) {
 	ratio := accel2.x / accel1.x
 	testing.expect(t, math.abs(ratio - 2.0) < 1e-5, "Double source mass must double acceleration")
 }
-

@@ -30,21 +30,24 @@ sys_lifecycle_spawn_fragments :: proc(g: ^Game, energy: f64, rel_speed: f32, pos
 	}
 }
 
-sys_lifecycle_spawn_shockwave :: proc(g: ^Game, pos: rl.Vector2, energy: f64) {
+sys_lifecycle_spawn_shockwave :: proc(g: ^Game, pos: rl.Vector2, energy: f64, color: rl.Color) {
 	if energy <= 0 do return
 
 	id := entity_create(g)
 	entity_add_position(g, id, {current = pos})
 	entity_add_radius(g, id, SHOCKWAVE_RADIUS_START)
-	entity_add_life(
+
+	dur := clamp(
+		f32(SHOCKWAVE_DURATION_BASE_SEC) + 0.12 * math.ln(f32(energy + 1.0)),
+		f32(SHOCKWAVE_DURATION_MIN_SEC),
+		f32(SHOCKWAVE_DURATION_MAX_SEC),
+	)
+	entity_add_life(g, id, {created_at = g.elapsed, remaining = Timer{interval = dur}})
+	entity_add_shockwave(
 		g,
 		id,
-		{
-			created_at = g.elapsed,
-			remaining = Timer{interval = SHOCKWAVE_DURATION_BASE_SEC + math.ln(f32(energy + 1.0))},
-		},
+		{growth_rate = math.sqrt(f32(energy)) * SHOCKWAVE_GROWTH_FACTOR, color = color},
 	)
-	entity_add_shockwave(g, id, {growth_rate = math.sqrt(f32(energy)) * SHOCKWAVE_GROWTH_FACTOR})
 }
 
 sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^GameEvent_ObjectSpawn) {
@@ -126,7 +129,7 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^GameEvent_Collision) {
 		entity_add_orbit(g, id, {})
 	}
 
-	sys_lifecycle_spawn_shockwave(g, pos, f64(new_mass))
+	sys_lifecycle_spawn_shockwave(g, pos, f64(new_mass), g.params.celestials[new_type].color)
 
 	if entity_celestial_is_unlockable(new_type) {
 		g.slingshot.available_objects += {new_type}
@@ -147,7 +150,7 @@ sys_lifecycle_resolve_shatter :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	energy := mass * f64(rel_speed * rel_speed)
 
 	sys_lifecycle_spawn_fragments(g, mass, rel_speed, impact_point)
-	sys_lifecycle_spawn_shockwave(g, e1.pos.current, energy)
+	sys_lifecycle_spawn_shockwave(g, e1.pos.current, energy, e1.renderable.color)
 }
 
 sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^GameEvent_Collision) {
@@ -190,7 +193,7 @@ sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	energy_loss := f64(loss) * f64(rel_speed * rel_speed)
 
 	sys_lifecycle_spawn_fragments(g, f64(loss), rel_speed, big_pos)
-	sys_lifecycle_spawn_shockwave(g, e1.pos.current, energy_loss)
+	sys_lifecycle_spawn_shockwave(g, e1.pos.current, energy_loss, e_big.renderable.color)
 }
 
 sys_lifecycle_handle_star_absorb :: proc(g: ^Game, e: ^GameEvent_Collision) {
@@ -262,7 +265,7 @@ sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^GameEvent_Object_Demolis
 		if e.mass > 0 {
 			refund := f64(g.params.physics.energy_refund_factor * e.mass * e.radius)
 			g.score.energy += refund
-			sys_lifecycle_spawn_shockwave(g, e.pos.current, f64(e.mass))
+			sys_lifecycle_spawn_shockwave(g, e.pos.current, f64(e.mass), e.renderable.color)
 		}
 		delete_entities[closest_id] = true
 	}
@@ -367,4 +370,3 @@ sys_lifecycle :: proc(g: ^Game) {
 
 	sys_lifecycle_update_entities(g)
 }
-

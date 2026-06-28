@@ -71,4 +71,3 @@ test_timer_reset :: proc(t: ^testing.T) {
 	testing.expect_value(t, timer.curr, f32(0.0))
 	testing.expect_value(t, timer.done, false)
 }
-

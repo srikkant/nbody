@@ -9,7 +9,4 @@
                                            :type "lldb"
                                            :request "launch"
                                            :program (lambda () (concat (project-root (project-current)) "nbody"))
-                                           :cwd (lambda () (project-root (project-current)))))))
-                  (eval . (after! apheleia
-                            (setf (alist-get 'odin-fmt apheleia-formatters) '("odinfmt" "-stdin"))
-                            (setq-local apheleia-formatter 'odin-fmt))))))))
+                                           :cwd (lambda () (project-root (project-current))))))))))

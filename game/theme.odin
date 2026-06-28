@@ -31,4 +31,3 @@ theme_init :: proc(g: ^Game) {
 
 	t.font_title = .Title
 }
-

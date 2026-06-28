@@ -67,4 +67,3 @@ get_inspected_entity :: proc(g: ^Game) -> (Entity_Id, bool) {
 
 	return closest_id, found
 }
-

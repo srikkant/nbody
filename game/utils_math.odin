@@ -37,4 +37,3 @@ math_catmull_rom :: proc(p0, p1, p2, p3: rl.Vector2, t: f32) -> rl.Vector2 {
 				(-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3) \
 	)
 }
-

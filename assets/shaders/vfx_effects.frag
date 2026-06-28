@@ -5,38 +5,46 @@ in vec4 fragColor;
 
 out vec4 finalColor;
 
-// 0.0 = Particle (glowing spark), 1.0 = Shockwave (neon ring + translucent dome)
-uniform float u_vfx_type;
 uniform float seconds;
 
 void main() {
     vec2 uv = fragTexCoord - vec2(0.5);
     float r = length(uv);
 
-    if (u_vfx_type > 0.5) {
-        float target_radius = 0.42;
-        float dist_to_ring = abs(r - target_radius);
+    float target_radius = 0.42;
+    float dist = r - target_radius;
 
-        float core_ring = 1.0 - smoothstep(0.0, 0.015, dist_to_ring);
-        float glow_ring = 1.0 - smoothstep(0.0, 0.055, dist_to_ring);
+    // Asymmetric blast wave profile (sharp front, soft trailing tail)
+    float front_decay = 180.0; // very sharp outer edge
+    float tail_decay = 25.0;    // softer inner edge/glow
+    float glow = dist > 0.0 ? exp(-dist * front_decay) : exp(dist * tail_decay);
 
-        float ring = core_ring * 2.2 + glow_ring * 0.8;
+    // Ultra-bright core right at the shock front
+    float core = exp(-abs(dist) * 300.0);
 
-        float dome = 0.0;
-        if (r < target_radius) {
-            float ripple_speed = 18.0;
-            float ripple_freq = 55.0;
-            float ripples = sin(r * ripple_freq - seconds * ripple_speed) * 0.5 + 0.5;
+    // Ripple dome behind the shockwave
+    float dome = 0.0;
+    if (r < target_radius) {
+        float ripple_speed = 22.0;
+        float ripple_freq = 60.0;
+        float ripples = sin(r * ripple_freq - seconds * ripple_speed) * 0.5 + 0.5;
 
-            // Soften ripples near the center so they originate cleanly
-            float center_fade = smoothstep(0.02, 0.15, r);
-
-            dome = pow(1.0 - (r / target_radius), 1.0) * (0.35 + ripples * 0.25 * center_fade);
-        }
-
-        float alpha = ring + dome;
-        vec3 hot_glow_color = fragColor.rgb * (1.0 + core_ring * 1.5 + glow_ring * 0.5);
-
-        finalColor = vec4(hot_glow_color, alpha * fragColor.a);
+        // Fade ripples near the center
+        float center_fade = smoothstep(0.02, 0.18, r);
+        
+        // Slower decay for dome ripples
+        dome = pow(1.0 - (r / target_radius), 1.5) * (0.25 + ripples * 0.20 * center_fade);
     }
+
+    // Mix the base neon color (from Odin) with hot white at the core
+    vec3 base_color = fragColor.rgb;
+    vec3 hot_white = vec3(1.0, 1.0, 1.0);
+    vec3 final_rgb = mix(base_color, hot_white, core * 0.9);
+
+    // Calculate alpha (combining front glow, core, and internal dome)
+    float alpha = clamp(glow * 0.8 + core * 1.0 + dome * 0.4, 0.0, 1.0);
+
+    // Add HDR-like bloom to final RGB based on core and glow intensity
+    finalColor = vec4(final_rgb * (1.0 + core * 1.5 + glow * 0.5), alpha * fragColor.a);
 }
+

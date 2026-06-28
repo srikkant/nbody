@@ -25,4 +25,3 @@ frame_setup :: proc(g: ^Game) {
 		math_update_timer(&g.timers[i], g.dt)
 	}
 }
-

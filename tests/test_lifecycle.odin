@@ -386,4 +386,3 @@ test_out_of_bounds_refund :: proc(t: ^testing.T) {
 	testing.expect_value(t, g.score.energy, f64(10.0))
 	testing.expect(t, game.delete_entities[id], "Out of bounds entity must be deleted")
 }
-

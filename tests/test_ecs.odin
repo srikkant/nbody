@@ -134,4 +134,3 @@ test_entity_add_collectible_negative_guard :: proc(t: ^testing.T) {
 		"Should add CollectibleEnergy if energy > 0",
 	)
 }
-

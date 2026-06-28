@@ -37,4 +37,3 @@ sys_score :: proc(g: ^Game) {
 		g.score.energy_rate_ticker = (g.score.energy_rate_ticker + 1) % AVG_CALC_TICKS
 	}
 }
-

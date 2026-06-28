@@ -38,4 +38,3 @@ ui_draw :: proc(g: ^Game) {
 	ui_draw_top_bar(g)
 	ui_draw_help(g)
 }
-

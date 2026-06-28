@@ -241,4 +241,3 @@ assets_get_font_size :: proc(g: ^Game, type: Assets_FontType) -> f32 {
 assets_get_font_spacing :: proc(g: ^Game, type: Assets_FontType) -> f32 {
 	return g.assets.fonts[type].spacing
 }
-

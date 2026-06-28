@@ -46,4 +46,3 @@ add_test_entity :: proc(
 add_test_star :: proc(g: ^game.Game, mass: f32, pos: rl.Vector2) -> game.Entity_Id {
 	return add_test_entity(g, .Star, mass, pos, rl.Vector2{0, 0})
 }
-

@@ -178,4 +178,3 @@ params_init :: proc(g: ^Game) {
 	p.slingshot.launch_power = 1.0
 	p.slingshot.preview_duration = 1.0
 }
-

@@ -72,4 +72,3 @@ sys_camera :: proc(g: ^Game) {
 	t := f32(1.0) - math.exp_f32(-decay * dt)
 	g.camera.rl_cam.zoom = math.lerp(g.camera.rl_cam.zoom, target_zoom, t)
 }
-

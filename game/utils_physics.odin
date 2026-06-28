@@ -111,4 +111,3 @@ physics_check_collision :: proc(
 
 	return nil
 }
-

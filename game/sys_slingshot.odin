@@ -60,8 +60,12 @@ sys_slingshot :: proc(g: ^Game) {
 
 			payload_mass := event.density * (event.radius * event.radius)
 			g.camera.shake_intensity = clamp(math.sqrt(payload_mass) * 0.45, 0.0, 25.0)
-			sys_lifecycle_spawn_shockwave(g, g.slingshot.start_pos, f64(payload_mass * 2.0))
+			sys_lifecycle_spawn_shockwave(
+				g,
+				g.slingshot.start_pos,
+				f64(payload_mass * 2.0),
+				g.params.celestials[event.celestial.type].color,
+			)
 		}
 	}
 }
-

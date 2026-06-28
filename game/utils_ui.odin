@@ -8,4 +8,3 @@ ui_draw_button :: proc(g: ^Game, text: cstring, rect: rl.Rectangle) -> bool {
 	// TODO: Check if this can use our common util
 	return false
 }
-

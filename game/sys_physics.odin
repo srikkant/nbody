@@ -85,4 +85,3 @@ sys_physics :: proc(g: ^Game) {
 		}
 	}
 }
-

@@ -1,6 +1,6 @@
 package game
 
-MSG_TITLE :: "THE N:BODY FORGE"
+MSG_TITLE :: "GIGAWATT GALAXY"
 
 MSG_NEW_GAME :: "new game"
 MSG_EXIT :: "exit"
@@ -47,4 +47,3 @@ t :: proc(g: ^Game, msg: Messages) -> cstring {
 	lang := Messages_Language.En
 	return cstring(raw_data(Messages_EN[lang][msg]))
 }
-

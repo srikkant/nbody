@@ -17,4 +17,3 @@ main :: proc() {
 		game.game_run(g)
 	}
 }
-

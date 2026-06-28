@@ -6,4 +6,3 @@ sys_modifier :: proc(g: ^Game) {
 		if !m.active do continue
 	}
 }
-

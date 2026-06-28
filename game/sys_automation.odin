@@ -37,4 +37,3 @@ sys_automation :: proc(g: ^Game) {
 		}
 	}
 }
-

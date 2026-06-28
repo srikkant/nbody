@@ -122,4 +122,3 @@ entity_celestial_prev_type :: proc(t: Celestial_Type, steps: int = 1) -> Celesti
 entity_celestial_is_unlockable :: proc(t: Celestial_Type) -> bool {
 	return t >= .Asteroid && t < .Star
 }
-

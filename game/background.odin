@@ -163,4 +163,3 @@ background_draw :: proc(g: ^Game) {
 		}
 	}
 }
-
