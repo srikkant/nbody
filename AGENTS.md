@@ -1,13 +1,13 @@
-# N-Body Forge — Agent Guide
+# Agent Guide
 
 ## Project Overview
 
-N-Body Forge is an incremental n-body gravity simulation game written in Odin using Raylib.
-It features physics-driven celestial mechanics, upgrade progression, automate emitters, and a slingshot mechanic.
+This project is an incremental n-body gravity simulation game written in Odin using Raylib. It features physics-driven celestial mechanics, upgrade progression, automated emitters, and a slingshot mechanic to launch new objects.
 
 ## Build and Execution
 
 ### Commands
+
 ```bash
 make run       # build + run native
 make build     # build native only (outputs `nbody` binary)
@@ -17,6 +17,7 @@ make clean     # remove build artifacts
 ```
 
 ### Targets
+
 - **Native**: Windows, macOS, Linux.
 - **Web (WASM)**: Outputs to `build/web/` using `./scripts/build_web.sh`. Requires emsdk (v5.0.7) and the Raylib WASM library (`vendor/raylib/libraylib.wasm.a`). Deployed to itch.io.
 
@@ -25,107 +26,65 @@ make clean     # remove build artifacts
 ## Core Architecture
 
 ### Entry Points
+
 - `main.odin` (`#+build !js`): Native entry. Sets up context with a tracking allocator for leak checking, initializes game state, and loops `game_run`.
 - `main_web.odin` (`#+build js`): Web/WASM entry. Exports `start()`, `run()`, and `update_size()` for emscripten. Implements `emscripten_allocator` on top of libc allocator (`malloc`, `free`, `realloc`, `calloc`) to ensure proper alignment required by maps and SIMD features.
 
 ### ECS (Entity Component System)
-The project implements a lightweight custom ECS in [ecs.odin](file:///Users/srikkant/work/srikkant/nbody/game/ecs.odin) and [types.odin](file:///Users/srikkant/work/srikkant/nbody/game/types.odin):
+
+The project implements a lightweight custom ECS in `game/ecs.odin` and `game/types.odin`.
+
 - **Storage**: Entities are stored in a Struct of Arrays (SOA) structure: `entities: #soa[MAX_ENTITIES]Game_Entity` inside the `Game` struct.
 - **Recycling**: Free entity indices are stored on a stack `free_entities` of size `MAX_ENTITIES`. When creating an entity, an index is popped from this stack if `free_entities_count > 0`, otherwise `entities_count` is incremented.
 - **Component Bitsets**: Components are toggled and checked using `Signature :: bit_set[ComponentType]`. Systems filter entities by verifying signature inclusion (e.g. `PHYSICS_SIG <= e.sig`).
 
 ### Event Queue
+
 - Standard fixed-size array `events: [MAX_ENTITIES]Game_Event` tracked by `events_count`.
 - Events are pushed throughout the frame via `push_event`.
 - Dispatched and cleared at the end of the game loop in `sys_lifecycle`.
 
----
+### Game Loop Orchestration
 
-## Game Loop Orchestration
 Executed sequentially in `game_run` ([game/game.odin](file:///Users/srikkant/work/srikkant/nbody/game/game.odin)):
+
 1. **Frame Setup**: Update delta time (clamped to `max_delta_time_sec`), increment elapsed time, query screen size, and update game timers (`Score`, `Trail`).
 2. **Input Processing**: Map inputs to abstract actions; process mouse and keyboard interactions (menus, slingshot actions, camera vibration).
-3. **Loop Phase Execution** (based on `Game_Status`):
-   - **Menu**: `sys_camera` → `sys_render` → `sys_render_menu_main`.
-   - **Paused**: `sys_render` → `sys_render_menu_pause`.
-   - **Playing**: `sys_slingshot` → `sys_modifier` → `sys_automation` → `sys_physics` → `sys_score` → `sys_lifecycle` → `sys_camera` → `sys_render`.
+3. **Loop Phase Execution** (based on `Game_Status`): Runs the main game loop and relevant systems depending on the status.
 
 ---
 
-## Systems Directory
+### Code structure
 
-- [frame.odin](file:///Users/srikkant/work/srikkant/nbody/game/frame.odin) — Capped delta time calculation and game-wide timer updates.
-- [input.odin](file:///Users/srikkant/work/srikkant/nbody/game/input.odin) — Input action matching and handling (slingshot activation, menu triggers, orbit toggle).
-- [sys_camera.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_camera.odin) — Focuses on coordinate `(0, 0)` (the central Star). Interpolates camera zoom to fit active entity boundary limits. Applies camera shake decay and slingshot pull vibration.
-- [sys_slingshot.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_slingshot.odin) — Slingshot energy cost check and entity spawn event queueing upon release.
-- [sys_render_slingshot.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_render_slingshot.odin) — Renders the slingshot Bezier pull line and its simulator trajectory.
-- [sys_automation.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_automation.odin) — Processes emitter entities, managing periodic object spawning and emitter destruction timers.
-- [sys_physics.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_physics.odin) — Calculates gravity vector offsets, updates velocities/positions, updates orbits/trails, and queues boundaries and collisions.
-- [sys_lifecycle.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_lifecycle.odin) — Dispatches events, processes collision types (merge, shatter, debris, absorb), updates life timers, and cleans up dead entity indices.
-- [sys_score.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_score.odin) — Generates energy based on orbital kinetic energy and active components.
-- [sys_menu.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_menu.odin) — Renders main and pause UI panels and buttons.
-- [sys_modifier.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_modifier.odin) — Iterates active modifier upgrades.
-- [sys_render.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_render.odin) — Draws background starfields, nebulae, layered entities (using order), trails, VFX, and cursor indicators.
-- [sys_render_ui.odin](file:///Users/srikkant/work/srikkant/nbody/game/sys_render_ui.odin) — Empty stub for future HUD rendering (current HUD/UI buttons reside in `sys_menu`).
+The `game` directory contains all the source code for the game.The code is primarily categorized into the following categories:
 
----
-
-## Math and Physics Mechanics
-
-### Gravitational Acceleration (with Softening)
-The gravity vector acting on a target from a source is softened to prevent infinite acceleration at zero distance:
-$$\vec{a} = \frac{G \cdot M_{\text{source}} \cdot \vec{r}}{(r^2 + \epsilon)^{1.5}}$$
-Where:
-- $\vec{r}$ is the vector from target to source.
-- $r^2$ is the squared distance.
-- $\epsilon$ is the `gravity_softening_factor` (from parameters).
-
-### Slingshot Preview (RK4 Integration)
-The trajectory preview utilizes Runge-Kutta 4th order (RK4) integration to predict movement. It evaluates total gravity acceleration at 4 steps:
-$$\begin{aligned}
-k_1 &= \vec{v}_n, \quad l_1 = \vec{a}(\vec{x}_n) \\
-k_2 &= \vec{v}_n + \frac{dt}{2} l_1, \quad l_2 = \vec{a}\left(\vec{x}_n + \frac{dt}{2} k_1\right) \\
-k_3 &= \vec{v}_n + \frac{dt}{2} l_2, \quad l_3 = \vec{a}\left(\vec{x}_n + \frac{dt}{2} k_2\right) \\
-k_4 &= \vec{v}_n + dt \cdot l_3, \quad l_4 = \vec{a}(\vec{x}_n + dt \cdot k_3)
-\end{aligned}$$
-$$\begin{aligned}
-\vec{x}_{n+1} &= \vec{x}_n + \frac{dt}{6} (k_1 + 2k_2 + 2k_3 + k_4) \\
-\vec{v}_{n+1} &= \vec{v}_n + \frac{dt}{6} (l_1 + 2l_2 + 2l_3 + l_4)
-\end{aligned}$$
-The preview dynamically adapts step size (`step_dt`) based on distance from the central star.
-
-### Slingshot Bezier Pull Curve and Bow Sag
-Renders a quadratic Bezier curve between `P0` (start drag) and `P2` (current cursor position) with control point `P1`:
-$$P_1 = \frac{P_0 + P_2}{2} + \vec{v}_{\text{gravity\_pull}} + \vec{v}_{\text{bow\_sag}}$$
-Where:
-- $\vec{v}_{\text{gravity\_pull}}$ is a vector pulling the curve toward the central star based on drag distance.
-- $\vec{v}_{\text{bow\_sag}}$ is a vector perpendicular to the drag direction, creating sag.
-
-### Collision Classification
-Collisions are processed in `sys_lifecycle` under four categories:
-1. **StarAbsorb**: If one body is a `Star`. The Star absorbs the other entity.
-2. **Debris**: If the colliding entities are of different types, or if their mass ratio exceeds `collision_mass_scaling_factor`:
-   - The smaller body is destroyed.
-   - The larger body is downgraded to the previous celestial type and loses mass based on relative speed.
-   - The lost mass spawns as collectible energy fragments, a shockwave, and particle burst.
-3. **Shatter**: If same-type entities collide at high velocity (relative speed squared > `shatter_threshold_sq`):
-   - Both entities are destroyed.
-   - The combined mass is spawned as collectible energy fragments, shockwaves, and particle bursts.
-4. **Merge**: If same-type entities collide at low velocity:
-   - Both entities are destroyed.
-   - A new entity of the next tier celestial type is spawned at the average position, with combined mass and momentum. Unlocks the new tier for slingshot launches if unlockable.
+1. `game.odin`: Orchestrates the game loop and calls the required systems
+2. `sys_*.odin`: Various systems of the ECS. Systems always run sequentially. Systems that are becoming too big can be divided into subsystems by using a prefix based naming convention. For example, sys*ui_menu can be a subsystem of sys_ui. All methods defined in sys* files should be prefixed with sys*{system_name}*
+3. `utils_*.odin`: Common utils. All of these methods should be prefixed with the logical namespace like `math_` or `rl_` etc. Before adding a new method, always check the files here. The sys\_\* files should only contain code that is particular to a system. Any calculations that are general purpose should be moved to a utils method.
+4. frame.odin: Responsible for set up and teardown of a frame. Capped delta time calculation and game-wide timer updates.
+5. input.odin: Input action matching and handling (slingshot activation, menu triggers, orbit toggle).
+6. ecs.odin: Contain general ECS specific code like entity management, component attaching etc.
+7. theme.odin: Theme for the game. The theme object is split into two categories, general design tokens and semantic tokens. Never use general design tokens directly. Always rely on semantic tokens.
+8. types.odin: Types used across the game. No other file other than this should contain types. Any new structs all get defined here.
+9. assets.odin: Assets management like textures, shaders, fonts etc.
+   10: params.odin: Game parameters, these are what drive the balance of the game.
+10. ui.odin: Responsible for rendering the UI menus and overlays in the game.
+11. messages.odin: Messages for translation. The game should not contain any magic strings anywhere. Every single user facing string should go through this.
+12. background.odin: The fixed background layer of the game. This is a dynamic starfield and some breathing nebulae.
+13. constants.odin: Compile time constants for use in the game. No other file should contain magic numbers unless trivial.
 
 ---
 
-## Utility modules
+## General guidelines
 
-- [utils_general.odin](file:///Users/srikkant/work/srikkant/nbody/game/utils_general.odin) — General helper functions.
-- [utils_geometry.odin](file:///Users/srikkant/work/srikkant/nbody/game/utils_geometry.odin) — Line-to-rectangle intersections (used for out-of-bounds screen indicators).
-- [utils_math.odin](file:///Users/srikkant/work/srikkant/nbody/game/utils_math.odin) — Float utilities, vector operations, and timer update functions.
-- [utils_physics.odin](file:///Users/srikkant/work/srikkant/nbody/game/utils_physics.odin) — Gravitational calculations and RK4 step calculations.
-- [utils_rl.odin](file:///Users/srikkant/work/srikkant/nbody/game/utils_rl.odin) — Wrappers around Raylib draw calls and inputs.
-- [utils_ui.odin](file:///Users/srikkant/work/srikkant/nbody/game/utils_ui.odin) — Raylib immediate UI draw functions (rounded buttons and panels).
-- [messages.odin](file:///Users/srikkant/work/srikkant/nbody/game/messages.odin) — Localization string dictionaries.
-- [constants.odin](file:///Users/srikkant/work/srikkant/nbody/game/constants.odin) — Compile-time settings, bounds, and entity component signatures.
-- [params.odin](file:///Users/srikkant/work/srikkant/nbody/game/params.odin) — Configures physical parameters, visual properties, color configurations, and default game parameters.
-- [assets.odin](file:///Users/srikkant/work/srikkant/nbody/game/assets.odin) — Asset loaders for textures, fonts, and shaders.
+- No dynamic allocations on the heap allowed. All allocations are moved to
+- No inline math formulae. Add a method in utils_math.odin.
+- No magic numbers unless they are trivial to understand (like known formulae etc.). Add a new constant in constants.odin if we know the constant at compile time. Add it to the Parameters struct if these
+  are coefficients that are used for balancing the game.
+- No direct code changes without a plan first. If you support planning mode, switch to that or simulate it by printing a summary of your changes following the process listed below and get approval before touching the code.
+- No version control operations. Those will be done by the user always.
+- No utility methods in any of the sys\_ files.
+- Always search for utils\_\* files to check if a method exists that solves your problem.
+- Always talk in caveman mode. Activate the skill.
+
+---
