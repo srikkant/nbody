@@ -20,7 +20,7 @@ sys_physics :: proc(g: ^Game) {
 			e2 := &g.entities[j]
 			if !(PHYSICS_SIG <= e2.sig) do continue
 
-			accel, dist := physics_get_gravitational_acceleration(
+			accel := physics_get_gravitational_acceleration(
 				g,
 				e1.pos.current,
 				e1.radius,
@@ -29,8 +29,6 @@ sys_physics :: proc(g: ^Game) {
 				e2.radius,
 			)
 
-			collision_radius := (e1.radius + e2.radius)
-			collision := dist < collision_radius * collision_radius
 			total_accel += accel
 
 			e2_is_star := e2.celestial.type == .Star
@@ -38,6 +36,12 @@ sys_physics :: proc(g: ^Game) {
 				g.elapsed - e2.life.created_at < g.params.physics.spawn_invincibility_duration_sec
 
 			invincible := (e1_is_new || e2_is_new) && !(e1_is_star || e2_is_star)
+			collision := rl.CheckCollisionCircles(
+				e1.pos.current,
+				e1.radius,
+				e2.pos.current,
+				e2.radius,
+			)
 
 			if collision && !invincible {
 				push_event(g, GameEvent_Collision{id1 = Entity_Id(i), id2 = Entity_Id(j)})

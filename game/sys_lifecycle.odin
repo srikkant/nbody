@@ -53,7 +53,7 @@ sys_lifecycle_spawn_shockwave :: proc(g: ^Game, pos: rl.Vector2, energy: f64, co
 sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^GameEvent_ObjectSpawn) {
 	id := entity_create(g)
 
-	mass := event.density * event.radius * event.radius
+	mass := physics_calculate_mass(event.density, event.radius)
 
 	entity_add_mass(g, id, mass)
 	entity_add_radius(g, id, event.radius)

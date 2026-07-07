@@ -11,7 +11,6 @@ Score :: struct {
 sys_score :: proc(g: ^Game) {
 	dt := g.dt
 	curr_energy := g.score.energy
-	gain_fac := g.params.physics.energy_gain_factor
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
@@ -21,13 +20,18 @@ sys_score :: proc(g: ^Game) {
 			vel_score := math_vec2_length_sq(e.velocity.current)
 			pos_score := 1 / (1 + math_vec2_length_sq(e.pos.current)) // prevent division by zero
 
-			g.score.energy += f64(gain_fac * mass_score * vel_score * pos_score)
+			g.score.energy += f64(
+				g.params.physics.energy_gain_factor * mass_score * vel_score * pos_score,
+			)
 		}
 
 		if ENERGY_SOURCE_SIG <= e.sig {
 			math_update_timer(&e.energy_source.timer, dt)
 			if e.energy_source.timer.done {
-				g.score.energy += f64(gain_fac * (e.energy_source.output + (e.radius * e.radius)))
+				g.score.energy += f64(
+					g.params.physics.energy_source_gain_factor *
+					(e.energy_source.output + (e.radius * e.radius)),
+				)
 			}
 		}
 	}

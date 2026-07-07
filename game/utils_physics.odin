@@ -10,24 +10,24 @@ physics_get_gravitational_acceleration :: proc(
 	source_pos: rl.Vector2,
 	source_mass: f32,
 	source_radius: f32,
-) -> (
-	rl.Vector2,
-	f32,
-) {
-	diff := source_pos - target_pos
-	r2 := diff.x * diff.x + diff.y * diff.y
-	if r2 == 0 do r2 = 1 // Prevent division by zero
-	r3 := r2 * math.sqrt(r2)
+) -> rl.Vector2 {
+	r2 := rl.Vector2DistanceSqrt(source_pos, target_pos)
+	if r2 < 1 do return rl.Vector2(0)
 
-	strength := g.params.physics.gravity_constant * source_mass
-	accel := rl.Vector2{(strength * diff.x) / r3, (strength * diff.y) / r3}
+	dir := source_pos - target_pos
+	unit := rl.Vector2Normalize(dir)
+	magnitude := g.params.physics.gravity_constant * source_mass / r2
 
-	return accel, r2
+	return unit * magnitude
 }
 
 
 physics_get_slingshot_release_velocity :: proc(g: ^Game) -> rl.Vector2 {
 	return (g.slingshot.start_pos - g.slingshot.end_pos) * g.params.slingshot.launch_power
+}
+
+physics_calculate_mass :: proc(density: f32, radius: f32) -> f32 {
+	return density * radius * radius
 }
 
 physics_radius_from_mass_density :: proc(mass: f32, density: f32) -> f32 {
@@ -46,7 +46,7 @@ physics_get_total_acceleration_at_pos :: proc(
 		if !(PHYSICS_SIG <= e.sig) do continue
 		if e.mass <= 0.0 do continue
 
-		acc, _ := physics_get_gravitational_acceleration(
+		acc := physics_get_gravitational_acceleration(
 			g,
 			target_pos,
 			target_radius,

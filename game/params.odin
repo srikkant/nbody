@@ -156,7 +156,7 @@ params_init :: proc(g: ^Game) {
 	// PHYSICS
 	// ==========================================
 
-	p.physics.gravity_constant = 1.0
+	p.physics.gravity_constant = 10
 	p.physics.mass_absorb_factor = 0.5
 	p.physics.spawn_invincibility_duration_sec = 1.0
 	p.physics.cursor_distance = 50.0
@@ -164,8 +164,8 @@ params_init :: proc(g: ^Game) {
 	p.physics.world_radius = 10000.0
 	p.physics.world_radius_squared = p.physics.world_radius * p.physics.world_radius
 
-	p.physics.energy_gain_factor = 0.01
-	p.physics.energy_source_gain_factor = 0.05
+	p.physics.energy_gain_factor = 1
+	p.physics.energy_source_gain_factor = 1
 	p.physics.energy_refund_factor = 0.1
 
 	p.physics.collision_mass_loss_factor = 0.01
@@ -175,6 +175,6 @@ params_init :: proc(g: ^Game) {
 	// SLINGSHOT
 	// ==========================================
 
-	p.slingshot.launch_power = 1.0
+	p.slingshot.launch_power = 5
 	p.slingshot.preview_duration = 1.0
 }
