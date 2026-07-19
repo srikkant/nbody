@@ -81,7 +81,9 @@ input_handle_action :: proc(g: ^Game) {
 	switch g.input.action {
 	case .None:
 	case .Game_Pause:
-		g.status = .Paused
+		if g.help.launch_done {
+			g.status = .Paused
+		}
 	case .Game_Resume:
 		g.status = .Playing
 	case .Slingshot_Activate:

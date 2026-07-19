@@ -4,6 +4,10 @@ import "core:fmt"
 import rl "vendor:raylib"
 
 ui_draw_top_bar :: proc(g: ^Game) {
+	if g.status == .Paused {
+		rl.DrawRectangle(0, 0, i32(g.screenw), i32(g.screenh), rl.Color{0, 0, 0, 150})
+	}
+
 	pos := rl.Vector2(g.theme.margin_top_bar)
 
 	if g.help.launch_done {
@@ -21,16 +25,20 @@ ui_draw_top_bar :: proc(g: ^Game) {
 ui_draw_help :: proc(g: ^Game) {
 	if g.status != .Playing do return
 
-	// Splash screen / first help message
 	if !g.help.launch_done {
 		title_size := rl_text_measure(g, .Title, t(g, .Title))
 		tutorial_size := rl_text_measure(g, .Body, t(g, .Tutorial_Start))
 
-		y := (3 * g.screenh / 4) // 75% of screen
-		rl_text_draw(g, .Body, t(g, .Tutorial_Start), {(g.screenw - tutorial_size.x) / 2, y})
+		title_y := g.screenh * 0.20
+		rl_text_draw(g, .Title, t(g, .Title), {(g.screenw - title_size.x) / 2, title_y})
 
-		y = y + tutorial_size.y + g.theme.spacing_l
-		rl_text_draw(g, .Title, t(g, .Title), {(g.screenw - title_size.x) / 2, y})
+		tutorial_y := g.screenh * 0.75
+		rl_text_draw(
+			g,
+			.Body,
+			t(g, .Tutorial_Start),
+			{(g.screenw - tutorial_size.x) / 2, tutorial_y},
+		)
 	}
 }
 

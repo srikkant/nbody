@@ -1,4 +1,4 @@
-#+title: Gigawatt Galaxy: Design
+#+title: Overview
 
 An incremental simulation game where players manage a celestial system. By
 launching objects into orbit around a central star, players generate energy
@@ -6,44 +6,33 @@ based on orbital mechanics. The game aims to blend the chaotic beauty of n-body
 physics with the satisfying progression of automation and eventual prestige.
 
 ** Gameplay loops & mechanics
-
-The primary loop involves spending energy to launch objects, maintaining stable
-orbits to maximize energy generation, and managing collisions to evolve
+The primary loop involves spending energy to launch objects, maintaining stable orbits to maximize energy generation, and managing collisions to evolve
 celestial bodies.
 
 *** Energy generation
-
 - The central star provides a baseline energy emission based on its mass and
   radius.
 - Orbiting objects generate energy scaled by their size, kinetic energy,
   proximity to the star, and longevity.
-- Shattered objects drop energy fragments that must be manually collected via
-  hover.
+- Shattered objects drop energy fragments that must be manually collected via hover.
 - Out-of-bounds objects provide a minor balance-recovery energy payout.
-
+  
 *** Launch & Collision mechanics
-
-Players use a slingshot mechanic to launch payloads. Launches will cost energy
-based on type of the object and the slingshot distance
-Collisions result in three outcomes based on size and velocity:
+Players use a slingshot mechanic to launch payloads. Launches will cost energy based on type of the object and the slingshot distance Collisions result in three outcomes based on size and velocity:
 - High velocity, similar size. Results in energy bursts and both bodies get
   destroyed.
-- Low velocity, similar size. Objects merge into one and evolve into higher-tier
-  bodies (e.g., planets to gas giants).
-- Collision with stars will increase the mass and radius of the star and
- destroy the object colliding with it.
+- Low velocity,similar size. Objects merge into one and evolve into higher-tier bodies (e.g., planets to gas giants).
+- Collision with stars will increase the mass and radius of the star and destroy the object colliding with it.
 
-**  Progression and Economy
+** Progression and Economy
 
 *** Phase 1: Manual Discovery
-
 Initial gameplay focuses on discovery. New object types encountered through
 physics interactions are added to the player's permanent library. Examples
 include Standard Comets, Heavier Planets, Antimatter Comets, and Dense Iron
 Cores.
 
 *** Phase 2: Automation & Upgrades
-
 - Players unlock tools to automate the system like adding emitters that
   Periodically launch pecific objects for a set duration.
 - Upgrade Tree. Players can spend energy to modify properties like the
@@ -53,9 +42,8 @@ Cores.
     - emitter properties like speed, cost etc.
     - slingshot properties like preview duration, cost etc.
     - properties of individual objects
-
+      
 *** Phase 3: Prestige (Supernova)
-
 When the star becomes too massive for orbits to escape, the system collapses
 into a Black Hole or Supernova. This acts as a soft reset, providing premium
 currency and permanent multipliers for the next run.

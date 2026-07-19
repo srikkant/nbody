@@ -1,0 +1,22 @@
+#+TITLE: Planner
+#+TODO: TODO(t) PLANNED(p) WORKING(w) | DONE(d)
+
+* Tracks
+**  UI [0/4]
+*** TODO Pause menu
+*** TODO Progression menu
+*** TODO Upgrade menu
+*** TODO Control menu
+** Economy
+*** TODO Scoring system
+*** TODO Launch cost
+** Progression
+*** TODO Modifier system for upgrades
+** Physics
+*** TODO Decouple visual and simulation parameters
+** Bugs
+*** TODO Fix build for WASM
+*** TODO Shockwave scale is broken
++ Even for simpler collisions, the shockwave scale is massive and results in it covering the whole screen
+*** TODO Floating energy animations are broken
++ Energy blobs float all over the screen due to framerate issues?
