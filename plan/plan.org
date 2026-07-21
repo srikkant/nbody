@@ -21,10 +21,13 @@
   collapses into a black hole/supernova: soft reset that grants premium currency and permanent
   multipliers for the next run. Needs a star-mass threshold trigger, reset flow, and currency
   plumbing.
-*** TODO Save/load persistence
-+ Needed once upgrades and prestige exist: persist energy, unlocked objects
-  (slingshot.available_objects), modifiers, and premium currency across sessions. No serialization
-  exists in the codebase today.
+*** PLANNED Save/load persistence
++ Full Game state, single slot, binary format, native only. Resume-like-paused on launch.
+  Detailed plan: [[file:serialization.org]]
+*** TODO WASM persistence backend
++ IndexedDB/localStorage via emscripten. Native file save lands first (serialization.org).
+*** TODO Save format migration system
++ Needed post-release. Dev builds reject mismatched versions and start fresh.
 ** Physics [0/1]
 *** TODO Decouple visual and simulation parameters
 ** Testing [2/3]
