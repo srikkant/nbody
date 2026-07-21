@@ -83,9 +83,8 @@ Executed sequentially in `game_run` in `game.odin`:
 - Always talk in caveman mode. Activate the skill.
 - Always run `make test` before you start any task to ensure tests are not failing because of your
   changes. If they are failing beforehand, get explicit approval before proceeding.
+- If there are any tasks that are deferred to a later date, always file them under plan/plan.org
+  without fail.
 
 ---
 
-## Work process
-
-- Most plans are written as org files inside plan/ directory. The user will give you a plan, immediately use the grill-me skill to get complete alignment with the user 

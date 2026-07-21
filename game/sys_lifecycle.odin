@@ -11,7 +11,7 @@ Game_Event_CollisionType :: enum {
 }
 
 sys_lifecycle_spawn_fragments :: proc(g: ^Game, energy: f64, rel_speed: f32, pos: rl.Vector2) {
-	frag_count := ENERGY_FRAGMENTS_COUNT_BASE + rel_speed * ENERGY_FRAGMENTS_COUNT_SPEED_FACTOR
+	frag_count := int(ENERGY_FRAGMENTS_COUNT_BASE + rel_speed * ENERGY_FRAGMENTS_COUNT_SPEED_FACTOR)
 	frag_energy_each := energy / f64(frag_count)
 
 	for f in 0 ..< frag_count {

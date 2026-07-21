@@ -1,22 +1,52 @@
 #+TITLE: Planner
 #+TODO: TODO(t) PLANNED(p) WORKING(w) | DONE(d)
+#+OPTIONS: ^:{}
 
 * Tracks
-**  UI [0/4]
+**  UI [0/5]
 *** TODO Pause menu
 *** TODO Progression menu
 *** TODO Upgrade menu
 *** TODO Control menu
-** Economy
+*** TODO Launch menu
++ Object + emitter selection for the slingshot. Emitter system exists but is unreachable; slingshot
+  output is hardcoded to DwarfPlanet. Render_LaunchMenu struct is dead scaffolding.
+** Economy [0/2]
 *** TODO Scoring system
 *** TODO Launch cost
-** Progression
+** Progression [0/3]
 *** TODO Modifier system for upgrades
-** Physics
+*** TODO Prestige (supernova reset)
++ Phase 3 from docs/overview.org. When the star becomes too massive for orbits to escape, the system
+  collapses into a black hole/supernova: soft reset that grants premium currency and permanent
+  multipliers for the next run. Needs a star-mass threshold trigger, reset flow, and currency
+  plumbing.
+*** TODO Save/load persistence
++ Needed once upgrades and prestige exist: persist energy, unlocked objects
+  (slingshot.available_objects), modifiers, and premium currency across sessions. No serialization
+  exists in the codebase today.
+** Physics [0/1]
 *** TODO Decouple visual and simulation parameters
-** Bugs
+** Testing [2/3]
+*** DONE Decouple logic from render/globals for testability
++ Moved delete_entities/mass_delta globals into Game struct.
++ Extracted sys_slingshot_compute_preview from sys_render; render is draw-only.
+*** DONE Rewrite test suite from scratch
++ Old suite discarded (coupled to live balance params).
++ 51 tests, all green: fixtures (pinned params, builders, test_step harness), domain asserts,
+  ecs/utils/system matrix + scenario tests.
+*** TODO CI for test suite
++ GitHub Action: setup Odin + make test. Red suite should block merges.
+** Bugs [1/5]
 *** TODO Fix build for WASM
 *** TODO Shockwave scale is broken
-+ Even for simpler collisions, the shockwave scale is massive and results in it covering the whole screen
++ Even for simpler collisions, the shockwave scale is massive and results in it covering the whole
+  screen
 *** TODO Floating energy animations are broken
 + Energy blobs float all over the screen due to framerate issues?
+*** TODO sys_slingshot calls sys_lifecycle_spawn_shockwave directly
++ Cross-system call. Systems should not call each other; move to event queue instead.
+*** DONE Fragment energy was not conserved on shatter
++ frag_count was f32: loop spawned ceil(count) fragments but divided energy by the fractional count,
+  inflating total energy up to ~5%. Fixed by truncating frag_count to int. Caught by
+  test_scenario_fast_collision_shatters_and_collects.
