@@ -10,9 +10,6 @@ Game_Event_CollisionType :: enum {
 	Debris,
 }
 
-delete_entities: [MAX_ENTITIES]bool
-mass_delta: [MAX_ENTITIES]f32
-
 sys_lifecycle_spawn_fragments :: proc(g: ^Game, energy: f64, rel_speed: f32, pos: rl.Vector2) {
 	frag_count := ENERGY_FRAGMENTS_COUNT_BASE + rel_speed * ENERGY_FRAGMENTS_COUNT_SPEED_FACTOR
 	frag_energy_each := energy / f64(frag_count)
@@ -98,8 +95,8 @@ sys_lifecycle_collision_classify :: proc(
 }
 
 sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^GameEvent_Collision) {
-	delete_entities[e.id1] = true
-	delete_entities[e.id2] = true
+	g.delete_entities[e.id1] = true
+	g.delete_entities[e.id2] = true
 
 	e1 := &g.entities[e.id1]
 	e2 := &g.entities[e.id2]
@@ -137,8 +134,8 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^GameEvent_Collision) {
 }
 
 sys_lifecycle_resolve_shatter :: proc(g: ^Game, e: ^GameEvent_Collision) {
-	delete_entities[e.id1] = true
-	delete_entities[e.id2] = true
+	g.delete_entities[e.id1] = true
+	g.delete_entities[e.id2] = true
 
 	e1 := &g.entities[e.id1]
 	e2 := &g.entities[e.id2]
@@ -177,7 +174,7 @@ sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^GameEvent_Collision) {
 		big_radius = e2.radius
 	}
 
-	delete_entities[small_id] = true
+	g.delete_entities[small_id] = true
 
 	rel_speed := math_vec2_length(e1.velocity.current - e2.velocity.current)
 	loss := small_mass * (rel_speed * g.params.physics.collision_mass_loss_factor)
@@ -207,13 +204,13 @@ sys_lifecycle_handle_star_absorb :: proc(g: ^Game, e: ^GameEvent_Collision) {
 		other_mass = g.entities[e.id1].mass
 	}
 
-	delete_entities[other_id] = true
+	g.delete_entities[other_id] = true
 	absorbed := other_mass * g.params.physics.mass_absorb_factor
-	mass_delta[star_id] += absorbed
+	g.mass_delta[star_id] += absorbed
 }
 
 sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^GameEvent_Collision) {
-	if delete_entities[event.id1] || delete_entities[event.id2] {
+	if g.delete_entities[event.id1] || g.delete_entities[event.id2] {
 		return
 	}
 
@@ -237,7 +234,7 @@ sys_lifecycle_handle_out_of_bounds :: proc(g: ^Game, event: ^GameEvent_Object_Ou
 		refund := f64(g.params.physics.energy_refund_factor * e.mass * e.radius)
 		g.score.energy += refund
 	}
-	delete_entities[event.id] = true
+	g.delete_entities[event.id] = true
 }
 
 sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^GameEvent_Object_Demolish) {
@@ -246,7 +243,7 @@ sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^GameEvent_Object_Demolis
 	found := false
 
 	for i in 0 ..< g.entities_count {
-		if delete_entities[i] do continue
+		if g.delete_entities[i] do continue
 		e := &g.entities[i]
 		if PHYSICS_SIG <= e.sig && e.celestial.type != .Star {
 			dist := rl.Vector2Distance(e.pos.current, g.input.mouse_pos)
@@ -267,12 +264,12 @@ sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^GameEvent_Object_Demolis
 			g.score.energy += refund
 			sys_lifecycle_spawn_shockwave(g, e.pos.current, f64(e.mass), e.renderable.color)
 		}
-		delete_entities[closest_id] = true
+		g.delete_entities[closest_id] = true
 	}
 }
 
 sys_lifecycle_handle_destroyed :: proc(g: ^Game, event: ^GameEvent_Object_Destroyed) {
-	delete_entities[event.id] = true
+	g.delete_entities[event.id] = true
 }
 
 sys_lifecycle_handle_fragments :: proc(g: ^Game) {
@@ -280,7 +277,7 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
-		if delete_entities[i] do continue
+		if g.delete_entities[i] do continue
 
 		if !(.CollectibleEnergy in e.sig) do continue
 
@@ -296,7 +293,7 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 
 		if dist_sq < g.params.physics.cursor_distance_squared {
 			g.score.energy += e.collectible_energy.energy
-			delete_entities[i] = true
+			g.delete_entities[i] = true
 		}
 	}
 }
@@ -307,9 +304,9 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 	for i in 0 ..< MAX_ENTITIES {
 		e := &g.entities[i]
 
-		if delete_entities[i] {
+		if g.delete_entities[i] {
 			entity_free(g, Entity_Id(i))
-			delete_entities[i] = false
+			g.delete_entities[i] = false
 			continue
 		}
 
@@ -332,16 +329,16 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 			g.score.total_objects += 1
 		}
 
-		if mass_delta[i] > 0 {
+		if g.mass_delta[i] > 0 {
 			density := g.params.celestials[e.celestial.type].density
-			e.mass += mass_delta[i]
+			e.mass += g.mass_delta[i]
 			e.radius = physics_radius_from_mass_density(e.mass, density)
 
 			if ENERGY_SOURCE_SIG <= e.sig {
 				e.energy_source.output = f32(g.params.physics.energy_source_gain_factor * e.mass)
 			}
 
-			mass_delta[i] = 0
+			g.mass_delta[i] = 0
 		}
 
 	}

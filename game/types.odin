@@ -477,6 +477,7 @@ Slingshot :: struct {
 	preview:           f32,
 	preview_points:    [600]rl.Vector2,
 	preview_times:     [600]f32,
+	preview_count:     int,
 	snap:              Slingshot_Snap,
 	ring_flashes:      [8]Slingshot_RingFlash,
 	obj_color:         rl.Color,
@@ -655,6 +656,8 @@ Game :: struct {
 	free_entities:       [MAX_ENTITIES]Entity_Id,
 	events_count:        u64,
 	events:              [MAX_ENTITIES]GameEvent,
+	delete_entities:     [MAX_ENTITIES]bool, // Scratch buffer used by sys_lifecycle
+	mass_delta:          [MAX_ENTITIES]f32, // Scratch buffer used by sys_lifecycle
 	modifiers_count:     u64,
 	modifiers:           [MAX_MODIFIERS]Modifier,
 }

@@ -61,44 +61,8 @@ sys_render_slingshot_trigger :: proc(g: ^Game) {
 }
 
 sys_render_slingshot_preview :: proc(g: ^Game) {
-	star := &g.entities[Entity_Id(0)]
-
-	// No preview if the user cannot launch or has no preview level, to avoid confusion
-	if g.slingshot.preview == 0 || !g.slingshot.can_launch do return
-
-	pos := g.slingshot.start_pos
-	vel := physics_get_slingshot_release_velocity(g)
-
-	g.slingshot.preview_points[0] = pos
-	g.slingshot.preview_times[0] = 0.0
-
-	actual_frames: i32 = 0
-	base_dt: f32 = (1.0 / 30.0)
-	accumulated_t: f32 = 0.0
-
-	for idx in 1 ..< 600 {
-		if accumulated_t >= g.params.slingshot.preview_duration do break
-
-		dist := rl.Vector2Distance(pos, star.pos.current)
-		scale := clamp(dist / f32(380.0), f32(0.12), f32(3.5))
-		step_dt := base_dt * scale * f32(2.8)
-
-		// Check collision with any celestial
-		// TODO(perf): Potential for improvement here.
-		// Right now, this iterates through all entities 600 times essentially.
-		entity := physics_check_collision(g, pos, g.slingshot.obj_radius, PHYSICS_SIG)
-		if entity != nil {
-			actual_frames = i32(idx)
-			break
-		}
-
-		physics_rk4_step(g, &pos, &vel, step_dt, g.slingshot.obj_radius)
-		accumulated_t += step_dt
-
-		g.slingshot.preview_points[idx] = pos
-		g.slingshot.preview_times[idx] = accumulated_t
-		actual_frames = i32(idx)
-	}
+	actual_frames := i32(g.slingshot.preview_count)
+	if actual_frames == 0 do return
 
 	// Draw base preview
 	for i in 0 ..< actual_frames {
