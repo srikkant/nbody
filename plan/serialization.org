@@ -66,7 +66,8 @@ Payload: field-by-field binary writes, explicit order, no padding, no raw struct
 
 ** Resume state
 
-After load: status = .Playing. Game continues from saved elapsed time.
+After load: status = .Paused (resume-like-paused). The user resumes manually
+from the pause state; the game then continues from the saved elapsed time.
 
 * Modules touched
 
@@ -103,7 +104,7 @@ New constants:
 
 ** EDIT game/game.odin
 - game_init: after background_init, call persist_load_from_disk(g). If it returns false,
-  fall through to existing game_reset(g). If true, skip game_reset and set status = .Playing,
+  fall through to existing game_reset(g). If true, skip game_reset and set status = .Paused,
   slingshot transient defaults.
 - game_run: in .Playing branch, call persist_maybe_autosave(g).
 
@@ -140,8 +141,8 @@ Startup:
 1. game_init runs: window, assets, params, theme, input, background.
 2. persist_load_from_disk:
    - no file / invalid -> game_reset (current fresh-start path, unchanged)
-   - valid -> populate fields, status = .Playing, slingshot reset to Inactive,
-     events_count = 0
+   - valid -> populate fields, status = .Paused (user resumes manually),
+     slingshot reset to Inactive, events_count = 0
 
 During play: persist_maybe_autosave in Playing branch; saves at most once per 30s.
 
@@ -150,8 +151,9 @@ Exit: main loop ends -> persist_save_to_disk -> game_free.
 * Failure handling
 
 - Corrupt/incompatible save: reject, start fresh, never crash.
-- Save write failure: log warning, game continues.
-- Save dir creation failure: log warning, saving disabled for session.
+- Save write failure: fail silently (no inline logging allowed; dedicated log
+  file deferred to plan/plan.org Infrastructure track), game continues.
+- Save dir creation failure: fail silently, saving disabled for session.
 
 * Deferred (also filed in plan/plan.org)
 

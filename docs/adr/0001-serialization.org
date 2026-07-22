@@ -1,0 +1,73 @@
+#+TITLE: ADR 0001: Save/Load Serialization
+#+OPTIONS: ^:{}
+
+* Status
+
+Accepted (implemented). Native only.
+
+* Context
+
+The run state of the game must survive process exit: quitting saves, launching
+resumes like an unpause, and play autosaves periodically. Detailed interview
+output lives in plan/serialization.org.
+
+* Decisions
+
+** Binary format over JSON/text
+Field-by-field binary writes in an explicit order. No padding, no raw struct
+dumps (memory layout is not a stable format). Smaller, faster, exact float
+roundtrip, no parser dependency.
+
+** Version header + reject over migration
+Header carries SAVE_VERSION. Mismatch = reject load and start fresh, never
+crash. Migration of old saves is deferred to post-release; during development
+the format changes freely (bump SAVE_VERSION).
+
+** CRC32 integrity check + atomic write
+Header stores crc32 (u64 slot) over the payload. Corruption (partial write,
+disk error, manual tampering) fails the checksum and the game starts fresh.
+Writes go to save.bin.tmp then rename over save.bin, so a crash mid-write can
+never truncate the good save.
+
+** Fixed static buffer (no-heap rule)
+Serialization works into a single static buffer of MAX_SAVE_SIZE (~5 MB upper
+bound computed from MAX_ENTITIES and friends). File reads also go straight
+into that buffer via os.read; os.read_entire_file was rejected because it
+heap-allocates. This keeps the project's no-dynamic-allocation rule intact.
+
+** Native only, WASM deferred
+persistence.odin is `#+build !js` and uses core:os file IO. persistence_web.odin
+provides no-op stubs for the js build so call sites stay tag-free. A real WASM
+backend (IndexedDB/localStorage via emscripten) is a separate track.
+
+** Single slot, OS user data dir
+One save.bin per OS user: Linux $XDG_DATA_HOME/nbody (fallback
+~/.local/share/nbody), macOS ~/Library/Application Support/nbody, Windows
+%APPDATA%\nbody. Directory is created on demand (mkdir -p); failure disables
+saving for the session, the game continues. Failures are silent: project rules
+forbid inline logging and the dedicated log file system is not set up yet
+(see plan/plan.org, Infrastructure track).
+
+** Exclusion list (regenerated over persisted)
+Assets (GPU handles), render layers, input, events, scratch buffers
+(delete_entities, mass_delta), per-frame values (dt, screen size, scale),
+background stars/nebulae, camera offset/shake, and all slingshot transient
+state (preview, snap, ring flashes, drag positions) are skipped. They are
+recomputed or regenerated on load; persisting them would only add failure
+modes. On load the slingshot resets to Inactive defaults and status becomes
+.Paused: the run resumes behind the pause overlay and the user unpauses
+manually. sys_camera does not run while paused, so the camera base offset is
+seeded from the screen size on load (zoom/target come from the save).
+
+** Autosave every 30 s
+persist_maybe_autosave runs once per frame in the Playing branch and saves
+when the Autosave timer triggers. The Autosave timer lives in Game (g.timers[.Autosave])
+and is updated in frame_setup.
+
+* Consequences
+
+- Kill -9 loses at most 30 s of progress.
+- Corrupt or incompatible saves degrade to a fresh start, never a crash.
+- Adding persisted fields later = bump SAVE_VERSION, extend the payload
+  reader/writer in lockstep, extend the roundtrip test.
+- Prestige fields will require the first version bump when that system lands.

@@ -278,6 +278,57 @@ ENERGY_FRAGMENTS_SIZE :: 2.0
 
 
 // ==========================================
+// SAVE / PERSISTENCE CONSTANTS
+// ==========================================
+
+/*
+ * Magic bytes at the start of every save file.
+ */
+SAVE_MAGIC :: "NBOD"
+/*
+ * Save format version. Mismatch = reject load, start fresh.
+ */
+SAVE_VERSION :: 1
+/*
+ * Interval between autosaves during play, in seconds.
+ */
+SAVE_AUTOSAVE_INTERVAL_SEC :: 30
+/*
+ * Name of the save file inside the OS user data dir.
+ */
+SAVE_FILENAME :: "save.bin"
+/*
+ * Name of the game-specific directory inside the OS user data dir.
+ */
+SAVE_DIR_NAME :: "nbody"
+/*
+ * Size of the save file header: magic(4) + version(u32) + length(u64) + crc32(u64).
+ */
+SAVE_HEADER_SIZE :: 24
+/*
+ * Upper bound of one serialized entity (all components incl. orbit points and
+ * trail), with margin. Exact v1 size is ~1016 bytes.
+ */
+SAVE_ENTITY_MAX_SIZE :: 1200
+/*
+ * Static buffer size for serialization. Covers header, full entity array, free
+ * list, modifiers and the scalar tail, with margin. No heap allocations allowed.
+ */
+MAX_SAVE_SIZE ::
+	SAVE_HEADER_SIZE +
+	MAX_ENTITIES * SAVE_ENTITY_MAX_SIZE +
+	MAX_ENTITIES * size_of(Entity_Id) +
+	MAX_MODIFIERS * 32 +
+	4096
+/*
+ * Serialized slingshot output variant tags. Unions are nil-able in Odin;
+ * tag 0 covers the unset case.
+ */
+SAVE_OUTPUT_TAG_NONE :: 0
+SAVE_OUTPUT_TAG_EMITTER :: 1
+SAVE_OUTPUT_TAG_CELESTIAL :: 2
+
+// ==========================================
 // CAMERA PARAMETERS
 // ==========================================
 

@@ -15,6 +15,8 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.HideCursor()
 
 	g := new(Game)
+	g.screenw = f32(params.w)
+	g.screenh = f32(params.h)
 
 	assets_init(g)
 	params_init(g)
@@ -30,8 +32,12 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 	g.slingshot.available_objects = {.DwarfPlanet}
 	g.timers[.Score] = Timer{0, 1, false}
 	g.timers[.Trail] = Timer{0, 0.05, false}
+	g.timers[.Autosave] = Timer{0, SAVE_AUTOSAVE_INTERVAL_SEC, false}
 
-	game_reset(g)
+	// Resume from save if present and valid; otherwise start fresh.
+	if !persist_load_from_disk(g) {
+		game_reset(g)
+	}
 
 	return g
 }
@@ -100,6 +106,10 @@ game_run :: proc(g: ^Game) {
 		sys_physics(g)
 		sys_score(g)
 		sys_lifecycle(g)
+
+		// Autosave the game if required before moving to the rendering
+		persist_maybe_autosave(g)
+
 		sys_camera(g)
 		sys_render(g)
 	case .Paused:

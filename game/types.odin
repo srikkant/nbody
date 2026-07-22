@@ -39,6 +39,7 @@ Timer :: struct {
 Timer_BuiltIn :: enum {
 	Score,
 	Trail,
+	Autosave,
 }
 
 /*
@@ -634,30 +635,30 @@ Parameters :: struct {
  * This is passed around throughout for state management.
  */
 Game :: struct {
-	elapsed:             f32, // Time elapsed since the start of the game, in seconds. Updated every frame.
-	dt:                  f32, // Last frame's delta time in seconds. Updated every frame.
-	screenw:             f32,
-	screenh:             f32,
-	scale:               f32,
-	status:              Status, // Current game status, controls the active systems.
-	theme:               Theme,
-	params:              Parameters,
-	assets:              Assets,
-	input:               Input,
-	help:                Help,
-	camera:              Camera,
-	render:              Render,
-	slingshot:           Slingshot,
-	score:               Score,
-	timers:              [Timer_BuiltIn]Timer, // These are updated every frame
-	entities_count:      u64,
-	entities:            #soa[MAX_ENTITIES]Entity,
-	free_entities_count: u64,
-	free_entities:       [MAX_ENTITIES]Entity_Id,
-	events_count:        u64,
-	events:              [MAX_ENTITIES]GameEvent,
-	delete_entities:     [MAX_ENTITIES]bool, // Scratch buffer used by sys_lifecycle
-	mass_delta:          [MAX_ENTITIES]f32, // Scratch buffer used by sys_lifecycle
-	modifiers_count:     u64,
-	modifiers:           [MAX_MODIFIERS]Modifier,
+	elapsed:               f32, // Time elapsed since the start of the game, in seconds. Updated every frame.
+	dt:                    f32, // Last frame's delta time in seconds. Updated every frame.
+	screenw:               f32,
+	screenh:               f32,
+	scale:                 f32,
+	status:                Status, // Current game status, controls the active systems.
+	theme:                 Theme,
+	params:                Parameters,
+	assets:                Assets,
+	input:                 Input,
+	help:                  Help,
+	camera:                Camera,
+	render:                Render,
+	slingshot:             Slingshot,
+	score:                 Score,
+	timers:                [Timer_BuiltIn]Timer, // These are updated every frame
+	entities_count:        u64,
+	entities:              #soa[MAX_ENTITIES]Entity,
+	free_entities_count:   u64,
+	free_entities:         [MAX_ENTITIES]Entity_Id,
+	events_count:          u64,
+	events:                [MAX_ENTITIES]GameEvent,
+	delete_entities:       [MAX_ENTITIES]bool, // Scratch buffer used by sys_lifecycle
+	mass_delta:            [MAX_ENTITIES]f32, // Scratch buffer used by sys_lifecycle
+	modifiers_count:       u64,
+	modifiers:             [MAX_MODIFIERS]Modifier,
 }

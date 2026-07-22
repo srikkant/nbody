@@ -16,4 +16,7 @@ main :: proc() {
 	for g.status != .Exit {
 		game.game_run(g)
 	}
+
+	// Loop ended: persist the run before tearing down.
+	game.persist_save_to_disk(g)
 }

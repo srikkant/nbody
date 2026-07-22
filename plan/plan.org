@@ -14,20 +14,31 @@
 ** Economy [0/2]
 *** TODO Scoring system
 *** TODO Launch cost
-** Progression [0/3]
+** Progression [1/7]
 *** TODO Modifier system for upgrades
 *** TODO Prestige (supernova reset)
 + Phase 3 from docs/overview.org. When the star becomes too massive for orbits to escape, the system
   collapses into a black hole/supernova: soft reset that grants premium currency and permanent
   multipliers for the next run. Needs a star-mass threshold trigger, reset flow, and currency
   plumbing.
-*** PLANNED Save/load persistence
+*** DONE Save/load persistence
 + Full Game state, single slot, binary format, native only. Resume-like-paused on launch.
-  Detailed plan: [[file:serialization.org]]
+  Detailed plan: [[file:serialization.org]], decisions: [[file:../docs/adr/0001-serialization.org]]
++ Implemented: buffer-based serialize/deserialize, atomic disk write, autosave 30s, exit save,
+  7 new tests green. Pending: manual acceptance run (quit/relaunch resume, kill -9, corrupt save).
+*** TODO Prestige fields in save format
++ Bump SAVE_VERSION and extend the payload when prestige lands. Deferred from serialization.org.
+*** TODO Pause-menu manual save button
++ Deferred from serialization.org. Autosave + exit save cover the basics; manual trigger is UX polish.
 *** TODO WASM persistence backend
 + IndexedDB/localStorage via emscripten. Native file save lands first (serialization.org).
 *** TODO Save format migration system
 + Needed post-release. Dev builds reject mismatched versions and start fresh.
+** Infrastructure [0/1]
+*** TODO Dedicated log file
++ No logging exists yet; failures (e.g. persistence save/load) are silent. Set up a game logger
+  that writes to a log file (next to save.bin in the OS user data dir), then route warnings/errors
+  through it. Inline logging via fmt/eprintln etc. is not allowed anywhere in the codebase.
 ** Physics [0/1]
 *** TODO Decouple visual and simulation parameters
 ** Testing [2/3]

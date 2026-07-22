@@ -64,6 +64,24 @@ Executed sequentially in `game_run` in `game.odin`:
   slingshot actions, camera vibration).
 - Based on the `Game_Status`, the main game loop executes the relevant systems.
 
+### Persistence
+
+`game/persistence.odin` (`#+build !js`, native only; `game/persistence_web.odin` provides no-op
+stubs for the js build so call sites stay tag-free):
+
+- Binary save format: fixed header (`SAVE_MAGIC`, `SAVE_VERSION`, payload length, crc32) plus a
+  field-by-field little-endian payload. No padding, no raw struct dumps. Version or checksum
+  mismatch = reject load, start fresh, never crash.
+- Serializes into a static buffer (`MAX_SAVE_SIZE`); no heap allocations. Disk writes are atomic
+  (`save.bin.tmp` + rename). Save location is the OS user data dir (`persist_save_dir`).
+- Hooks: `game_init` calls `persist_load_from_disk` (falls back to `game_reset` on failure),
+  `game_run` Playing branch calls `persist_maybe_autosave` when the built-in Autosave timer triggers,
+  `main.odin` calls `persist_save_to_disk` on exit.
+- Transient state (slingshot preview/drag, events, camera offset/shake, scratch buffers) is not
+  persisted; it resets to defaults on load and status becomes `.Paused` (the user resumes
+  manually).
+- Decisions: `docs/adr/0001-serialization.org`. Plan: `plan/serialization.org`.
+
 ---
 
 ## General guidelines
@@ -79,6 +97,10 @@ Executed sequentially in `game_run` in `game.odin`:
   approval before touching the code.
 - No version control operations. Those will be done by the user always.
 - No utility methods in any of the `sys_` files.
+- No `@(private)` decorators on declarations. Everything in a package stays package-visible.
+- No inline logging (`fmt.eprintln`, `core:log`, etc.) anywhere in the codebase. All logging goes
+  to a dedicated log file; that system is not set up yet, so until then fail silently and return
+  errors to the caller.
 - Always search for `utils_*` files to check if a method exists that solves your problem.
 - Always talk in caveman mode. Activate the skill.
 - Always run `make test` before you start any task to ensure tests are not failing because of your
