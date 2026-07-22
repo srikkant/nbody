@@ -84,9 +84,11 @@ test_make_game :: proc() -> ^game.Game {
 	g.timers[.Score] = game.Timer{0, 1, false}
 	g.timers[.Trail] = game.Timer{0, 0.05, false}
 	g.timers[.Autosave] = game.Timer{0, game.SAVE_AUTOSAVE_INTERVAL_SEC, false}
+
 	g.slingshot.output = game.Slingshot_Output_Celestial {
 		celestial = {type = .DwarfPlanet},
 	}
+
 	return g
 }
 
@@ -102,11 +104,11 @@ test_add_celestial :: proc(
 	age := f32(100),
 ) -> game.Entity_Id {
 	event := game.GameEvent_ObjectSpawn {
-		pos        = pos,
-		velocity   = vel,
-		density    = g.params.celestials[type].density,
-		radius     = g.params.celestials[type].radius,
-		celestial  = {type = type},
+		pos = pos,
+		velocity = vel,
+		density = g.params.celestials[type].density,
+		radius = g.params.celestials[type].radius,
+		celestial = {type = type},
 		renderable = {color = g.params.celestials[type].color},
 	}
 	game.sys_lifecycle_handle_spawn(g, &event)
@@ -156,10 +158,7 @@ test_count_sig :: proc(g: ^game.Game, sig: game.Entity_Signature) -> int {
 	return count
 }
 
-test_find_celestial :: proc(
-	g: ^game.Game,
-	type: game.Celestial_Type,
-) -> (game.Entity_Id, bool) {
+test_find_celestial :: proc(g: ^game.Game, type: game.Celestial_Type) -> (game.Entity_Id, bool) {
 	for i in 0 ..< g.entities_count {
 		e := &g.entities[i]
 		if .Celestial in e.sig && e.celestial.type == type {

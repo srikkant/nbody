@@ -154,6 +154,8 @@ start :: proc "c" (h: c.int, w: c.int) {
 	context.allocator = emscripten_allocator()
 	runtime.init_global_temporary_allocator(1 * mem.Megabyte)
 
+	context.logger = game.log_init()
+
 	web_context = context
 
 	g = game.game_init({h = h, w = w})

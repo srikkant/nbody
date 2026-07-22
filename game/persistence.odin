@@ -448,7 +448,6 @@ persist_read_payload :: proc(r: ^Persist_Buffer, g: ^Game) {
 	g.slingshot.available_objects = available
 
 	tag := persist_read_u8(r)
-
 	switch tag {
 	case SAVE_OUTPUT_TAG_EMITTER:
 		out: Slingshot_Output_Emitter

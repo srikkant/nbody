@@ -34,11 +34,13 @@
 + IndexedDB/localStorage via emscripten. Native file save lands first (serialization.org).
 *** TODO Save format migration system
 + Needed post-release. Dev builds reject mismatched versions and start fresh.
-** Infrastructure [0/1]
-*** TODO Dedicated log file
+** Infrastructure [1/2]
+*** DONE Dedicated log file
 + No logging exists yet; failures (e.g. persistence save/load) are silent. Set up a game logger
   that writes to a log file (next to save.bin in the OS user data dir), then route warnings/errors
   through it. Inline logging via fmt/eprintln etc. is not allowed anywhere in the codebase.
+*** TODO Log level release filter
++ Change runtime log filter to .Warning or .Error in production release. Currently set to .Debug for dev.
 ** Physics [0/1]
 *** TODO Decouple visual and simulation parameters
 ** Testing [2/3]

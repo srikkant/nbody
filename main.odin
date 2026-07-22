@@ -10,6 +10,9 @@ main :: proc() {
 	defer free_memory_tracker(track)
 	context.allocator = mem.tracking_allocator(track)
 
+	context.logger = game.log_init()
+	defer game.log_shutdown()
+
 	g := game.game_init({h = 810, w = 1440})
 	defer game.game_free(g)
 

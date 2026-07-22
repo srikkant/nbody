@@ -1,0 +1,48 @@
+#+TITLE: ADR 0002: Dedicated Logging System
+#+OPTIONS: ^:{}
+
+* Status
+
+Proposed (planning phase).
+
+* Context
+
+The game lacks a logging system. Failures in systems (such as persistence save/load) currently fail silently. Debugging is hard without runtime context. To solve this, we need a dedicated logging system that writes to files (on native) and browser console (on Web/WASM). Inline logging (like fmt.println) is forbidden. We must integrate with Odin's native context logger while maintaining the no-heap-allocations constraint.
+
+* Decisions
+
+** Dynamic filename under OS user data dir
+Log files written to `persist_save_dir()`, next to `save.bin`.
+Filename format: `nbody_YYYYMMDD_HHMMSS.log` using system clock from `core:time`.
+Every run creates a new file. To prevent unbounded disk growth, a startup cleanup routine deletes all but the 5 most recent `nbody_*.log` files.
+
+** Web/WASM console routing
+`log_web.odin` (js build) routes log messages to standard console output (stdout/stderr mapped via Emscripten).
+Prefixes `[DEBUG]`, `[INFO]`, `[WARNING]`, `[ERROR]`, `[FATAL]` added to console outputs to match severity.
+
+** Native Odin logger configuration
+Implement a custom `Logger_Proc` procedure `game_logger_proc`.
+`game_init` or `main` initializes the log file and sets `context.logger` to target `game_logger_proc`.
+All systems can import `core:log` and use `log.warn()`, `log.error()`, etc.
+
+** Formatting and static buffer (no-heap rule)
+Formatting uses a static buffer `log_buf: [2048]u8` to construct each log line.
+Format: `[YYYY-MM-DD HH:MM:SS] [LEVEL] (file:line) message\n`
+If a message exceeds 2048 bytes, it is truncated.
+This avoids runtime heap allocations.
+
+** Immediate write (append mode)
+To ensure crash safety, we open the file, append the message, and close it immediately for each log call.
+This guarantees all logs up to the crash are written to disk without needing complex crash hooks.
+
+** Runtime log levels
+Logger initialized with runtime log level filter.
+Currently set to show all levels (`.Debug` and above) during development.
+Backlog task added to change runtime default level to `.Warning` in production release.
+
+* Consequences
+
+- Easy diagnostics: log files available on user's machine.
+- Safe crash debugging: log file updated up to the moment of crash.
+- Clean code: standard `core:log` used instead of custom wrappers.
+- No heap pressure: zero allocations in logging hot paths.

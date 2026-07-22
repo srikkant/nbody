@@ -98,9 +98,10 @@ stubs for the js build so call sites stay tag-free):
 - No version control operations. Those will be done by the user always.
 - No utility methods in any of the `sys_` files.
 - No `@(private)` decorators on declarations. Everything in a package stays package-visible.
-- No inline logging (`fmt.eprintln`, `core:log`, etc.) anywhere in the codebase. All logging goes
-  to a dedicated log file; that system is not set up yet, so until then fail silently and return
-  errors to the caller.
+- No raw console/stdout/stderr printing (`fmt.println`, `fmt.eprintln`, etc.) anywhere in the
+  codebase.  All logging must use standard logging functions (e.g. `log.warn`, `log.error` from
+  `"core:log"` package), which route through `context.logger` to the dedicated log file (native) or
+  console (WASM).
 - Always search for `utils_*` files to check if a method exists that solves your problem.
 - Always talk in caveman mode. Activate the skill.
 - Always run `make test` before you start any task to ensure tests are not failing because of your
