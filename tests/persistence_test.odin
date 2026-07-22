@@ -298,27 +298,6 @@ test_persistence_roundtrip :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_persistence_roundtrip_nil_output :: proc(t: ^testing.T) {
-	// Slingshot output union unset (nil) must survive the roundtrip.
-	g := test_make_game()
-	defer free(g)
-	g.elapsed = 10
-	testing.expect(t, g.slingshot.output == nil, "fixture output should be nil")
-
-	buf := make([]u8, game.MAX_SAVE_SIZE)
-	defer delete(buf)
-
-	n, ok := game.persist_serialize(g, buf)
-	testing.expect(t, ok, "serialize failed")
-
-	g2 := new(game.Game)
-	defer free(g2)
-	testing.expect(t, game.persist_deserialize(g2, buf[:n]), "deserialize failed")
-	testing.expect(t, g2.slingshot.output == nil, "nil output not preserved")
-	testing.expect(t, g2.elapsed == g.elapsed, "elapsed mismatch")
-}
-
-@(test)
 test_persistence_rejects_bad_magic :: proc(t: ^testing.T) {
 	g := test_make_populated_game()
 	defer free(g)

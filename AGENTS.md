@@ -110,3 +110,12 @@ stubs for the js build so call sites stay tag-free):
 
 ---
 
+## Process
+
+- For every task given to by the user, check if there is a corresponding entry in the plan/plan.org
+  file. If so, update the status of that entry throughout the process.
+- If there are any tasks that you and the user decide to defer to a future data, always add an entry
+  to the plan/plan.org file as a backlog item.
+- Once your task is done, always ensure plan/plan.org file is updated.
+- During the process, if there were any extra guidelines/restrictions that the user recommended,
+  always add them to the AGENTS.md file after getting approval from the user.

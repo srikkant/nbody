@@ -393,8 +393,8 @@ persist_write_payload :: proc(w: ^Persist_Buffer, g: ^Game) {
 		persist_write_u8(w, SAVE_OUTPUT_TAG_CELESTIAL)
 		persist_write_u8(w, u8(out.celestial.type))
 	case:
-		// Union is nil-able; nothing selected yet.
-		persist_write_u8(w, SAVE_OUTPUT_TAG_NONE)
+		w.ok = false
+		return
 	}
 	persist_write_f32(w, g.slingshot.launch_power)
 
@@ -448,9 +448,8 @@ persist_read_payload :: proc(r: ^Persist_Buffer, g: ^Game) {
 	g.slingshot.available_objects = available
 
 	tag := persist_read_u8(r)
+
 	switch tag {
-	case SAVE_OUTPUT_TAG_NONE:
-		g.slingshot.output = nil
 	case SAVE_OUTPUT_TAG_EMITTER:
 		out: Slingshot_Output_Emitter
 		persist_read_emitter(r, &out.emitter)

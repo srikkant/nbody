@@ -321,10 +321,9 @@ MAX_SAVE_SIZE ::
 	MAX_MODIFIERS * 32 +
 	4096
 /*
- * Serialized slingshot output variant tags. Unions are nil-able in Odin;
- * tag 0 covers the unset case.
+ * Serialized slingshot output variant tags. Output is never nil;
+ * it must be one of the two concrete types.
  */
-SAVE_OUTPUT_TAG_NONE :: 0
 SAVE_OUTPUT_TAG_EMITTER :: 1
 SAVE_OUTPUT_TAG_CELESTIAL :: 2
 

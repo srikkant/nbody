@@ -84,6 +84,9 @@ test_make_game :: proc() -> ^game.Game {
 	g.timers[.Score] = game.Timer{0, 1, false}
 	g.timers[.Trail] = game.Timer{0, 0.05, false}
 	g.timers[.Autosave] = game.Timer{0, game.SAVE_AUTOSAVE_INTERVAL_SEC, false}
+	g.slingshot.output = game.Slingshot_Output_Celestial {
+		celestial = {type = .DwarfPlanet},
+	}
 	return g
 }
 
