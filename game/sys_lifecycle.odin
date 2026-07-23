@@ -301,9 +301,13 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 
 		t := g.elapsed + f32(i)
 		e.pos.current.x +=
-			math.cos(t * ENERGY_FRAGMENTS_DRIFT_FREQUENCY_X) * ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_X
+			math.cos(t * ENERGY_FRAGMENTS_DRIFT_FREQUENCY_X) *
+			ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_X *
+			f32(g.dt)
 		e.pos.current.y +=
-			math.sin(t * ENERGY_FRAGMENTS_DRIFT_FREQUENCY_Y) * ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_Y
+			math.sin(t * ENERGY_FRAGMENTS_DRIFT_FREQUENCY_Y) *
+			ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_Y *
+			f32(g.dt)
 
 		if dist_sq < g.params.physics.cursor_distance_squared {
 			g.score.energy += e.collectible_energy.energy

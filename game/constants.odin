@@ -277,11 +277,11 @@ ENERGY_FRAGMENTS_DRIFT_FREQUENCY_Y :: 0.42
 /*
  * Amplitude of drift in x
  */
-ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_X :: 0.035
+ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_X :: 2.1
 /*
  * Amplitude of drift in y
  */
-ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_Y :: 0.035
+ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_Y :: 2.1
 /*
  * Size of the energy fragments
  * @TODO Should this be dynamic?

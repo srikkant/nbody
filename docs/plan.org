@@ -75,7 +75,7 @@
 *** DONE Shockwave scale is broken
 + Even for simpler collisions, the shockwave scale is massive and results in it covering the whole screen. The energy fragments generated are also too small in size and cover the whole scren.
 + Switched shockwave growth from sqrt to log scaling with max cap (20px/s). Increased fragment size (6px), clamped count (3-10), fixed 17px spread radius. Reduced drift frequency/amplitude to ~23% for gentle floating motion.
-*** TODO Floating energy animations are broken
+*** DONE Floating energy animations are broken
 + Energy blobs float all over the screen due to framerate issues?
 *** TODO sys_slingshot calls sys_lifecycle_spawn_shockwave directly
 + Cross-system call. Systems should not call each other; move to event queue instead.
