@@ -14,12 +14,18 @@ sys_lifecycle_spawn_fragments :: proc(g: ^Game, energy: f64, rel_speed: f32, pos
 	frag_count := int(
 		ENERGY_FRAGMENTS_COUNT_BASE + rel_speed * ENERGY_FRAGMENTS_COUNT_SPEED_FACTOR,
 	)
+	frag_count = int(
+		clamp(f32(frag_count), f32(ENERGY_FRAGMENTS_COUNT_MIN), f32(ENERGY_FRAGMENTS_COUNT_MAX)),
+	)
 	frag_energy_each := energy / f64(frag_count)
 
 	for f in 0 ..< frag_count {
 		angle := (math.PI * 2.0 * f32(f)) / f32(frag_count) + math.PI / f32(frag_count)
 		id := entity_create(g)
-		offset := rl.Vector2{pos.x + math.cos(angle), pos.y + math.sin(angle)}
+		offset := rl.Vector2 {
+			pos.x + math.cos(angle) * ENERGY_FRAGMENTS_SPREAD_RADIUS,
+			pos.y + math.sin(angle) * ENERGY_FRAGMENTS_SPREAD_RADIUS,
+		}
 
 		entity_add_position(g, id, {current = offset})
 		entity_add_radius(g, id, ENERGY_FRAGMENTS_SIZE)
@@ -45,7 +51,13 @@ sys_lifecycle_spawn_shockwave :: proc(g: ^Game, pos: rl.Vector2, energy: f64, co
 	entity_add_shockwave(
 		g,
 		id,
-		{growth_rate = math.sqrt(f32(energy)) * SHOCKWAVE_GROWTH_FACTOR, color = color},
+		{
+			growth_rate = math.min(
+				math.ln(f32(energy) + 1.0) * SHOCKWAVE_GROWTH_FACTOR,
+				SHOCKWAVE_GROWTH_MAX,
+			),
+			color = color,
+		},
 	)
 }
 

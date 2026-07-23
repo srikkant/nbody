@@ -70,16 +70,16 @@
   ecs/utils/system matrix + scenario tests.
 *** TODO CI for test suite
 + GitHub Action: setup Odin + make test. Red suite should block merges.
-** Bugs [1/5]
+** Bugs [2/5]
 *** TODO Fix build for WASM
-*** TODO Shockwave scale is broken
-+ Even for simpler collisions, the shockwave scale is massive and results in it covering the whole
-  screen
+*** DONE Shockwave scale is broken
++ Even for simpler collisions, the shockwave scale is massive and results in it covering the whole screen. The energy fragments generated are also too small in size and cover the whole scren.
++ Switched shockwave growth from sqrt to log scaling with max cap (20px/s). Increased fragment size (6px), clamped count (3-10), fixed 17px spread radius. Reduced drift frequency/amplitude to ~23% for gentle floating motion.
 *** TODO Floating energy animations are broken
 + Energy blobs float all over the screen due to framerate issues?
 *** TODO sys_slingshot calls sys_lifecycle_spawn_shockwave directly
 + Cross-system call. Systems should not call each other; move to event queue instead.
 *** DONE Fragment energy was not conserved on shatter
-+ frag_count was f32: loop spawned ceil(count) fragments but divided energy by the fractional count,
-  inflating total energy up to ~5%. Fixed by truncating frag_count to int. Caught by
-  test_scenario_fast_collision_shatters_and_collects.
+** Backlog
+*** TODO Energy-dependent fragment size and spread
++ Fragment size (ENERGY_FRAGMENTS_SIZE) and spread radius (ENERGY_FRAGMENTS_SPREAD_RADIUS) are currently fixed constants. As bigger objects (Jupiter-sized planets etc.) enter the game, these should scale with collision energy so fragments remain proportional and collectible.

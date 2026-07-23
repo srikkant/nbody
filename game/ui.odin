@@ -21,7 +21,10 @@ ui_draw_top_bar :: proc(g: ^Game) {
 		rl_text_draw(g, .Title, t(g, .Title), title_pos)
 
 		paused_size := rl_text_measure(g, .Body, t(g, .Paused))
-		paused_pos := rl.Vector2{g.screenw - (g.theme.margin_top_bar + paused_size.x), g.theme.margin_top_bar}
+		paused_pos := rl.Vector2 {
+			g.screenw - (g.theme.margin_top_bar + paused_size.x),
+			g.theme.margin_top_bar,
+		}
 		rl_text_draw(g, .BodyBold, t(g, .Paused), paused_pos)
 	}
 }

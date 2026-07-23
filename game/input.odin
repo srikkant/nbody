@@ -12,6 +12,7 @@ DEFAULT_GAME_INPUTS: [Input_Action]Input_Matcher = {
 	.Slingshot_Cancel   = Input_Matcher_Keyboard{{.Pressed, .Playing}, .C},
 	.View_ToggleOrbit   = Input_Matcher_Keyboard{{.Pressed, .Playing}, .T},
 	.Demolish_Object    = Input_Matcher_Mouse{{.Pressed, .Playing}, .RIGHT},
+	.Game_Reset         = Input_Matcher_Keyboard{{.Pressed, .Playing}, .R},
 }
 
 input_init :: proc(g: ^Game) {
@@ -101,6 +102,8 @@ input_handle_action :: proc(g: ^Game) {
 		g.render.show_orbits = !g.render.show_orbits
 	case .Demolish_Object:
 		push_event(g, GameEvent_Object_Demolish{})
+	case .Game_Reset:
+		game_reset(g)
 	}
 
 	g.input.action = .None

@@ -12,7 +12,10 @@ test_sys_lifecycle_classify_star_absorb :: proc(t: ^testing.T) {
 	star := test_add_celestial(g, .Star, {0, 0})
 	other := test_add_celestial(g, .DwarfPlanet, {15, 0})
 
-	event := game.GameEvent_Collision{id1 = star, id2 = other}
+	event := game.GameEvent_Collision {
+		id1 = star,
+		id2 = other,
+	}
 	testing.expect(t, game.sys_lifecycle_collision_classify(g, &event) == .StarAbsorb)
 }
 
@@ -25,7 +28,10 @@ test_sys_lifecycle_classify_merge :: proc(t: ^testing.T) {
 	id1 := test_add_celestial(g, .DwarfPlanet, {-10, 0}, {1, 0})
 	id2 := test_add_celestial(g, .DwarfPlanet, {10, 0}, {-1, 0})
 
-	event := game.GameEvent_Collision{id1 = id1, id2 = id2}
+	event := game.GameEvent_Collision {
+		id1 = id1,
+		id2 = id2,
+	}
 	testing.expect(t, game.sys_lifecycle_collision_classify(g, &event) == .Merge)
 }
 
@@ -38,7 +44,10 @@ test_sys_lifecycle_classify_shatter :: proc(t: ^testing.T) {
 	id1 := test_add_celestial(g, .DwarfPlanet, {-10, 0}, {20, 0})
 	id2 := test_add_celestial(g, .DwarfPlanet, {10, 0}, {0, 0})
 
-	event := game.GameEvent_Collision{id1 = id1, id2 = id2}
+	event := game.GameEvent_Collision {
+		id1 = id1,
+		id2 = id2,
+	}
 	testing.expect(t, game.sys_lifecycle_collision_classify(g, &event) == .Shatter)
 }
 
@@ -50,7 +59,10 @@ test_sys_lifecycle_classify_debris :: proc(t: ^testing.T) {
 	id1 := test_add_celestial(g, .Asteroid, {-10, 0})
 	id2 := test_add_celestial(g, .DwarfPlanet, {10, 0})
 
-	event := game.GameEvent_Collision{id1 = id1, id2 = id2}
+	event := game.GameEvent_Collision {
+		id1 = id1,
+		id2 = id2,
+	}
 	testing.expect(t, game.sys_lifecycle_collision_classify(g, &event) == .Debris)
 }
 
@@ -74,7 +86,12 @@ test_sys_lifecycle_merge_evolves_and_conserves :: proc(t: ^testing.T) {
 		merged := &g.entities[merged_id]
 		expect_f32_approx(t, merged.mass, 8, msg = "mass is conserved")
 		expect_vec2_approx(t, merged.pos.current, rl.Vector2{0, 0}, msg = "spawned at midpoint")
-		expect_vec2_approx(t, merged.velocity.current, rl.Vector2{0, 0}, msg = "momentum conserved")
+		expect_vec2_approx(
+			t,
+			merged.velocity.current,
+			rl.Vector2{0, 0},
+			msg = "momentum conserved",
+		)
 	}
 
 	testing.expect(t, .SubEarth in g.slingshot.available_objects, "new tier unlocked")

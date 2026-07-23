@@ -41,11 +41,7 @@ test_sys_physics_collision_pushes_event :: proc(t: ^testing.T) {
 
 	game.sys_physics(g)
 
-	testing.expect(
-		t,
-		g.events_count >= 1,
-		"overlapping aged bodies should push a collision event",
-	)
+	testing.expect(t, g.events_count >= 1, "overlapping aged bodies should push a collision event")
 }
 
 @(test)

@@ -33,7 +33,11 @@ test_celestial_next_type :: proc(t: ^testing.T) {
 @(test)
 test_celestial_prev_type :: proc(t: ^testing.T) {
 	testing.expect(t, game.entity_celestial_prev_type(.Moonlet) == .Asteroid)
-	testing.expect(t, game.entity_celestial_prev_type(.Asteroid) == .Asteroid, "floors at asteroid")
+	testing.expect(
+		t,
+		game.entity_celestial_prev_type(.Asteroid) == .Asteroid,
+		"floors at asteroid",
+	)
 	testing.expect(t, game.entity_celestial_prev_type(.GiantPlanet, 2) == .SubNeptune)
 	testing.expect(t, game.entity_celestial_prev_type(.None) == .None)
 }

@@ -75,7 +75,9 @@ test_sys_automation_destroyed_on_timer :: proc(t: ^testing.T) {
 	defer free(g)
 
 	emitter := test_emitter_component()
-	emitter.destroy_timer = {interval = 0.005}
+	emitter.destroy_timer = {
+		interval = 0.005,
+	}
 	test_add_emitter(g, {500, 0}, emitter)
 	g.score.energy = 0 // no emissions; destruction is timer-driven
 	g.dt = 0.02

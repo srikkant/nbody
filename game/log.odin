@@ -2,12 +2,12 @@
 
 package game
 
+import "base:runtime"
 import "core:fmt"
 import "core:os"
-import "core:time"
-import "core:strings"
 import "core:slice"
-import "base:runtime"
+import "core:strings"
+import "core:time"
 
 log_file_path_buf: [1200]u8
 log_file_path: string
@@ -15,7 +15,7 @@ log_initialized := false
 
 log_init :: proc() -> runtime.Logger {
 	if log_initialized {
-		return runtime.Logger{
+		return runtime.Logger {
 			procedure = game_logger_proc,
 			data = nil,
 			lowest_level = .Debug,
@@ -54,7 +54,7 @@ log_init :: proc() -> runtime.Logger {
 
 	log_initialized = true
 
-	return runtime.Logger{
+	return runtime.Logger {
 		procedure = game_logger_proc,
 		data = nil,
 		lowest_level = .Debug,
@@ -107,11 +107,16 @@ game_logger_proc :: proc(
 
 	level_str := "INFO"
 	switch level {
-	case .Debug:   level_str = "DEBUG"
-	case .Info:    level_str = "INFO"
-	case .Warning: level_str = "WARNING"
-	case .Error:   level_str = "ERROR"
-	case .Fatal:   level_str = "FATAL"
+	case .Debug:
+		level_str = "DEBUG"
+	case .Info:
+		level_str = "INFO"
+	case .Warning:
+		level_str = "WARNING"
+	case .Error:
+		level_str = "ERROR"
+	case .Fatal:
+		level_str = "FATAL"
 	}
 
 	log_buf: [2048]u8

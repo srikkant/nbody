@@ -81,3 +81,4 @@ Executed sequentially in `game_run` in `game.odin`:
 - If there are any tasks that you and the user decide to defer to a future data, always add an entry to the docs/plan.org file as a backlog item.
 - Once your task is done, always ensure docs/plan.org file is updated.
 - During the process, if there were any extra guidelines/restrictions that the user recommended, always add them to the AGENTS.md file after getting approval from the user.
+- After every change, run `odinfmt . -w` to ensure files are formatted properly.

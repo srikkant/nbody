@@ -1,11 +1,11 @@
 package tests
 
 import game "../game"
-import "core:testing"
-import "core:os"
-import "core:log"
-import "core:strings"
 import "core:fmt"
+import "core:log"
+import "core:os"
+import "core:strings"
+import "core:testing"
 
 @(test)
 test_logger_writes_to_file :: proc(t: ^testing.T) {
@@ -24,7 +24,11 @@ test_logger_writes_to_file :: proc(t: ^testing.T) {
 	testing.expect(t, err == nil, "should read log file")
 
 	content := string(data)
-	testing.expect(t, strings.contains(content, "NBODY_TEST_LOG_MESSAGE_WARNING"), "log should contain message")
+	testing.expect(
+		t,
+		strings.contains(content, "NBODY_TEST_LOG_MESSAGE_WARNING"),
+		"log should contain message",
+	)
 	testing.expect(t, strings.contains(content, "[WARNING]"), "log should contain level string")
 }
 
@@ -34,7 +38,7 @@ test_logger_cleanup_limits_files :: proc(t: ^testing.T) {
 	if dir == "" do return
 
 	// Create 10 dummy log files
-	for i in 0..<10 {
+	for i in 0 ..< 10 {
 		dummy_path := fmt.tprintf("%s/nbody_99999999_0000%02d.log", dir, i)
 		f, err := os.open(dummy_path, {.Write, .Create, .Trunc})
 		if err == nil {

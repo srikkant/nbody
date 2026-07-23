@@ -13,8 +13,18 @@ test_physics_calculate_mass :: proc(t: ^testing.T) {
 @(test)
 test_physics_radius_from_mass_density :: proc(t: ^testing.T) {
 	expect_f32_approx(t, game.physics_radius_from_mass_density(18, 2), 3)
-	expect_f32_approx(t, game.physics_radius_from_mass_density(4, 0), 0, msg = "zero density is safe")
-	expect_f32_approx(t, game.physics_radius_from_mass_density(4, -1), 0, msg = "negative density is safe")
+	expect_f32_approx(
+		t,
+		game.physics_radius_from_mass_density(4, 0),
+		0,
+		msg = "zero density is safe",
+	)
+	expect_f32_approx(
+		t,
+		game.physics_radius_from_mass_density(4, -1),
+		0,
+		msg = "negative density is safe",
+	)
 }
 
 @(test)
@@ -65,7 +75,9 @@ test_physics_rk4_falls_toward_star :: proc(t: ^testing.T) {
 
 @(test)
 test_math_update_timer :: proc(t: ^testing.T) {
-	timer := game.Timer{interval = 1.0}
+	timer := game.Timer {
+		interval = 1.0,
+	}
 
 	game.math_update_timer(&timer, 0.5)
 	testing.expect(t, !timer.done)

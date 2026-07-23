@@ -235,9 +235,13 @@ SHOCKWAVE_DURATION_MIN_SEC :: 0.35
  */
 SHOCKWAVE_DURATION_MAX_SEC :: 1.2
 /*
- * Multiplier applied to the growth rate with energy
+ * Multiplier applied to the log-scaled energy for shockwave growth rate
  */
-SHOCKWAVE_GROWTH_FACTOR :: 5
+SHOCKWAVE_GROWTH_FACTOR :: 4
+/*
+ * Maximum growth rate for shockwaves (safety cap)
+ */
+SHOCKWAVE_GROWTH_MAX :: 20
 /*
  * Starting deceleration of shockwaves
  */
@@ -251,30 +255,42 @@ SHOCKWAVE_DECEL_DECAY :: 1.95
  */
 ENERGY_FRAGMENTS_COUNT_BASE :: 3
 /*
+ * Minimum number of energy fragments (clamp)
+ */
+ENERGY_FRAGMENTS_COUNT_MIN :: 3
+/*
+ * Maximum number of energy fragments (clamp)
+ */
+ENERGY_FRAGMENTS_COUNT_MAX :: 10
+/*
  * Multiplier applied for deciding number of energy fragments after a collision.
  */
 ENERGY_FRAGMENTS_COUNT_SPEED_FACTOR :: 0.3
 /*
  * Frequency drift in x
  */
-ENERGY_FRAGMENTS_DRIFT_FREQUENCY_X :: 1.5
+ENERGY_FRAGMENTS_DRIFT_FREQUENCY_X :: 0.35
 /*
  * Frequency drift in y
  */
-ENERGY_FRAGMENTS_DRIFT_FREQUENCY_Y :: 1.8
+ENERGY_FRAGMENTS_DRIFT_FREQUENCY_Y :: 0.42
 /*
  * Amplitude of drift in x
  */
-ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_X :: 0.15
+ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_X :: 0.035
 /*
  * Amplitude of drift in y
  */
-ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_Y :: 0.15
+ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_Y :: 0.035
 /*
  * Size of the energy fragments
  * @TODO Should this be dynamic?
  */
-ENERGY_FRAGMENTS_SIZE :: 2.0
+ENERGY_FRAGMENTS_SIZE :: 6.0
+/*
+ * Radius of the circle around impact point where fragments spawn
+ */
+ENERGY_FRAGMENTS_SPREAD_RADIUS :: 10.0
 
 
 // ==========================================

@@ -49,7 +49,9 @@ test_scenario_fast_collision_shatters_and_collects :: proc(t: ^testing.T) {
 	test_add_celestial(g, .DwarfPlanet, {-50, 0}, {30, 0})
 	test_add_celestial(g, .DwarfPlanet, {50, 0}, {-30, 0})
 	g.input.mouse_pos = {0, 0} // hover the impact point to collect fragments
-	g.timers[.Score] = game.Timer{interval = 1000} // isolate fragment energy from KE scoring
+	g.timers[.Score] = game.Timer {
+		interval = 1000,
+	} 	// isolate fragment energy from KE scoring
 
 	test_step(g, 150)
 
