@@ -46,7 +46,7 @@ One save.bin per OS user: Linux $XDG_DATA_HOME/nbody (fallback
 %APPDATA%\nbody. Directory is created on demand (mkdir -p); failure disables
 saving for the session, the game continues. Failures are silent: project rules
 forbid inline logging and the dedicated log file system is not set up yet
-(see plan/plan.org, Infrastructure track).
+(see docs/plan.org, Infrastructure track).
 
 ** Exclusion list (regenerated over persisted)
 Assets (GPU handles), render layers, input, events, scratch buffers

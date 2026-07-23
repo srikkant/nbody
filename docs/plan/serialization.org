@@ -8,19 +8,19 @@ Persist full game state to disk. Exit saves. Launch resumes the run where it lef
 
 * Decisions (from design interview)
 
-| Question              | Decision                                              |
-|-----------------------+-------------------------------------------------------|
-| Scope                 | Full Game state, resume-like-paused                   |
-| Ordering              | Serialization before prestige; version field allows future fields |
-| Slots                 | Single slot                                           |
-| Format                | Binary, structured, field-by-field (no raw memcpy)    |
-| Web                   | Native only; WASM backend deferred                    |
-| Compatibility         | Version header; mismatch = reject load, start fresh   |
-| Save timing           | On exit + autosave every 30s                          |
-| Exclusions            | Skip anything deterministically recomputable; persist other transient state |
-| Location              | OS user data dir                                      |
-| Integrity             | CRC32 checksum + atomic write (tmp + rename)          |
-| Autosave interval     | 30s                                                   |
+| Question          | Decision                                            |
+|-------------------+-----------------------------------------------------|
+| Scope             | Full Game state, resume-like-paused                 |
+| Ordering          | Serialization before prestige; version field        |
+| Slots             | Single slot                                         |
+| Format            | Binary, structured, field-by-field                  |
+| Web               | Native only; WASM backend deferred                  |
+| Compatibility     | Version header; mismatch = reject load, start fresh |
+| Save timing       | On exit + autosave every 30s                        |
+| Exclusions        | Skip anything deterministically recomputable        |
+| Location          | OS user data dir                                    |
+| Integrity         | CRC32 checksum + atomic write (tmp + rename)        |
+| Autosave interval | 30s                                                 |
 
 * Save file format
 
@@ -128,7 +128,7 @@ Tests (buffer API only, no disk):
 ADR capturing interview decisions: binary over JSON, version+reject over migration,
 native-first, fixed static buffer (no-heap rule), exclusion list rationale, atomic write.
 
-** EDIT plan/plan.org
+** EDIT docs/plan.org
 - Progression > Save/load persistence: link this plan, mark WORKING.
 - Add deferred items (see Deferred section).
 
@@ -152,10 +152,10 @@ Exit: main loop ends -> persist_save_to_disk -> game_free.
 
 - Corrupt/incompatible save: reject, start fresh, never crash.
 - Save write failure: fail silently (no inline logging allowed; dedicated log
-  file deferred to plan/plan.org Infrastructure track), game continues.
+  file deferred to docs/plan.org Infrastructure track), game continues.
 - Save dir creation failure: fail silently, saving disabled for session.
 
-* Deferred (also filed in plan/plan.org)
+* Deferred (also filed in docs/plan.org)
 
 - WASM persistence backend (IndexedDB/localStorage via emscripten)
 - Prestige fields in save format (bump SAVE_VERSION when prestige lands)

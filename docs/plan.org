@@ -23,7 +23,7 @@
   plumbing.
 *** DONE Save/load persistence
 + Full Game state, single slot, binary format, native only. Resume-like-paused on launch.
-  Detailed plan: [[file:serialization.org]], decisions: [[file:../docs/adr/0001-serialization.org]]
+  Detailed plan: [[file:plan/serialization.org]], decisions: [[file:adr/0001-serialization.org]]
 + Implemented: buffer-based serialize/deserialize, atomic disk write, autosave 30s, exit save,
   7 new tests green. Pending: manual acceptance run (quit/relaunch resume, kill -9, corrupt save).
 *** TODO Prestige fields in save format
