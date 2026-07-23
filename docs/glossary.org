@@ -1,0 +1,108 @@
+#+TITLE: Glossary
+#+OPTIONS: ^:{}
+
+Shared vocabulary for the project. Terms are grouped by area. When a term maps to
+a concrete code symbol, the symbol is given in =monospace=.
+
+* Control Menu
+
+** Control Menu
+The two-tier statusbar docked at the bottom of the screen that controls the
+slingshot. State lives in the =Control_Menu= struct (repurposed from the dead
+=Render_LaunchMenu= scaffolding). Rendered in =ui.odin=; interacted with via
+hit-testing in =input.odin=. See ADR 0003 and [[file:ui-control-menu.org]].
+
+** Tier-1 (Primary Type Selector)
+The top row of the Control Menu. Three tabs organized by the *kind of entity
+produced*: Direct launches (Celestial), Emitters (Emitter), Special Hardware
+(Hardware). Maps onto the =Slingshot_Output= union variants.
+
+** Tier-2 (Configuration Deck / Contextual Sub-Menu)
+The bottom row of the Control Menu. Its contents depend on the active Tier-1 tab
+and expose only the parameters needed before the slingshot drag:
+- Direct: a celestial picker.
+- Emitter: a celestial picker + an Emitter Preset picker.
+- Hardware: disabled ("coming soon").
+
+** Drag_Intent
+First-class enum describing how the slingshot drag vector is interpreted for the
+active output. =Velocity= = drag becomes launch velocity (Direct, Emitter).
+=Radius= = drag magnitude becomes a placement radius (planned Hardware; stubbed).
+=sys_slingshot= cost/launch and the preview render branch on this.
+
+** Emitter Preset
+A named, predefined bundle of emitter *behavior* chosen in Tier-2 for the Emitter
+tab. Players pick a preset instead of adjusting raw numbers. Enum
+=Emitter_Preset :: enum { Burst, Steady, Sustained, Trickle }=. Each preset fixes
+=interval=, =duration=, =max_count= (=Parameters_Emitter_Preset=); the payload
+physics come from the chosen celestial. Stored in the
+=emitter_presets: [Emitter_Preset]Parameters_Emitter_Preset= table in
+=Parameters=.
+
+** Universal verb (slingshot drag)
+Design principle: every Control Menu mode terminates in the same physical gesture
+— the slingshot drag + release. The menu never adds a second interaction verb; it
+only changes the output and the Drag_Intent.
+
+* Slingshot
+
+** Slingshot
+The universal interaction for placing things in the world. State: =Slingshot=
+struct (types.odin). Core system: =sys_slingshot=. Drag flow driven by
+=Slingshot_Activate= / =Slingshot_Move= / =Slingshot_Release= /
+=Slingshot_Cancel= input actions.
+
+** Slingshot_Output
+Union describing what the current slingshot drag will produce. Variants:
+=Slingshot_Output_Celestial=, =Slingshot_Output_Emitter=, and (new, stubbed)
+=Slingshot_Output_Hardware=. The Control Menu sets this.
+
+** available_objects
+=bit_set[Celestial_Type]= on =Slingshot= listing which celestials the player has
+unlocked (grows via merge-unlocks in =sys_lifecycle=). Historically written but
+never read; the Control Menu's Direct/Emitter pickers now read it to gate
+selectable celestials.
+
+** Launch power
+=Parameters_Slingshot.launch_power=: multiplier applied to the drag vector to
+produce launch velocity (Velocity Drag_Intent).
+
+** Preview
+The simulated forward trajectory shown during a drag
+(=sys_slingshot_compute_preview=, RK4). Duration =Parameters_Slingshot.preview_duration=.
+
+* Entities & Physics
+
+** Celestial
+An orbiting body. =Component_Celestial{type}= where =type: Celestial_Type=.
+The tier ladder (Asteroid .. Star) drives merge/shatter progression and per-type
+params in =Parameters_Celestial=.
+
+** Celestial_Type
+Ordered enum of body tiers: =None, Asteroid, Moonlet, DwarfPlanet, SubEarth,
+SuperEarth, MegaEarth, MiniNeptune, SubNeptune, SuperNeptune, GiantPlanet,
+SuperJupiter, Star=.
+
+** Emitter
+An automated launcher structure that periodically spawns a celestial.
+=Component_Emitter= (emit_* payload fields + timer, destroy_timer, max_count,
+base_cost). Ticked by =sys_automation=. Registered via =entity_add_emitter=,
+which no-ops if =base_cost == 0=.
+
+** Special Hardware
+Planned utility structures (Collector Drone, Gravity Satellite). Design-only
+today; no components or systems. Reserved in the model as the
+=Slingshot_Output_Hardware= stub and the disabled Hardware tab.
+
+** base_cost
+Energy an emitter must have available (per emission) to fire. For menu-placed
+emitters this is derived from the chosen Emitter Preset and celestial at placement
+time.
+
+* Cross-system conventions
+
+** Event queue
+Fixed-size =events= array dispatched/cleared in =sys_lifecycle=. *Required* for
+entity spawn/delete (e.g. =GameEvent_ObjectSpawn=, =GameEvent_Object_Destroyed=).
+Direct state modification between systems is allowed when safe; systems must not
+call each other's functions/methods. See ADR 0003 and AGENTS.md.

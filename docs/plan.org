@@ -3,14 +3,31 @@
 #+OPTIONS: ^:{}
 
 * Tracks
-**  UI [0/5]
+**  UI [0/8]
 *** TODO Pause menu
 *** TODO Progression menu
 *** TODO Upgrade menu
-*** TODO Control menu
+*** WORKING Control menu
++ Two-tier statusbar for slingshot payload selection. Design: [[file:ui-control-menu.org]],
+  decisions: [[file:adr/0003-control-menu.org]], vocab: [[file:glossary.org]].
++ Tier-1 tabs by entity kind (Direct/Emitter/Hardware) -> Slingshot_Output union. Tier-2 contextual:
+  celestial picker (Direct), celestial + Emitter_Preset picker (Emitter), disabled (Hardware).
++ Wires available_objects (read for the first time) + makes emitter subsystem reachable.
++ Repurpose dead Render_LaunchMenu struct into Control_Menu state. Render in ui.odin, hit-test in
+  input.odin. Introduces Drag_Intent enum + Parameters_Emitter_Preset table.
 *** TODO Launch menu
-+ Object + emitter selection for the slingshot. Emitter system exists but is unreachable; slingshot
-  output is hardcoded to DwarfPlanet. Render_LaunchMenu struct is dead scaffolding.
++ Object + emitter selection for the slingshot. Now covered by the Control menu track above; keep
+  this entry for any separate launch-confirmation UI if it emerges.
+*** TODO Special Hardware entities + radius drag
++ Deferred from Control menu (ADR 0003). Implement Collector Drone / Gravity Satellite components,
+  the Radius Drag_Intent path in sys_slingshot + preview render, and placement. Enable the Hardware
+  tab (currently a disabled stub) and the Slingshot_Output_Hardware variant.
+*** TODO Keyboard controls for control menu
++ Deferred from Control menu (ui-control-menu.org). Mouse-only for now; expose keyboard bindings for
+  tab/payload/preset selection to retain game pace.
+*** TODO Emitter preset balance pass
++ Deferred from ADR 0003. Tune Emitter_Preset values (Burst/Steady/Sustained/Trickle) and the
+  base_cost preset_cost_multiplier once the menu ships and playtests.
 ** Economy [0/2]
 *** TODO Scoring system
 *** TODO Launch cost

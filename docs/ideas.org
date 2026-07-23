@@ -1,0 +1,12 @@
+#+TITLE: Ideas
+
+
+* Unique launch objects
+** Gravity wells
+*** This can be used to potentially pull the action to a specific spot on the screen.
+*** Potentially, introduce cosmic active zones where energy gain is doubled for a period? Use the background nebulae like effects to show these.
+** Iron cores
+*** High density objects to quickly increase your star's mass
+** Energy collector - Energy harnesser?
+*** Collect all energy within a radius that is caused from a collision
+*** Additionally, makes collisions more effective in the area

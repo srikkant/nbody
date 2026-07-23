@@ -1,0 +1,95 @@
+#+TITLE: Control menu
+#+OPTIONS: ^:{}
+
+The slingshot is a universal interaction that simplifies the core gameplay loop
+and this menu is used to control the slingshot. The design for this menu is
+crucial to the game as users spend a lot of time interacting with this.
+
+For now, we will rely on mouse inputs for all the menus. Eventually, we'd want to
+move to expose keyboard controls for these so we can retain the pace of the game
+(deferred; see backlog in [[file:plan.org]]).
+
+Decisions in this document are recorded formally in
+[[file:adr/0003-control-menu.org]]. Shared vocabulary is in [[file:glossary.org]].
+
+* Two tier statusbar
+
+The menu is styled as a two-tiered statusbar at the bottom of the screen. Instead
+of listing every item in a single long row, the bottom dock splits cleanly into
+Mode Selection (Primary Tabs) and Payload/Configuration Deck (Contextual
+Sub-Menu).
+
+* Core model decisions
+
+- *Universal verb*: every Tier-1 mode terminates in a slingshot drag + release.
+  The menu never introduces a second interaction verb.
+- *Drag_Intent*: the drag vector is interpreted per active output. =Velocity=
+  (Direct, Emitter) = launch velocity. =Radius= (planned Hardware) = placement
+  radius. Modelled as =Drag_Intent :: enum { Velocity, Radius }=.
+- *Tier-1 axis*: tabs are organized by the kind of entity produced, mapping to the
+  =Slingshot_Output= union.
+- *Menu-to-state*: menu handlers write =Slingshot.output= and selection state
+  directly (allowed); entity spawn stays on the event queue.
+- *Input*: menu bounds are hit-tested before slingshot activation; a click inside
+  the bar is consumed by the menu.
+- *Empty/locked state*: all tabs/items always visible; locked items greyed.
+
+** Tier 1: Primary Type Selector (Tabs)
+
+Sets the active output of the slingshot. Players switch by clicking the tab with
+the mouse.
+
+| Tab              | Produces  | Union variant                | Status      |
+|------------------+-----------+------------------------------+-------------|
+| Direct launches  | Celestial | =Slingshot_Output_Celestial= | Implemented |
+| Emitters         | Emitter   | =Slingshot_Output_Emitter=   | Implemented |
+| Special Hardware | Hardware  | =Slingshot_Output_Hardware=  | Disabled    |
+
+- *Direct launches*: fires a single projectile (celestial) directly into space.
+- *Emitters*: deploys an automated launcher structure onto the field.
+- *Special Hardware*: places utility structures like Collector Drones or Gravity
+  Satellites. *Disabled this task* ("coming soon"); reserved as a stub variant.
+
+** Tier 2: Contextual Sub-Menus (The Configuration Deck)
+
+When a Primary Type is active, Tier 2 adapts to expose only the necessary
+parameters before the slingshot drag is executed.
+
+*** Direct launches -> celestial picker
+
+Shows the unlocked celestial types read from =Slingshot.available_objects=.
+Locked types render greyed/disabled. Selecting sets
+=Slingshot.output = Slingshot_Output_Celestial{type}=.
+
+*** Emitters -> celestial picker + preset picker
+
+Two selectors:
+1. The emitted celestial (same unlocked set as Direct).
+2. An *Emitter Preset* (predefined behavior bundle). No raw sliders.
+
+Proposed presets (=Emitter_Preset= enum; values in
+=Parameters_Emitter_Preset=, subject to balance):
+
+| Preset    | interval | duration | max_count | Character                        |
+|-----------+----------+----------+-----------+----------------------------------|
+| Burst     |     0.25 |      5.0 |        12 | Rapid short salvo                |
+| Steady    |      1.0 |     20.0 |        20 | Balanced default cadence         |
+| Sustained |      2.0 |     60.0 |        30 | Long-lived slow feeder           |
+| Trickle   |      4.0 |    999.0 |         8 | Near-permanent, very slow accent |
+
+Payload physics (density/radius/velocity/color) derive from the chosen celestial.
+=base_cost= derives from preset + celestial at placement time.
+
+*** Special Hardware -> disabled
+
+Tab and deck rendered disabled. Radius Drag_Intent and hardware components are
+deferred (see backlog).
+
+* Build notes
+
+- Menu state: repurpose the dead =Render_LaunchMenu= struct into =Control_Menu=
+  (active tab, selected celestial, selected preset, opacity, hit-rects).
+- Render/layout: =ui.odin=. Hit-test + selection: =input.odin=.
+- =sys_slingshot= and preview render branch on =Drag_Intent=; =Velocity= path
+  preserves current behavior.
+- New params table: =emitter_presets: [Emitter_Preset]Parameters_Emitter_Preset=.

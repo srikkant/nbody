@@ -61,7 +61,11 @@ Executed sequentially in `game_run` in `game.odin`:
 - No utility methods in any of the `sys_` files.
 - No `@(private)` decorators on declarations. Everything in a package stays package-visible.
 - All methods defined in system files should be of the form: `sys_(system)_(method)`. Except for the main entry method, all others defined in these files should not be called outside this file.
-- Use the event queue for all cross system communication for now. We might move to a more imperative or immediate mode in the UI. Always get these approved from the user beforehand.
+- Cross-system communication rules:
+  - Entity spawn and delete MUST go through the event queue (e.g. `GameEvent_ObjectSpawn`, `GameEvent_Object_Destroyed`). Entities cannot be spawned or deleted without it.
+  - Direct state modification is allowed as long as it is safe. A system may read/write another system's state fields directly.
+  - Systems must NOT call functions/methods defined in another system file (`sys_*` methods are file-private by convention). Communicate via state or events instead.
+  - We might move to a more imperative or immediate mode in the UI. Always get such changes approved from the user beforehand.
 - All utils methods defined in various `utils_*` files should be of the form: `(util_namespace)_(method_name)`
 - No raw console/stdout/stderr printing (`fmt.println`, `fmt.eprintln`, etc.) anywhere in the codebase. All logging must use standard logging functions (e.g. `log.warn`, `log.error` from `"core:log"` package), which route through `context.logger` to the dedicated log file (native) or console (WASM).
 - Always search for `utils_*` files to check if a method exists that solves your problem.

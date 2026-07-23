@@ -1,0 +1,171 @@
+#+TITLE: ADR 0003: Two-Tier Control Menu (Slingshot Payload Selection)
+#+OPTIONS: ^:{}
+
+* Status
+
+Proposed (planning phase).
+
+* Context
+
+The slingshot is the universal interaction of the game and players spend most of
+their time using it. Today the slingshot payload is hardcoded to =DwarfPlanet=
+(game.odin) and never changes at runtime except that merge-unlocks grow
+=Slingshot.available_objects=, a =bit_set= that is written but never read to
+change the launch output. As a result:
+
+- Players cannot choose what to launch.
+- The emitter subsystem is fully implemented (=Component_Emitter=,
+  =sys_automation=, spawn wiring) but *unreachable* — no input path ever sets the
+  slingshot output to an emitter.
+- "Special Hardware" (Collector Drones, Gravity Satellites) exists only in design
+  docs; there is zero backing code.
+
+The design in [[file:../ui-control-menu.org]] proposes a two-tier statusbar docked
+at the bottom of the screen to control the slingshot. This ADR records the domain
+model and the decisions taken to make that menu concrete and buildable.
+
+* Decisions
+
+** Universal verb: every mode ends in a slingshot drag
+
+Every Tier-1 mode terminates in a slingshot drag + release. The menu never
+introduces a second interaction verb (no click-to-place). The *meaning* of the
+drag varies by the active output (see Drag_Intent), but the physical gesture is
+always the slingshot drag. This keeps the core loop single-verb and consistent.
+
+** Drag_Intent: polymorphic drag meaning per output type
+
+The slingshot drag vector is interpreted differently depending on the active
+output. This is modelled as a first-class enum:
+
+#+begin_src odin
+Drag_Intent :: enum { Velocity, Radius }
+#+end_src
+
+- =Velocity= — drag vector becomes launch velocity (today's behavior). Used by
+  Direct launches and Emitters.
+- =Radius= — drag magnitude becomes a placement radius around a fixed centre
+  (planned for Special Hardware, e.g. collector coverage). *Stubbed* in this task;
+  no hardware consumes it yet.
+
+=sys_slingshot= (cost + launch) and the preview render branch on =Drag_Intent=.
+The =Velocity= path preserves current behavior exactly.
+
+** Tier-1 axis: entity kind produced
+
+The three Tier-1 tabs are organized by the *kind of entity produced*, mapping
+directly onto the =Slingshot_Output= union:
+
+| Tab             | Entity kind | Union variant                | Status this task |
+|-----------------+-------------+------------------------------+------------------|
+| Direct launches | Celestial   | =Slingshot_Output_Celestial= | Implemented      |
+| Emitters        | Emitter     | =Slingshot_Output_Emitter=   | Implemented      |
+| Special Hardware| Hardware    | =Slingshot_Output_Hardware=  | Stub / disabled  |
+
+A third union variant =Slingshot_Output_Hardware= is added as a stub so the model
+is complete, but the Hardware tab is rendered *disabled* ("coming soon").
+
+** Tier-2 Direct: unlocked celestial picker
+
+For the Direct tab, Tier-2 shows the unlocked celestial types read from
+=Slingshot.available_objects= (the =bit_set= that is currently written but never
+read). Selecting a celestial sets
+=Slingshot.output = Slingshot_Output_Celestial{type}=. This finally wires the
+existing unlock progression into the launch loop.
+
+** Tier-2 Emitter: celestial picker + emitter preset
+
+For the Emitter tab, Tier-2 exposes *two* selectors:
+
+1. The emitted celestial (from the same unlocked set).
+2. An *Emitter_Preset* — a predefined bundle of emitter behavior. Players do NOT
+   adjust raw emitter numbers; they pick a named preset.
+
+** Emitter_Preset: predefined behavior bundles
+
+A preset fixes emitter *behavior* (rate + longevity); the *payload physics*
+(density, radius, velocity, color) come from the chosen celestial. Model:
+
+#+begin_src odin
+Emitter_Preset :: enum { Burst, Steady, Sustained, Trickle }
+
+Parameters_Emitter_Preset :: struct {
+    interval:  f32, // seconds between emissions (emitter.timer.interval)
+    duration:  f32, // seconds before emitter self-destructs (destroy_timer.interval)
+    max_count: int, // total emissions before self-destruct
+}
+#+end_src
+
+Stored as an enum-indexed table =emitter_presets: [Emitter_Preset]Parameters_Emitter_Preset=
+inside =Parameters=, mirroring the =celestials= table.
+
+Proposed starting values (subject to balance pass):
+
+| Preset    | interval | duration | max_count | Character                          |
+|-----------+----------+----------+-----------+------------------------------------|
+| Burst     |     0.25 |      5.0 |        12 | Rapid short salvo                  |
+| Steady    |      1.0 |     20.0 |        20 | Balanced default cadence           |
+| Sustained |      2.0 |     60.0 |        30 | Long-lived slow feeder             |
+| Trickle   |      4.0 |    999.0 |         8 | Near-permanent, very slow accent   |
+
+=base_cost= is derived at placement time from the preset and the chosen celestial
+(e.g. =celestial.launch_cost * preset_cost_multiplier=). The multipliers live in
+params.odin and are set during the build task. Note =entity_add_emitter= guards
+on =base_cost == 0=, so a nonzero derived cost is required for the emitter to
+register.
+
+** Special Hardware deferred
+
+Hardware entities (Collector Drone, Gravity Satellite), their components, and the
+=Radius= drag semantics are out of scope for this task. The Hardware tab and the
+=Slingshot_Output_Hardware= variant exist as disabled stubs so the taxonomy is
+whole. Full hardware is a backlog item.
+
+** Empty / locked state: show all, disable locked
+
+All tabs and all celestial items are always visible for layout stability and
+discoverability. Locked celestials render greyed/disabled. The Emitter tab becomes
+usable once at least one celestial is unlocked. The Hardware tab is always
+disabled for now.
+
+** Menu-to-state communication: direct writes; spawn via events
+
+Refinement of the project's cross-system rule (also applied to AGENTS.md):
+
+- *Direct state modification is allowed* when safe. The menu handler may write
+  =Slingshot.output= and menu selection state directly.
+- *Entity spawn/delete must go through the event queue.* Emitter/celestial
+  placement continues to push =GameEvent_ObjectSpawn=.
+- Systems still must not call each other's functions/methods (the original intent
+  of the rule).
+
+** Menu input: hit-test before slingshot
+
+The statusbar is a screen-space dock; the slingshot drag is world-space. The input
+pipeline hit-tests the menu bounds *before* mapping =Slingshot_Activate=. A click
+inside the menu is consumed as a menu action (updating selection + slingshot
+output directly) and does not start a drag. A click outside the menu falls through
+to the slingshot as today.
+
+** Code placement
+
+- Menu render + layout (including computing hit-rects): =ui.odin= (extended).
+- Menu hit-test + selection handling: =input.odin=.
+- Menu state: repurpose the dead =Render_LaunchMenu= struct into a real
+  =Control_Menu= state struct (active tab, selected celestial, selected preset,
+  opacity, hit-rects). No new =sys_= file (the menu is not an ECS system, and
+  =sys_= naming/util rules would be awkward).
+
+* Consequences
+
+- Emitter subsystem becomes reachable for the first time.
+- =Slingshot.available_objects= is finally read, tying unlock progression to
+  launches.
+- The single-verb (drag) model is preserved while allowing future non-velocity
+  drag semantics via =Drag_Intent=.
+- Presets keep the emitter UI simple (no sliders) while offering distinct
+  playstyles; balancing is centralized in one params table.
+- Hardware remains cleanly stubbed; adding it later means implementing the
+  =Radius= drag path + hardware components, not reworking the menu.
+- The cross-system rule is loosened for state writes, simplifying UI wiring while
+  keeping entity lifecycle centralized in the event queue.
