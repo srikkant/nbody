@@ -177,4 +177,36 @@ params_init :: proc(g: ^Game) {
 
 	p.slingshot.launch_power = 5
 	p.slingshot.preview_duration = 1.0
+
+	// ==========================================
+	// EMITTER PRESETS
+	// ==========================================
+
+	p.emitter_presets[.Burst] = {
+		interval        = 0.25,
+		duration        = 5.0,
+		max_count       = 12,
+		cost_multiplier = 1.2,
+	}
+
+	p.emitter_presets[.Steady] = {
+		interval        = 1.0,
+		duration        = 20.0,
+		max_count       = 20,
+		cost_multiplier = 1.0,
+	}
+
+	p.emitter_presets[.Sustained] = {
+		interval        = 2.0,
+		duration        = 60.0,
+		max_count       = 30,
+		cost_multiplier = 0.8,
+	}
+
+	p.emitter_presets[.Trickle] = {
+		interval        = 4.0,
+		duration        = 999.0,
+		max_count       = 8,
+		cost_multiplier = 0.6,
+	}
 }

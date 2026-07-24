@@ -380,7 +380,6 @@ Render :: struct {
 	show_orbits: bool,
 	layers:      [Render_LayerType]Render_Layer,
 	bg:          Render_Background,
-	launch_menu: Render_LaunchMenu,
 }
 
 Render_LayerType :: enum {
@@ -421,11 +420,40 @@ Render_Background :: struct {
 	nebulae: [BG_NEBULA_COUNT]Render_Background_Nebula,
 }
 
-Render_LaunchMenu :: struct {
-	opacity:        f32,
-	inactive_timer: Timer,
-	h_idx:          int, // horizontal selection is for object types
-	v_idx:          int, // vertical selection is for subselections within objects.
+Drag_Intent :: enum {
+	Velocity,
+	Radius,
+}
+
+Emitter_Preset :: enum {
+	Burst,
+	Steady,
+	Sustained,
+	Trickle,
+}
+
+Parameters_Emitter_Preset :: struct {
+	interval:        f32,
+	duration:        f32,
+	max_count:       int,
+	cost_multiplier: f64,
+}
+
+Control_Menu_Tab :: enum {
+	Direct,
+	Emitter,
+	Hardware,
+}
+
+Control_Menu :: struct {
+	active_tab:         Control_Menu_Tab,
+	selected_celestial: Celestial_Type,
+	selected_preset:    Emitter_Preset,
+	opacity:            f32,
+	rect:               rl.Rectangle,
+	tab_rects:          [Control_Menu_Tab]rl.Rectangle,
+	celestial_rects:    [Celestial_Type]rl.Rectangle,
+	preset_rects:       [Emitter_Preset]rl.Rectangle,
 }
 
 /*
@@ -503,9 +531,12 @@ Slingshot_Output_Celestial :: struct {
 	celestial: Component_Celestial,
 }
 
+Slingshot_Output_Hardware :: struct {}
+
 Slingshot_Output :: union {
 	Slingshot_Output_Emitter,
 	Slingshot_Output_Celestial,
+	Slingshot_Output_Hardware,
 }
 
 Slingshot_Snap :: struct {
@@ -628,9 +659,10 @@ Parameters_Celestial :: struct {
  * Modifications can be new game modes, through upgrade trees etc.
  */
 Parameters :: struct {
-	celestials: [Celestial_Type]Parameters_Celestial,
-	physics:    Parameters_Physics,
-	slingshot:  Parameters_Slingshot,
+	celestials:      [Celestial_Type]Parameters_Celestial,
+	emitter_presets: [Emitter_Preset]Parameters_Emitter_Preset,
+	physics:         Parameters_Physics,
+	slingshot:       Parameters_Slingshot,
 }
 
 /*
@@ -653,6 +685,7 @@ Game :: struct {
 	camera:              Camera,
 	render:              Render,
 	slingshot:           Slingshot,
+	control_menu:        Control_Menu,
 	score:               Score,
 	timers:              [Timer_BuiltIn]Timer, // These are updated every frame
 	entities_count:      u64,

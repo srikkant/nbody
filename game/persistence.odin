@@ -392,6 +392,8 @@ persist_write_payload :: proc(w: ^Persist_Buffer, g: ^Game) {
 	case Slingshot_Output_Celestial:
 		persist_write_u8(w, SAVE_OUTPUT_TAG_CELESTIAL)
 		persist_write_u8(w, u8(out.celestial.type))
+	case Slingshot_Output_Hardware:
+		persist_write_u8(w, SAVE_OUTPUT_TAG_HARDWARE)
 	case:
 		w.ok = false
 		return
@@ -457,6 +459,8 @@ persist_read_payload :: proc(r: ^Persist_Buffer, g: ^Game) {
 		out: Slingshot_Output_Celestial
 		out.celestial.type = persist_read_celestial_type(r)
 		g.slingshot.output = out
+	case SAVE_OUTPUT_TAG_HARDWARE:
+		g.slingshot.output = Slingshot_Output_Hardware{}
 	case:
 		r.ok = false
 		return

@@ -7,7 +7,7 @@
 *** TODO Pause menu
 *** TODO Progression menu
 *** TODO Upgrade menu
-*** WORKING Control menu
+*** DONE Control menu
 + Two-tier statusbar for slingshot payload selection. Design: [[file:ui-control-menu.org]],
   decisions: [[file:adr/0003-control-menu.org]], vocab: [[file:glossary.org]].
 + Tier-1 tabs by entity kind (Direct/Emitter/Hardware) -> Slingshot_Output union. Tier-2 contextual:

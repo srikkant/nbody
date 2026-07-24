@@ -13,6 +13,9 @@ DEFAULT_GAME_INPUTS: [Input_Action]Input_Matcher = {
 
 input_init :: proc(g: ^Game) {
 	g.input.controls = DEFAULT_GAME_INPUTS
+	g.slingshot.preview = 1
+	g.slingshot.status = .Inactive
+	g.slingshot.snap.active = false
 }
 
 input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
@@ -177,6 +180,8 @@ input_slingshot_prepare_launch :: proc(
 		)
 		g.slingshot.obj_radius = event.radius
 		g.slingshot.obj_color = color
+	case Slingshot_Output_Hardware:
+		cost = 0.0
 	}
 
 	return

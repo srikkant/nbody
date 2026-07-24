@@ -74,6 +74,31 @@ test_params :: proc() -> game.Parameters {
 	p.slingshot.launch_power = 1
 	p.slingshot.preview_duration = 1
 
+	p.emitter_presets[.Burst] = {
+		interval        = 0.25,
+		duration        = 5.0,
+		max_count       = 12,
+		cost_multiplier = 1.2,
+	}
+	p.emitter_presets[.Steady] = {
+		interval        = 1.0,
+		duration        = 20.0,
+		max_count       = 20,
+		cost_multiplier = 1.0,
+	}
+	p.emitter_presets[.Sustained] = {
+		interval        = 2.0,
+		duration        = 60.0,
+		max_count       = 30,
+		cost_multiplier = 0.8,
+	}
+	p.emitter_presets[.Trickle] = {
+		interval        = 4.0,
+		duration        = 999.0,
+		max_count       = 8,
+		cost_multiplier = 0.6,
+	}
+
 	return p
 }
 
@@ -85,9 +110,8 @@ test_make_game :: proc() -> ^game.Game {
 	g.timers[.Trail] = game.Timer{0, 0.05, false}
 	g.timers[.Autosave] = game.Timer{0, game.SAVE_AUTOSAVE_INTERVAL_SEC, false}
 
-	g.slingshot.output = game.Slingshot_Output_Celestial {
-		celestial = {type = .DwarfPlanet},
-	}
+	g.slingshot.available_objects = {.DwarfPlanet}
+	game.ui_control_menu_init(g)
 
 	return g
 }

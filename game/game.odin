@@ -9,7 +9,7 @@ Game_InitParams :: struct {
 
 game_init :: proc(params: Game_InitParams) -> ^Game {
 	rl.SetTraceLogLevel(rl.TraceLogLevel.WARNING)
-	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_RESIZABLE})
+	rl.SetConfigFlags({.MSAA_4X_HINT, .WINDOW_UNDECORATED})
 	rl.InitWindow(params.w, params.h, "gigawatt galaxy")
 	rl.SetExitKey(.KEY_NULL)
 	rl.HideCursor()
@@ -24,15 +24,7 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 
 	input_init(g)
 	background_init(g)
-
-	g.slingshot.output = Slingshot_Output_Celestial {
-		celestial = {type = .DwarfPlanet},
-	}
-
-	g.slingshot.available_objects = {.DwarfPlanet}
-	g.timers[.Score] = Timer{0, 1, false}
-	g.timers[.Trail] = Timer{0, 0.05, false}
-	g.timers[.Autosave] = Timer{0, SAVE_AUTOSAVE_INTERVAL_SEC, false}
+	ui_init(g)
 
 	// Resume from save if present and valid; otherwise start fresh.
 	if !persist_load_from_disk(g) {
@@ -43,44 +35,10 @@ game_init :: proc(params: Game_InitParams) -> ^Game {
 }
 
 game_reset :: proc(g: ^Game) {
-	g.camera.rl_cam.zoom = 1
-	g.camera.rl_cam.offset = rl.Vector2{g.screenw / 2, g.screenh / 2}
-	g.camera.rl_cam.target = rl.Vector2(0)
-	g.slingshot.preview = 1
-	g.slingshot.status = .Inactive
-	g.slingshot.snap.active = false
-	g.entities_count = 0
-	g.free_entities_count = 0
-	g.events_count = 0
-
-	g.score.energy = 100000 // TODO: added for debugging.
-	g.score.total_objects = 0
-	g.score.energy_rate_ticker = 0
-
-	for i in 0 ..< MAX_ENTITIES {
-		g.entities[i].sig = {}
-	}
-
-	for i in 0 ..< AVG_CALC_TICKS {
-		g.score.energy_gains[i] = 0
-		g.score.energy_losses[i] = 0
-	}
-
-	for i in Timer_BuiltIn {
-		g.timers[i].curr = 0
-	}
-
-	push_event(
-		g,
-		GameEvent_ObjectSpawn {
-			pos = rl.Vector2(0),
-			celestial = {.Star},
-			density = g.params.celestials[.Star].density,
-			radius = g.params.celestials[.Star].radius,
-			energy_source = {output = 10, timer = {interval = 1}},
-			renderable = {g.params.celestials[.Star].color},
-		},
-	)
+	sys_camera_init(g)
+	sys_lifecycle_init(g)
+	sys_score_init(g)
+	frame_init(g)
 }
 
 game_free :: proc(g: ^Game) {

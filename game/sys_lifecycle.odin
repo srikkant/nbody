@@ -10,6 +10,30 @@ Game_Event_CollisionType :: enum {
 	Debris,
 }
 
+sys_lifecycle_init :: proc(g: ^Game) {
+	g.entities_count = 0
+	g.free_entities_count = 0
+	g.events_count = 0
+
+	g.slingshot.available_objects = {.DwarfPlanet}
+
+	for i in 0 ..< MAX_ENTITIES {
+		g.entities[i].sig = {}
+	}
+
+	push_event(
+		g,
+		GameEvent_ObjectSpawn {
+			pos = rl.Vector2(0),
+			celestial = {.Star},
+			density = g.params.celestials[.Star].density,
+			radius = g.params.celestials[.Star].radius,
+			energy_source = {output = 10, timer = {interval = 1}},
+			renderable = {g.params.celestials[.Star].color},
+		},
+	)
+}
+
 sys_lifecycle_spawn_fragments :: proc(g: ^Game, energy: f64, rel_speed: f32, pos: rl.Vector2) {
 	frag_count := int(
 		ENERGY_FRAGMENTS_COUNT_BASE + rel_speed * ENERGY_FRAGMENTS_COUNT_SPEED_FACTOR,

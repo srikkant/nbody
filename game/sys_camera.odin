@@ -12,6 +12,12 @@ Camera :: struct {
 
 CAMERA_SIG: Entity_Signature : {.Position}
 
+sys_camera_init :: proc(g: ^Game) {
+	g.camera.rl_cam.zoom = 1
+	g.camera.rl_cam.offset = rl.Vector2{g.screenw / 2, g.screenh / 2}
+	g.camera.rl_cam.target = rl.Vector2(0)
+}
+
 sys_camera :: proc(g: ^Game) {
 	g.camera.rl_cam.offset = rl.Vector2{g.screenw / 2, g.screenh / 2}
 

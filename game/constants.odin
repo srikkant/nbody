@@ -342,6 +342,7 @@ MAX_SAVE_SIZE ::
  */
 SAVE_OUTPUT_TAG_EMITTER :: 1
 SAVE_OUTPUT_TAG_CELESTIAL :: 2
+SAVE_OUTPUT_TAG_HARDWARE :: 3
 
 // ==========================================
 // CAMERA PARAMETERS

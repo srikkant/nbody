@@ -3,6 +3,19 @@ package game
 import "core:math"
 import rl "vendor:raylib"
 
+/*
+ * Runs once per game on reset
+ */
+frame_init :: proc(g: ^Game) {
+	g.timers[.Score] = Timer{0, 1, false}
+	g.timers[.Trail] = Timer{0, 0.05, false}
+	g.timers[.Autosave] = Timer{0, SAVE_AUTOSAVE_INTERVAL_SEC, false}
+}
+
+/*
+ * Runs at the beginning of every frame
+ * Sets up some essentials for the frame
+ */
 frame_setup :: proc(g: ^Game) {
 	g.dt = math.min(rl.GetFrameTime(), MAX_DT)
 	g.elapsed += g.dt

@@ -3,7 +3,19 @@ package game
 import "core:fmt"
 import rl "vendor:raylib"
 
-ui_draw_top_bar :: proc(g: ^Game) {
+ui_init :: proc(g: ^Game) {
+	ui_control_menu_init(g)
+
+	g.help.launch_done = false
+}
+
+ui_draw :: proc(g: ^Game) {
+	ui_top_bar_draw(g)
+	ui_help_draw(g)
+	ui_control_menu_draw(g)
+}
+
+ui_top_bar_draw :: proc(g: ^Game) {
 	if g.status == .Paused {
 		rl.DrawRectangle(0, 0, i32(g.screenw), i32(g.screenh), rl.Color{0, 0, 0, 150})
 	}
@@ -29,7 +41,7 @@ ui_draw_top_bar :: proc(g: ^Game) {
 	}
 }
 
-ui_draw_help :: proc(g: ^Game) {
+ui_help_draw :: proc(g: ^Game) {
 	if g.status != .Playing do return
 
 	if !g.help.launch_done {
@@ -47,9 +59,4 @@ ui_draw_help :: proc(g: ^Game) {
 			{(g.screenw - tutorial_size.x) / 2, tutorial_y},
 		)
 	}
-}
-
-ui_draw :: proc(g: ^Game) {
-	ui_draw_top_bar(g)
-	ui_draw_help(g)
 }

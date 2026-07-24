@@ -8,6 +8,17 @@ Score :: struct {
 	energy_losses:      [AVG_CALC_TICKS]f64,
 }
 
+sys_score_init :: proc(g: ^Game) {
+	g.score.energy = 10000000 // TODO: added for debugging.
+	g.score.total_objects = 0
+	g.score.energy_rate_ticker = 0
+
+	for i in 0 ..< AVG_CALC_TICKS {
+		g.score.energy_gains[i] = 0
+		g.score.energy_losses[i] = 0
+	}
+}
+
 sys_score :: proc(g: ^Game) {
 	dt := g.dt
 	curr_energy := g.score.energy
