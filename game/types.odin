@@ -278,6 +278,7 @@ GameEvent :: union {
 	GameEvent_Object_OutOfBounds,
 	GameEvent_Object_Destroyed,
 	GameEvent_Object_Demolish,
+	GameEvent_Shockwave,
 }
 
 GameEvent_ObjectSpawn :: struct {
@@ -307,6 +308,12 @@ GameEvent_Collision :: struct {
 	id2: Entity_Id,
 }
 
+GameEvent_Shockwave :: struct {
+	pos:    rl.Vector2,
+	energy: f64,
+	color:  rl.Color,
+}
+
 /*
  * Manage the input state of the game
  * This is processed at the beginning of each frame and updated.
@@ -318,6 +325,8 @@ Input :: struct {
 	mouse_pos_screen:  rl.Vector2,
 	// Current mouse position. Calculated at the beginning of each frame.
 	mouse_pos:         rl.Vector2,
+	// Previous mouse position in world space.
+	prev_mouse_pos:    rl.Vector2,
 	// Current mouse scroll
 	mouse_scroll_move: rl.Vector2,
 	// Current queued action
@@ -356,12 +365,7 @@ Input_Action :: enum {
 	None,
 	Game_Pause,
 	Game_Resume,
-	Slingshot_Activate,
-	Slingshot_Move,
-	Slingshot_Release,
-	Slingshot_Cancel,
 	View_ToggleOrbit,
-	Demolish_Object,
 	Game_Reset,
 }
 
@@ -489,7 +493,6 @@ Slingshot :: struct {
 Slingshot_Status :: enum {
 	Inactive,
 	Active,
-	Released,
 }
 
 Slingshot_Output_Emitter :: struct {

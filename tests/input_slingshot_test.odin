@@ -14,6 +14,7 @@ test_slingshot_setup :: proc(g: ^game.Game, start, end: rl.Vector2) {
 	g.slingshot.status = .Active
 	g.slingshot.start_pos = start
 	g.slingshot.end_pos = end
+	g.input.mouse_pos = end
 	g.slingshot.preview = 1
 	g.slingshot.output = game.Slingshot_Output_Celestial {
 		celestial = {type = .DwarfPlanet},
@@ -21,14 +22,14 @@ test_slingshot_setup :: proc(g: ^game.Game, start, end: rl.Vector2) {
 }
 
 @(test)
-test_sys_slingshot_inactive :: proc(t: ^testing.T) {
+test_input_slingshot_inactive :: proc(t: ^testing.T) {
 	g := test_make_game()
 	defer free(g)
 
 	g.slingshot.status = .Inactive
 	g.score.energy = 1000
 
-	game.sys_slingshot(g)
+	game.input_slingshot_update(g)
 
 	testing.expect(t, g.slingshot.status == .Inactive)
 	testing.expect(t, g.score.energy == 1000)
@@ -36,43 +37,42 @@ test_sys_slingshot_inactive :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_sys_slingshot_active_insufficient_energy :: proc(t: ^testing.T) {
+test_input_slingshot_active_insufficient_energy :: proc(t: ^testing.T) {
 	g := test_make_game()
 	defer free(g)
 
 	test_slingshot_setup(g, {0, 0}, {10, 0})
 	g.score.energy = 0
 
-	game.sys_slingshot(g)
+	game.input_slingshot_update(g)
 
 	testing.expect(t, !g.slingshot.can_launch)
 	testing.expect(t, g.slingshot.status == .Active)
 }
 
 @(test)
-test_sys_slingshot_active_sufficient_energy :: proc(t: ^testing.T) {
+test_input_slingshot_active_sufficient_energy :: proc(t: ^testing.T) {
 	g := test_make_game()
 	defer free(g)
 
 	test_slingshot_setup(g, {0, 0}, {10, 0})
 	g.score.energy = SLINGSHOT_TEST_COST
 
-	game.sys_slingshot(g)
+	game.input_slingshot_update(g)
 
 	testing.expect(t, g.slingshot.can_launch, "energy == cost must be launchable")
 	testing.expect(t, g.slingshot.status == .Active)
 }
 
 @(test)
-test_sys_slingshot_released_insufficient_energy :: proc(t: ^testing.T) {
+test_input_slingshot_released_insufficient_energy :: proc(t: ^testing.T) {
 	g := test_make_game()
 	defer free(g)
 
 	test_slingshot_setup(g, {0, 0}, {10, 0})
-	g.slingshot.status = .Released
 	g.score.energy = 100
 
-	game.sys_slingshot(g)
+	game.input_slingshot_release(g)
 
 	testing.expect(t, !g.slingshot.can_launch)
 	testing.expect(t, g.slingshot.status == .Inactive)
@@ -81,21 +81,20 @@ test_sys_slingshot_released_insufficient_energy :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_sys_slingshot_released_sufficient_energy :: proc(t: ^testing.T) {
+test_input_slingshot_released_sufficient_energy :: proc(t: ^testing.T) {
 	g := test_make_game()
 	defer free(g)
 
 	test_slingshot_setup(g, {0, 0}, {10, 0})
-	g.slingshot.status = .Released
 	g.score.energy = 500
 
-	game.sys_slingshot(g)
+	game.input_slingshot_release(g)
 
 	testing.expect(t, g.slingshot.status == .Inactive)
 	expect_f64_approx(t, g.score.energy, 500 - SLINGSHOT_TEST_COST)
 	expect_event_count(t, g, game.GameEvent_ObjectSpawn, 1)
 
-	if g.events_count == 1 {
+	if g.events_count >= 1 {
 		event, ok := g.events[0].(game.GameEvent_ObjectSpawn)
 		testing.expect(t, ok, "event should be GameEvent_ObjectSpawn")
 		if ok {
@@ -107,18 +106,19 @@ test_sys_slingshot_released_sufficient_energy :: proc(t: ^testing.T) {
 		}
 	}
 
+	expect_event_count(t, g, game.GameEvent_Shockwave, 1)
 	testing.expect(t, g.help.launch_done, "successful launch completes the tutorial")
 }
 
 @(test)
-test_sys_slingshot_preview_straight_line_without_gravity :: proc(t: ^testing.T) {
+test_input_slingshot_preview_straight_line_without_gravity :: proc(t: ^testing.T) {
 	g := test_make_game()
 	defer free(g)
 
 	test_slingshot_setup(g, {100, 0}, {100, 10})
 	g.score.energy = 1000
 
-	game.sys_slingshot(g)
+	game.input_slingshot_update(g)
 
 	testing.expect(t, g.slingshot.preview_count > 10)
 	expect_vec2_approx(t, g.slingshot.preview_points[0], rl.Vector2{100, 0})
@@ -128,19 +128,19 @@ test_sys_slingshot_preview_straight_line_without_gravity :: proc(t: ^testing.T) 
 }
 
 @(test)
-test_sys_slingshot_preview_terminates_on_collision :: proc(t: ^testing.T) {
+test_input_slingshot_preview_terminates_on_collision :: proc(t: ^testing.T) {
 	g_clear := test_make_game()
 	defer free(g_clear)
 	test_slingshot_setup(g_clear, {20, 0}, {40, 0})
 	g_clear.score.energy = 10000
-	game.sys_slingshot(g_clear)
+	game.input_slingshot_update(g_clear)
 
 	g_hit := test_make_game()
 	defer free(g_hit)
 	test_add_celestial(g_hit, .Star, {0, 0})
 	test_slingshot_setup(g_hit, {20, 0}, {40, 0})
 	g_hit.score.energy = 10000
-	game.sys_slingshot(g_hit)
+	game.input_slingshot_update(g_hit)
 
 	testing.expect(t, g_clear.slingshot.preview_count > 10)
 	testing.expect(
@@ -151,20 +151,20 @@ test_sys_slingshot_preview_terminates_on_collision :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_sys_slingshot_preview_zero_when_unlaunchable :: proc(t: ^testing.T) {
+test_input_slingshot_preview_zero_when_unlaunchable :: proc(t: ^testing.T) {
 	g := test_make_game()
 	defer free(g)
 
 	test_slingshot_setup(g, {0, 0}, {10, 0})
 	g.score.energy = 0
 
-	game.sys_slingshot(g)
+	game.input_slingshot_update(g)
 
 	testing.expect(t, g.slingshot.preview_count == 0)
 }
 
 @(test)
-test_sys_slingshot_preview_zero_when_preview_disabled :: proc(t: ^testing.T) {
+test_input_slingshot_preview_zero_when_preview_disabled :: proc(t: ^testing.T) {
 	g := test_make_game()
 	defer free(g)
 
@@ -172,7 +172,7 @@ test_sys_slingshot_preview_zero_when_preview_disabled :: proc(t: ^testing.T) {
 	g.slingshot.preview = 0
 	g.score.energy = 1000
 
-	game.sys_slingshot(g)
+	game.input_slingshot_update(g)
 
 	testing.expect(t, g.slingshot.preview_count == 0)
 }

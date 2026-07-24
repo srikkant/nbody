@@ -1,18 +1,14 @@
 package game
 
+import "core:math"
 import rl "vendor:raylib"
 
 DEFAULT_GAME_INPUTS: [Input_Action]Input_Matcher = {
-	.None               = {},
-	.Game_Pause         = Input_Matcher_Keyboard{{.Pressed, .Playing}, .ESCAPE},
-	.Game_Resume        = Input_Matcher_Keyboard{{.Pressed, .Paused}, .ESCAPE},
-	.Slingshot_Activate = Input_Matcher_Mouse{{.Pressed, .Playing}, .LEFT},
-	.Slingshot_Move     = Input_Matcher_Mouse{{.Down, .Playing}, .LEFT},
-	.Slingshot_Release  = Input_Matcher_Mouse{{.Released, .Playing}, .LEFT},
-	.Slingshot_Cancel   = Input_Matcher_Keyboard{{.Pressed, .Playing}, .C},
-	.View_ToggleOrbit   = Input_Matcher_Keyboard{{.Pressed, .Playing}, .T},
-	.Demolish_Object    = Input_Matcher_Mouse{{.Pressed, .Playing}, .RIGHT},
-	.Game_Reset         = Input_Matcher_Keyboard{{.Pressed, .Playing}, .R},
+	.None             = {},
+	.Game_Pause       = Input_Matcher_Keyboard{{.Pressed, .Playing}, .ESCAPE},
+	.Game_Resume      = Input_Matcher_Keyboard{{.Pressed, .Paused}, .ESCAPE},
+	.View_ToggleOrbit = Input_Matcher_Keyboard{{.Pressed, .Playing}, .T},
+	.Game_Reset       = Input_Matcher_Keyboard{{.Pressed, .Playing}, .R},
 }
 
 input_init :: proc(g: ^Game) {
@@ -87,26 +83,181 @@ input_handle_action :: proc(g: ^Game) {
 		}
 	case .Game_Resume:
 		g.status = .Playing
-	case .Slingshot_Activate:
-		g.slingshot.status = .Active
-		g.slingshot.start_pos = g.input.mouse_pos
-		g.slingshot.end_pos = g.input.mouse_pos
-	case .Slingshot_Move:
-		g.slingshot.end_pos = g.input.mouse_pos
-	case .Slingshot_Release:
-		g.slingshot.status = .Released
-		g.slingshot.end_pos = g.input.mouse_pos
-	case .Slingshot_Cancel:
-		g.slingshot.status = .Inactive
 	case .View_ToggleOrbit:
 		g.render.show_orbits = !g.render.show_orbits
-	case .Demolish_Object:
-		push_event(g, GameEvent_Object_Demolish{})
 	case .Game_Reset:
 		game_reset(g)
 	}
 
 	g.input.action = .None
+}
+
+input_slingshot_compute_preview :: proc(g: ^Game) {
+	g.slingshot.preview_count = 0
+
+	star := &g.entities[Entity_Id(0)]
+
+	if g.slingshot.preview == 0 || !g.slingshot.can_launch do return
+
+	pos := g.slingshot.start_pos
+	vel := physics_get_slingshot_release_velocity(g)
+
+	g.slingshot.preview_points[0] = pos
+	g.slingshot.preview_times[0] = 0.0
+	g.slingshot.preview_count = 1
+
+	base_dt: f32 = (1.0 / 30.0)
+	accumulated_t: f32 = 0.0
+
+	for idx in 1 ..< 600 {
+		if accumulated_t >= g.params.slingshot.preview_duration do break
+
+		dist := rl.Vector2Distance(pos, star.pos.current)
+		scale := clamp(dist / f32(380.0), f32(0.12), f32(3.5))
+		step_dt := base_dt * scale * f32(2.8)
+
+		entity := physics_check_collision(g, pos, g.slingshot.obj_radius, PHYSICS_SIG)
+		if entity != nil {
+			break
+		}
+
+		physics_rk4_step(g, &pos, &vel, step_dt, g.slingshot.obj_radius)
+		accumulated_t += step_dt
+
+		g.slingshot.preview_points[idx] = pos
+		g.slingshot.preview_times[idx] = accumulated_t
+		g.slingshot.preview_count = idx + 1
+	}
+}
+
+input_slingshot_activate :: proc(g: ^Game) {
+	g.slingshot.status = .Active
+	g.slingshot.start_pos = g.input.mouse_pos
+	g.slingshot.end_pos = g.input.mouse_pos
+	input_slingshot_update(g)
+}
+
+input_slingshot_prepare_launch :: proc(
+	g: ^Game,
+	vel: rl.Vector2,
+) -> (
+	cost: f64,
+	event: GameEvent_ObjectSpawn,
+) {
+	event.pos = g.slingshot.start_pos
+
+	switch out in g.slingshot.output {
+	case Slingshot_Output_Emitter:
+		color := get_celestial_color(g, out.emitter.emit_celestial.type)
+		event.radius = g.params.celestials[out.emitter.emit_celestial.type].radius
+		event.emitter = out.emitter
+		event.emitter.emit_vel = vel
+		event.emitter.emit_density = g.params.celestials[out.emitter.emit_celestial.type].density
+		event.emitter.emit_radius = g.params.celestials[out.emitter.emit_celestial.type].radius
+		event.emitter.emit_color = color
+		cost = f64(
+			event.emitter.emit_density *
+			event.emitter.emit_radius *
+			event.emitter.emit_radius *
+			math_vec2_length_sq(vel),
+		)
+		g.slingshot.obj_radius = event.radius
+		g.slingshot.obj_color = color
+	case Slingshot_Output_Celestial:
+		color := get_celestial_color(g, out.celestial.type)
+		event.celestial = out.celestial
+		event.density = g.params.celestials[out.celestial.type].density
+		event.radius = g.params.celestials[out.celestial.type].radius
+		event.velocity = vel
+		event.show_orbit = true
+		event.renderable = Component_Renderable{color}
+		cost = f64(
+			g.params.celestials[out.celestial.type].launch_cost +
+			(event.density * event.radius * event.radius * math_vec2_length_sq(vel)),
+		)
+		g.slingshot.obj_radius = event.radius
+		g.slingshot.obj_color = color
+	}
+
+	return
+}
+
+input_slingshot_update :: proc(g: ^Game) {
+	if g.slingshot.status != .Active do return
+
+	g.slingshot.end_pos = g.input.mouse_pos
+	vel := physics_get_slingshot_release_velocity(g)
+	cost, _ := input_slingshot_prepare_launch(g, vel)
+
+	g.slingshot.can_launch = g.score.energy >= cost
+
+	if g.input.mouse_pos != g.input.prev_mouse_pos || g.slingshot.preview_count == 0 {
+		input_slingshot_compute_preview(g)
+	}
+}
+
+input_slingshot_release :: proc(g: ^Game) {
+	if g.slingshot.status != .Active do return
+
+	g.slingshot.status = .Inactive
+	g.slingshot.end_pos = g.input.mouse_pos
+	vel := physics_get_slingshot_release_velocity(g)
+	cost, event := input_slingshot_prepare_launch(g, vel)
+
+	g.slingshot.can_launch = g.score.energy >= cost
+
+	if g.slingshot.can_launch {
+		g.help.launch_done = true
+
+		push_event(g, event)
+		g.score.energy -= cost
+
+		payload_mass := event.density * (event.radius * event.radius)
+		g.camera.shake_intensity = clamp(math.sqrt(payload_mass) * 0.45, 0.0, 25.0)
+
+		push_event(
+			g,
+			GameEvent_Shockwave {
+				pos = g.slingshot.start_pos,
+				energy = f64(payload_mass * 2.0),
+				color = g.slingshot.obj_color,
+			},
+		)
+	}
+
+	g.slingshot.preview_count = 0
+}
+
+input_slingshot_cancel :: proc(g: ^Game) {
+	g.slingshot.status = .Inactive
+	g.slingshot.preview_count = 0
+}
+
+input_handle_mouse :: proc(g: ^Game) {
+	if g.input.ignore do return
+	if g.status != .Playing do return
+
+	if rl_is_mouse_button_pressed(g, .LEFT) {
+		input_slingshot_activate(g)
+	} else if rl_is_mouse_button_released(g, .LEFT) {
+		if g.slingshot.status == .Active {
+			input_slingshot_release(g)
+		}
+	} else if rl_is_mouse_button_down(g, .LEFT) {
+		if g.slingshot.status == .Active {
+			input_slingshot_update(g)
+		}
+	} else if g.slingshot.status == .Active {
+		input_slingshot_update(g)
+	}
+
+	if rl_is_mouse_button_pressed(g, .RIGHT) {
+		if g.slingshot.status == .Active {
+			input_slingshot_cancel(g)
+		} else {
+			push_event(g, GameEvent_Object_Demolish{})
+		}
+	}
 }
 
 input_process :: proc(g: ^Game) {
@@ -117,11 +268,13 @@ input_process :: proc(g: ^Game) {
 
 	g.input.action = .None
 	g.input.mouse_pos_screen = rl.GetMousePosition()
+	g.input.prev_mouse_pos = g.input.mouse_pos
 	g.input.mouse_pos = input_mouse_pos(g)
 	g.input.mouse_scroll_move = rl.GetMouseWheelMoveV()
 
 	input_match_action(g)
 	input_handle_action(g)
+	input_handle_mouse(g)
 
 	g.input.ignore = false
 }

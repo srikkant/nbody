@@ -141,7 +141,6 @@ test_step :: proc(g: ^game.Game, frames: int, dt := TEST_DT) {
 		for i in game.Timer_BuiltIn {
 			game.math_update_timer(&g.timers[i], dt)
 		}
-		game.sys_slingshot(g)
 		game.sys_modifier(g)
 		game.sys_automation(g)
 		game.sys_physics(g)

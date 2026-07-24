@@ -4,6 +4,24 @@
 Shared vocabulary for the project. Terms are grouped by area. When a term maps to
 a concrete code symbol, the symbol is given in =monospace=.
 
+* Input
+
+** Slingshot Gesture
+The single world-interaction verb: LEFT press (activate) → drag (update) →
+LEFT release (launch) or RIGHT press (cancel). Owned by the Input Slingshot
+Handlers, not by an ECS system. See ADR 0004.
+
+** Input Slingshot Handlers
+=input_slingshot_activate= / =_update= / =_release= / =_cancel= in
+=input.odin=. Extracted from the deleted =sys_slingshot=. Read
+=g.input.mouse_pos= directly; write slingshot/score/camera state directly;
+spawn entities only via the event queue.
+
+** RIGHT-click routing
+Contextual RIGHT press: cancels the Slingshot Gesture when it is =.Active=,
+otherwise pushes =GameEvent_Object_Demolish=. Replaces the old keyboard =C=
+cancel.
+
 * Control Menu
 
 ** Control Menu

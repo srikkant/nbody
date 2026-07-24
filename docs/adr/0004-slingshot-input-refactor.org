@@ -1,0 +1,158 @@
+#+TITLE: ADR 0004: Slingshot as Input Gesture, Not System
+#+OPTIONS: ^:{}
+
+* Status
+
+Proposed (planning phase).
+
+* Context
+
+The slingshot is a pure input gesture, but it is implemented as an ECS system
+(=sys_slingshot=) fed by an action-matcher table:
+
+- Mouse input is matched against the =DEFAULT_GAME_INPUTS= table into a single
+  =g.input.action= per frame. Only one action can win per frame — an artificial
+  constraint for a gesture with simultaneous concerns (move while active).
+- =input_handle_action= mutates slingshot state; =sys_slingshot= then does the
+  real work (cost, =can_launch=, release charge, preview). The gesture is split
+  across two files with a status enum (=.Released=) used only to ferry a
+  one-frame edge from input to system.
+- =sys_slingshot= calls =sys_lifecycle_spawn_shockwave= directly, violating the
+  cross-system communication rule (bug entry in [[file:../plan.org]]).
+- The matcher table exists for future rebindable controls. That goal applies to
+  keyboard commands, not to the mouse gesture, which is spatial (position,
+  drag), not a button mapping.
+
+* Decisions
+
+** Mouse handling inlined; matcher table becomes keyboard-only
+
+A new =input_handle_mouse= in =input.odin= handles LEFT press/move/release and
+RIGHT press inline. The mouse variants (=Slingshot_Activate=, =Slingshot_Move=,
+=Slingshot_Release=, =Demolish_Object=) leave the =Input_Action= enum and the
+=DEFAULT_GAME_INPUTS= table. The table remains for keyboard commands
+(=Game_Pause=, =Game_Resume=, =View_ToggleOrbit=, =Game_Reset=) and stays the
+seam for future rebinding. Keyboard cancel (=C=) is removed; cancel moves to
+RIGHT click (below).
+
+** RIGHT-click routing: cancel when active, demolish otherwise
+
+RIGHT press is contextual:
+
+- Slingshot =.Active= → cancel the gesture.
+- Otherwise → push =GameEvent_Object_Demolish=.
+
+The =Slingshot_Cancel= action variant is deleted.
+
+** Gesture logic lives in =input_slingshot_*=; =sys_slingshot= is deleted
+
+Four handlers in =input.odin= own the gesture:
+
+#+BEGIN_SRC odin
+input_slingshot_activate :: proc(g: ^Game)
+input_slingshot_update   :: proc(g: ^Game)
+input_slingshot_release  :: proc(g: ^Game)
+input_slingshot_cancel   :: proc(g: ^Game)
+#+END_SRC
+
+Handlers read =g.input.mouse_pos= directly (game state is the source of truth;
+no position parameters). =sys_slingshot= and =sys_slingshot_compute_preview=
+are extracted into these handlers and the system file is deleted.
+
+** Update policy: cheap per-frame, expensive per-mouse-move
+
+While the slingshot is =.Active=:
+
+- =can_launch= is recomputed *every frame* (single cost calculation; energy
+  ticks during the drag, so the trail color must not go stale).
+- The trajectory preview is recomputed *only when the mouse moved* (600 RK4
+  steps + all-entity collision is too expensive to run unconditionally).
+  =Input= gains a =prev_mouse_pos= field for the comparison. Camera pan/zoom
+  shifts world mouse position without screen-mouse movement; the resulting
+  spurious recompute is harmless and accepted.
+
+** Release is authoritative
+
+=input_slingshot_release= recomputes the launch cost fresh at the release
+instant. It never trusts a stale =can_launch=.
+
+** =Slingshot_Status.Released= is deleted
+
+Release is handled at the input edge; no status is needed to ferry it across
+frames. The enum becomes =Inactive / Active=. Persistence already force-resets
+slingshot runtime state on load, so the save format is unaffected.
+
+** Input layer boundary: state direct, entities via events
+
+Input handlers may write non-entity state directly (=g.slingshot=,
+=g.score.energy= charge, =g.camera.shake_intensity=, =g.help.launch_done=).
+Entity spawn/destroy goes strictly through the event queue
+(=GameEvent_ObjectSpawn=, =GameEvent_Object_Demolish=). The event queue exists
+to serialise entity creation/deletion; plain state writes have no race risk.
+
+** Shockwave becomes an event (phase 3)
+
+A new event replaces the cross-system call:
+
+#+BEGIN_SRC odin
+GameEvent_Shockwave :: struct {
+    pos:    rl.Vector2,
+    energy: f64,
+    color:  rl.Color,
+}
+#+END_SRC
+
+=input_slingshot_release= pushes it; =sys_lifecycle= consumes it where
+=sys_lifecycle_spawn_shockwave= already lives. Camera shake stays a direct
+state write.
+
+** Readers untouched
+
+=sys_render= (preview buffers, =can_launch=, =obj_color=, =obj_radius=) and
+=sys_camera= (status + drag vector) keep reading =g.slingshot= unchanged. Only
+writers move.
+
+** Frame ordering preserved
+
+=input_process= already runs before physics each frame. Moving preview/cost
+computation from the post-input system into the input layer keeps the same
+relative position in the frame; entity state is identical at that point. No
+behavioural drift.
+
+* Phasing
+
+** Phase 1 — inline mouse handling
+
+- Add =input_handle_mouse=; inline LEFT activate/move/release state writes and
+  RIGHT-click routing (cancel when active, else demolish event).
+- Remove mouse variants + =Slingshot_Cancel= from =Input_Action= and the
+  table; table becomes keyboard-only.
+- =sys_slingshot= untouched. All existing tests stay green.
+
+** Phase 2 — extract handlers, delete system
+
+- Add =input_slingshot_activate/update/release/cancel=; move cost,
+  =can_launch=, release charge, and preview logic out of =sys_slingshot=.
+- Adopt the update policy (per-frame =can_launch=, per-move preview) and
+  authoritative release.
+- Delete =Slingshot_Status.Released=.
+- Delete =sys_slingshot.odin=.
+- Rewrite =tests/sys_slingshot_test.odin= against the individual handlers
+  (same assertions, per-function granularity).
+
+** Phase 3 — shockwave event
+
+- Add =GameEvent_Shockwave=; push from =input_slingshot_release=; consume in
+  =sys_lifecycle=. Removes the cross-system call (closes the plan.org bug
+  entry).
+
+* Consequences
+
+- The input layer becomes the single home of the gesture: one file to read for
+  "what does the mouse do".
+- The Control Menu (ADR 0003) will build its hit-testing inside
+  =input_handle_mouse= later, routing UI hits before the world gesture. That
+  work is out of scope here.
+- The matcher table shrinks to keyboard commands; mouse no longer competes for
+  the single =g.input.action= slot.
+- Tests target small handlers instead of a monolithic system.

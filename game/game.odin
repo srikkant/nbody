@@ -100,7 +100,6 @@ game_run :: proc(g: ^Game) {
 
 	switch g.status {
 	case .Playing:
-		sys_slingshot(g)
 		sys_modifier(g)
 		sys_automation(g)
 		sys_physics(g)

@@ -375,6 +375,8 @@ sys_lifecycle :: proc(g: ^Game) {
 			sys_lifecycle_handle_destroyed(g, &event)
 		case GameEvent_Object_Demolish:
 			sys_lifecycle_handle_demolish(g, &event)
+		case GameEvent_Shockwave:
+			sys_lifecycle_spawn_shockwave(g, event.pos, event.energy, event.color)
 		}
 	}
 

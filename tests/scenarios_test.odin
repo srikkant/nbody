@@ -77,10 +77,11 @@ test_scenario_launch_via_full_pipeline :: proc(t: ^testing.T) {
 	g.slingshot.status = .Active
 	g.slingshot.start_pos = {200, 0}
 	g.slingshot.end_pos = {200, 0}
+	g.input.mouse_pos = {200, 0}
 	g.slingshot.output = game.Slingshot_Output_Celestial {
 		celestial = {type = .DwarfPlanet},
 	}
-	g.slingshot.status = .Released
+	game.input_slingshot_release(g)
 
 	test_step(g, 1)
 

@@ -77,9 +77,25 @@
 + Switched shockwave growth from sqrt to log scaling with max cap (20px/s). Increased fragment size (6px), clamped count (3-10), fixed 17px spread radius. Reduced drift frequency/amplitude to ~23% for gentle floating motion.
 *** DONE Floating energy animations are broken
 + Energy blobs float all over the screen due to framerate issues?
-*** TODO sys_slingshot calls sys_lifecycle_spawn_shockwave directly
+*** DONE sys_slingshot calls sys_lifecycle_spawn_shockwave directly
 + Cross-system call. Systems should not call each other; move to event queue instead.
++ Covered by Phase 3 of the slingshot input refactor ([[file:adr/0004-slingshot-input-refactor.org]]):
+  GameEvent_Shockwave pushed by input_slingshot_release, consumed in sys_lifecycle.
 *** DONE Fragment energy was not conserved on shatter
 ** Backlog
 *** TODO Energy-dependent fragment size and spread
-+ Fragment size (ENERGY_FRAGMENTS_SIZE) and spread radius (ENERGY_FRAGMENTS_SPREAD_RADIUS) are currently fixed constants. As bigger objects (Jupiter-sized planets etc.) enter the game, these should scale with collision energy so fragments remain proportional and collectible.
++ Fragment size (ENERGY_FRAGMENTS_SIZE) and spread radius (ENERGY_FRAGMENTS_SPREAD_RADIUS) are currently fixed constants. As bigger objects (Jupiter-sized planets etc.) enter the game, these should scale with collision energy so fragments remain proportional and collectible.yy    
+** Refactoring
+*** DONE Refactor slingshot system to be a set of utilities linked to the input handler.
++ Decisions: [[file:adr/0004-slingshot-input-refactor.org]]. Slingshot is an input gesture, not
+  a system. Mouse handling inlines into input_handle_mouse; matcher table becomes keyboard-only;
+  gesture logic moves into input_slingshot_activate/update/release/cancel; sys_slingshot deleted.
++ Key decisions: RIGHT click cancels when active, else pushes demolish event. can_launch recomputed
+  every frame; preview only on mouse move. Release recomputes cost fresh. Slingshot_Status.Released
+  deleted. Input writes non-entity state direct; entities strictly via events. Render/camera untouched.
++ Phase 1: Inline mouse handling in input_handle_mouse. Remove mouse variants + Slingshot_Cancel
+  from Input_Action/table. sys_slingshot untouched, tests stay green.
++ Phase 2: Extract input_slingshot_* handlers from sys_slingshot, adopt update policy + authoritative
+  release, drop .Released status, delete sys_slingshot.odin, rewrite sys_slingshot tests per-handler.
++ Phase 3: GameEvent_Shockwave event consumed by sys_lifecycle; removes the cross-system call to
+  sys_lifecycle_spawn_shockwave (closes the Bugs entry below).
