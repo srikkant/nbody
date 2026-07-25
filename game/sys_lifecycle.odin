@@ -26,10 +26,10 @@ sys_lifecycle_init :: proc(g: ^Game) {
 		GameEvent_ObjectSpawn {
 			pos = rl.Vector2(0),
 			celestial = {.Star},
-			density = g.params.celestials[.Star].density,
-			radius = g.params.celestials[.Star].radius,
+			density = g.effective_params.celestials[.Star].density,
+			radius = g.effective_params.celestials[.Star].radius,
 			energy_source = {output = 10, timer = {interval = 1}},
-			renderable = {g.params.celestials[.Star].color},
+			renderable = {g.effective_params.celestials[.Star].color},
 		},
 	)
 }
@@ -102,7 +102,7 @@ sys_lifecycle_handle_spawn :: proc(g: ^Game, event: ^GameEvent_ObjectSpawn) {
 	entity_add_celestial(g, id, event.celestial)
 
 	if event.show_orbit {
-		if g.params.celestials[event.celestial.type].trail_multiplier > 0 {
+		if g.effective_params.celestials[event.celestial.type].trail_multiplier > 0 {
 			entity_add_orbit(g, id, {})
 		}
 	}
@@ -122,7 +122,7 @@ sys_lifecycle_collision_classify :: proc(
 	// Same celestial types will result in shatter or merge depending on
 	// relative velocity
 	shatter_threshold_sq :=
-		g.params.physics.collision_shatter_threshold_factor *
+		g.effective_params.physics.collision_shatter_threshold_factor *
 		(e1.mass + e2.mass) /
 		(e1.radius + e2.radius)
 
@@ -142,7 +142,7 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	// TODO: If the new type is a star, we should rethink this.
 	new_type := entity_celestial_next_type(e1.celestial.type)
 	new_mass := e1.mass + e2.mass
-	new_density := g.params.celestials[new_type].density
+	new_density := g.effective_params.celestials[new_type].density
 	new_radius := physics_radius_from_mass_density(new_mass, new_density)
 
 	vel_x := (e1.mass * e1.velocity.current.x + e2.mass * e2.velocity.current.x) / new_mass
@@ -158,13 +158,18 @@ sys_lifecycle_resolve_merge :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	entity_add_position(g, id, {current = pos})
 	entity_add_velocity(g, id, {current = new_vel})
 	entity_add_life(g, id, {created_at = g.elapsed})
-	entity_add_renderable(g, id, {g.params.celestials[new_type].color})
+	entity_add_renderable(g, id, {g.effective_params.celestials[new_type].color})
 	entity_add_celestial(g, id, {new_type})
-	if g.params.celestials[new_type].trail_multiplier > 0 {
+	if g.effective_params.celestials[new_type].trail_multiplier > 0 {
 		entity_add_orbit(g, id, {})
 	}
 
-	sys_lifecycle_spawn_shockwave(g, pos, f64(new_mass), g.params.celestials[new_type].color)
+	sys_lifecycle_spawn_shockwave(
+		g,
+		pos,
+		f64(new_mass),
+		g.effective_params.celestials[new_type].color,
+	)
 
 	if entity_celestial_is_unlockable(new_type) {
 		g.slingshot.available_objects += {new_type}
@@ -215,14 +220,14 @@ sys_lifecycle_resolve_debris :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	g.delete_entities[small_id] = true
 
 	rel_speed := math_vec2_length(e1.velocity.current - e2.velocity.current)
-	loss := small_mass * (rel_speed * g.params.physics.collision_mass_loss_factor)
+	loss := small_mass * (rel_speed * g.effective_params.physics.collision_mass_loss_factor)
 	remaining_mass := big_mass - loss
 
 	e_big := &g.entities[big_id]
 	e_big.celestial.type = entity_celestial_prev_type(big_type)
 	e_big.mass = remaining_mass
 
-	new_density := g.params.celestials[e_big.celestial.type].density
+	new_density := g.effective_params.celestials[e_big.celestial.type].density
 	e_big.radius = physics_radius_from_mass_density(remaining_mass, new_density)
 
 	energy_loss := f64(loss) * f64(rel_speed * rel_speed)
@@ -243,7 +248,7 @@ sys_lifecycle_handle_star_absorb :: proc(g: ^Game, e: ^GameEvent_Collision) {
 	}
 
 	g.delete_entities[other_id] = true
-	absorbed := other_mass * g.params.physics.mass_absorb_factor
+	absorbed := other_mass * g.effective_params.physics.mass_absorb_factor
 	g.mass_delta[star_id] += absorbed
 }
 
@@ -269,7 +274,7 @@ sys_lifecycle_handle_collision :: proc(g: ^Game, event: ^GameEvent_Collision) {
 sys_lifecycle_handle_out_of_bounds :: proc(g: ^Game, event: ^GameEvent_Object_OutOfBounds) {
 	e := &g.entities[event.id]
 	if e.celestial.type != .Star && e.mass > 0 {
-		refund := f64(g.params.physics.energy_refund_factor * e.mass * e.radius)
+		refund := f64(g.effective_params.physics.energy_refund_factor * e.mass * e.radius)
 		g.score.energy += refund
 	}
 	g.delete_entities[event.id] = true
@@ -285,7 +290,7 @@ sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^GameEvent_Object_Demolis
 		e := &g.entities[i]
 		if PHYSICS_SIG <= e.sig && e.celestial.type != .Star {
 			dist := rl.Vector2Distance(e.pos.current, g.input.mouse_pos)
-			click_radius := g.params.physics.cursor_distance
+			click_radius := g.effective_params.physics.cursor_distance
 
 			if dist <= click_radius && dist < closest_dist {
 				closest_dist = dist
@@ -298,7 +303,7 @@ sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^GameEvent_Object_Demolis
 	if found {
 		e := &g.entities[closest_id]
 		if e.mass > 0 {
-			refund := f64(g.params.physics.energy_refund_factor * e.mass * e.radius)
+			refund := f64(g.effective_params.physics.energy_refund_factor * e.mass * e.radius)
 			g.score.energy += refund
 			sys_lifecycle_spawn_shockwave(g, e.pos.current, f64(e.mass), e.renderable.color)
 		}
@@ -333,7 +338,7 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 			ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_Y *
 			f32(g.dt)
 
-		if dist_sq < g.params.physics.cursor_distance_squared {
+		if dist_sq < g.effective_params.physics.cursor_distance_squared {
 			g.score.energy += e.collectible_energy.energy
 			g.delete_entities[i] = true
 		}
@@ -372,12 +377,14 @@ sys_lifecycle_update_entities :: proc(g: ^Game) {
 		}
 
 		if g.mass_delta[i] > 0 {
-			density := g.params.celestials[e.celestial.type].density
+			density := g.effective_params.celestials[e.celestial.type].density
 			e.mass += g.mass_delta[i]
 			e.radius = physics_radius_from_mass_density(e.mass, density)
 
 			if ENERGY_SOURCE_SIG <= e.sig {
-				e.energy_source.output = f32(g.params.physics.energy_source_gain_factor * e.mass)
+				e.energy_source.output = f32(
+					g.effective_params.physics.energy_source_gain_factor * e.mass,
+				)
 			}
 
 			g.mass_delta[i] = 0

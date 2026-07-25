@@ -32,7 +32,7 @@ sys_score :: proc(g: ^Game) {
 			pos_score := 1 / (1 + math_vec2_length_sq(e.pos.current)) // prevent division by zero
 
 			g.score.energy += f64(
-				g.params.physics.energy_gain_factor * mass_score * vel_score * pos_score,
+				g.effective_params.physics.energy_gain_factor * mass_score * vel_score * pos_score,
 			)
 		}
 
@@ -40,7 +40,7 @@ sys_score :: proc(g: ^Game) {
 			math_update_timer(&e.energy_source.timer, dt)
 			if e.energy_source.timer.done {
 				g.score.energy += f64(
-					g.params.physics.energy_source_gain_factor *
+					g.effective_params.physics.energy_source_gain_factor *
 					(e.energy_source.output + (e.radius * e.radius)),
 				)
 			}

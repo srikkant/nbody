@@ -484,15 +484,24 @@ Help :: struct {
 	launch_done: bool,
 }
 
+Modifier_Kind :: enum {
+	Gravity_Boost,
+	Energy_Magnet,
+}
+
 /*
  * Modifiers applied to the game properties.
  * These will update the game parameters and the current state in some way.
- * TODO: Implement this system
  */
 Modifier :: struct {
-	active:     bool,
-	started_at: f64,
-	duration:   f64,
+	kind:      Modifier_Kind,
+	permanent: bool,
+	timer:     Timer,
+}
+
+Parameters_Modifier :: struct {
+	magnitude: f32, // multiplier applied to the kind's target field
+	duration:  f32, // seconds; temp kinds only (0.0 for permanent)
 }
 
 /*
@@ -663,6 +672,7 @@ Parameters :: struct {
 	emitter_presets: [Emitter_Preset]Parameters_Emitter_Preset,
 	physics:         Parameters_Physics,
 	slingshot:       Parameters_Slingshot,
+	modifiers:       [Modifier_Kind]Parameters_Modifier,
 }
 
 /*
@@ -679,6 +689,7 @@ Game :: struct {
 	status:              Status, // Current game status, controls the active systems.
 	theme:               Theme,
 	params:              Parameters,
+	effective_params:    Parameters,
 	assets:              Assets,
 	input:               Input,
 	help:                Help,

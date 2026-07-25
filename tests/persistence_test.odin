@@ -248,6 +248,7 @@ test_make_populated_game :: proc() -> ^game.Game {
 		},
 	}
 	g.params.physics.gravity_constant = 7.5
+	g.effective_params = g.params
 
 	_ = test_add_celestial(g, .Star, {0, 0})
 
@@ -286,9 +287,9 @@ test_make_populated_game :: proc() -> ^game.Game {
 	game.entity_free(g, id3)
 
 	g.modifiers[0] = {
-		active     = true,
-		started_at = 10,
-		duration   = 30,
+		kind = .Gravity_Boost,
+		permanent = false,
+		timer = {curr = 10, interval = 30, done = false},
 	}
 	g.modifiers_count = 1
 

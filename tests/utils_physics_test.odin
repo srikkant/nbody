@@ -33,6 +33,7 @@ test_physics_slingshot_release_velocity :: proc(t: ^testing.T) {
 	defer free(g)
 
 	g.params.slingshot.launch_power = 2
+	g.effective_params = g.params
 	g.slingshot.start_pos = {10, 5}
 	g.slingshot.end_pos = {4, 3}
 

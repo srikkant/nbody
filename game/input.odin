@@ -116,7 +116,7 @@ input_slingshot_compute_preview :: proc(g: ^Game) {
 	accumulated_t: f32 = 0.0
 
 	for idx in 1 ..< 600 {
-		if accumulated_t >= g.params.slingshot.preview_duration do break
+		if accumulated_t >= g.effective_params.slingshot.preview_duration do break
 
 		dist := rl.Vector2Distance(pos, star.pos.current)
 		scale := clamp(dist / f32(380.0), f32(0.12), f32(3.5))
@@ -155,11 +155,13 @@ input_slingshot_prepare_launch :: proc(
 	switch out in g.slingshot.output {
 	case Slingshot_Output_Emitter:
 		color := get_celestial_color(g, out.emitter.emit_celestial.type)
-		event.radius = g.params.celestials[out.emitter.emit_celestial.type].radius
+		event.radius = g.effective_params.celestials[out.emitter.emit_celestial.type].radius
 		event.emitter = out.emitter
 		event.emitter.emit_vel = vel
-		event.emitter.emit_density = g.params.celestials[out.emitter.emit_celestial.type].density
-		event.emitter.emit_radius = g.params.celestials[out.emitter.emit_celestial.type].radius
+		event.emitter.emit_density =
+			g.effective_params.celestials[out.emitter.emit_celestial.type].density
+		event.emitter.emit_radius =
+			g.effective_params.celestials[out.emitter.emit_celestial.type].radius
 		event.emitter.emit_color = color
 		cost = f64(
 			event.emitter.emit_density *
@@ -172,13 +174,13 @@ input_slingshot_prepare_launch :: proc(
 	case Slingshot_Output_Celestial:
 		color := get_celestial_color(g, out.celestial.type)
 		event.celestial = out.celestial
-		event.density = g.params.celestials[out.celestial.type].density
-		event.radius = g.params.celestials[out.celestial.type].radius
+		event.density = g.effective_params.celestials[out.celestial.type].density
+		event.radius = g.effective_params.celestials[out.celestial.type].radius
 		event.velocity = vel
 		event.show_orbit = true
 		event.renderable = Component_Renderable{color}
 		cost = f64(
-			g.params.celestials[out.celestial.type].launch_cost +
+			g.effective_params.celestials[out.celestial.type].launch_cost +
 			(event.density * event.radius * event.radius * math_vec2_length_sq(vel)),
 		)
 		g.slingshot.obj_radius = event.radius
@@ -288,6 +290,15 @@ input_process :: proc(g: ^Game) {
 	input_match_action(g)
 	input_handle_action(g)
 	input_handle_mouse(g)
+
+	if g.status == .Playing && !g.input.ignore {
+		if rl_is_key_pressed(g, .G) {
+			modifier_add(g, .Gravity_Boost)
+		}
+		if rl_is_key_pressed(g, .H) {
+			modifier_add(g, .Energy_Magnet)
+		}
+	}
 
 	g.input.ignore = false
 }

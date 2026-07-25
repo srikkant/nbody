@@ -1,0 +1,133 @@
+#+TITLE: ADR 0005: Modifier System (Base + Effective Params)
+#+OPTIONS: ^:{}
+
+* Status
+
+Proposed (planning phase).
+
+* Context
+
+The Phase 2 upgrade tree (docs/overview.org) needs a general-purpose way to
+change the game's fundamental params: gravity constant, energy gain/cost
+coefficients, slingshot properties. Modifiers can be temporary (timed buffs)
+or permanent (owned upgrades).
+
+A skeleton exists: =Game.modifiers[MAX_MODIFIERS]=, an empty =sys_modifier=
+wired first in the =.Playing= loop, and a =Modifier= struct mid-pivot in the
+working tree (={permanent, timer}=). =persistence.odin= still serializes the
+pre-pivot shape (={active, started_at, duration}=), so the build is currently
+red. The detailed plan is in [[file:../modifier-system.org]]; this ADR records
+the decisions.
+
+* Decisions
+
+** Closed enum kind: effects hardcoded, not data-driven
+
+#+begin_src odin
+Modifier_Kind :: enum { Gravity_Boost, Energy_Magnet }
+#+end_src
+
+A modifier's effect is a case in a switch inside =sys_modifier=, not an open
+{target, op, value} record. The set of possible effects is closed and
+type-safe; balancing lives in one =[Modifier_Kind]Parameters_Modifier= table
+in =Parameters=. New modifier = new enum case + fold branch, which is the
+right granularity for a hand-balanced game.
+
+** Target scope v1: flat scalars only
+
+Only =physics.*= and =slingshot.*= fields are valid targets. Table entries
+(=celestials[type].*=, =emitter_presets[preset].*=) are excluded — per-type
+targeting adds an addressing dimension nobody needs yet. The overview.org
+upgrade list (gravity, emitter cost, preview duration) is mostly flat
+scalars; per-type kinds can extend the enum later without structural change.
+
+** Application model: base + effective recompute
+
+=g.params= is BASE — written by =params_init= and save load, never mutated by
+modifiers. =g.effective_params= is DERIVED — =sys_modifier= recomputes it
+every frame: struct-copy base, then fold each active modifier. All runtime
+read sites migrate to =effective_params=.
+
+Rejected: mutate-in-place + reverse-on-expiry (inverse-op f32 drift, ordering
+bugs with stacked modifiers, snapshot complexity) and query-at-read-sites
+(easy to forget, derived-field caching hard). The recompute costs one struct
+copy + a handful of float ops per frame — nothing.
+
+Expiry is trivially correct in this model: drop the modifier from the list
+and the next frame's recompute simply doesn't fold it. No inverse op exists.
+
+** Duration: permanent flag + Timer
+
+#+begin_src odin
+Modifier :: struct {
+    kind:      Modifier_Kind,
+    permanent: bool,
+    timer:     Timer, // temp only
+}
+#+end_src
+
+Reuses the existing =Timer= + =math_update_timer=. The persisted =curr= means
+save/load mid-effect resumes the countdown naturally. Supersedes the
+pre-pivot ={active, started_at, duration}= shape, which duplicated the Timer
+concept on top of =g.elapsed=.
+
+** No duplicate kinds: refresh rule
+
+One active instance per =Modifier_Kind=. Re-acquiring a temp kind resets its
+timer; re-acquiring a permanent kind is rejected. The kind is effectively the
+key. This makes reasoning, persistence, and the UI chips simple, and caps
+=modifiers_count= at the number of distinct kinds (=MAX_MODIFIERS= 10 is
+ample).
+
+** Cross-kind compose: fold in enum declaration order
+
+The recompute folds kinds in =Modifier_Kind= declaration order, not list
+order, so composition is deterministic regardless of acquisition order.
+Rejected: op-grouping (add→mul→set) as unneeded engine complexity, and
+banning same-target kinds as an artificial design constraint. v1 kinds touch
+disjoint targets, so the rule is latent until a same-target kind arrives.
+
+** Acquisition: direct write via modifiers.odin
+
+Modifiers are not entities, so the event queue is not required (AGENTS.md
+cross-system rules allow direct state writes). The add/refresh/reject logic
+lives in a NEW non-sys file =game/modifiers.odin= (=modifier_add=), callable
+from input handlers and later the upgrade menu without violating the
+no-cross-sys-call rule. Precedent: =entity_add_emitter=.
+
+** Persistence: no SAVE_VERSION bump + kind guard
+
+Per-entry shape becomes =kind u64, permanent bool, curr f32, interval f32=
+without bumping =SAVE_VERSION=. Accepted risk analysis: the system never
+shipped, so =modifiers_count == 0= in every real save and no save contains
+old-shape bytes. Insurance: on load, =kind >= len(Modifier_Kind)= rejects the
+save. =timer.done= and =effective_params= are not persisted (recomputable,
+matching ADR 0001's exclusion rule).
+
+** v1 surface: two kinds, debug keys, chips UI, unit tests
+
+- Kinds: =Gravity_Boost= (temp 30s, =gravity_constant= x1.5) and
+  =Energy_Magnet= (permanent, =energy_gain_factor= x1.25) — one temp + one
+  permanent exercises both lifecycle paths.
+- Trigger: debug keybinds G/H in =input.odin= (free, no energy cost) until
+  the Upgrade menu track owns real acquisition.
+- Visibility: minimal statusbar chips (name + countdown bar) in =ui.odin= so
+  playtests can see active effects.
+- Tests: unit matrix over add/refresh/reject/expire/fold/base-isolation/
+  persistence roundtrip; no physics scenario test.
+
+* Consequences
+
+- The persistence build break is resolved by adopting the pivoted shape in
+  =persistence.odin= (phase 1 of the plan).
+- Every runtime params read site migrates to =effective_params= — a
+  mechanical sweep with one rule; the exceptions are init, persistence, and
+  the fold itself.
+- Save format gains the kind guard; old saves keep loading (they contain no
+  modifier entries).
+- The upgrade menu track gets a ready backend: it only needs UI, energy
+  costs, and more enum cases.
+- Prestige multipliers can land later as additional permanent kinds without
+  structural change; that decision belongs to the Prestige track.
+- Distinct kinds are capped at =MAX_MODIFIERS= (10); growing past that means
+  raising the cap, not redesigning.

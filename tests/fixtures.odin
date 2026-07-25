@@ -99,12 +99,22 @@ test_params :: proc() -> game.Parameters {
 		cost_multiplier = 0.6,
 	}
 
+	p.modifiers[.Gravity_Boost] = {
+		magnitude = 1.5,
+		duration  = 30.0,
+	}
+	p.modifiers[.Energy_Magnet] = {
+		magnitude = 1.25,
+		duration  = 0.0,
+	}
+
 	return p
 }
 
 test_make_game :: proc() -> ^game.Game {
 	g := new(game.Game)
 	g.params = test_params()
+	g.effective_params = g.params
 	g.dt = TEST_DT
 	g.timers[.Score] = game.Timer{0, 1, false}
 	g.timers[.Trail] = game.Timer{0, 0.05, false}
@@ -133,10 +143,10 @@ test_add_celestial :: proc(
 	event := game.GameEvent_ObjectSpawn {
 		pos = pos,
 		velocity = vel,
-		density = g.params.celestials[type].density,
-		radius = g.params.celestials[type].radius,
+		density = g.effective_params.celestials[type].density,
+		radius = g.effective_params.celestials[type].radius,
 		celestial = {type = type},
-		renderable = {color = g.params.celestials[type].color},
+		renderable = {color = g.effective_params.celestials[type].color},
 	}
 	game.sys_lifecycle_handle_spawn(g, &event)
 

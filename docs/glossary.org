@@ -117,6 +117,46 @@ Energy an emitter must have available (per emission) to fire. For menu-placed
 emitters this is derived from the chosen Emitter Preset and celestial at placement
 time.
 
+* Progression
+
+** Modifier
+A temporary or permanent change to a fundamental game param. =Modifier{kind,
+permanent, timer}= (types.odin), stored in =Game.modifiers[MAX_MODIFIERS]=.
+Temporary modifiers count down via their =Timer= and are removed on expiry;
+permanent modifiers ignore the timer. See ADR 0005 and
+[[file:modifier-system.org]].
+
+** Modifier_Kind
+Closed enum naming each possible modifier effect
+(=Gravity_Boost=, =Energy_Magnet=). The effect (target field + operation) is
+hardcoded as a case in =sys_modifier='s= fold; balance coefficients live in
+the =Parameters.modifiers[Modifier_Kind]Parameters_Modifier= table. One
+active instance per kind.
+
+** Base Parameters (=g.params=)
+The =Parameters= struct as initialized and persisted. Never mutated by
+modifiers. Read only by init, persistence, and the modifier fold itself.
+
+** Effective Parameters (=g.effective_params=)
+The =Parameters= struct all runtime systems read. Recomputed every frame by
+=sys_modifier=: struct-copy of Base Parameters with each active modifier
+folded in. Never persisted (deterministically recomputable).
+
+** Fold
+The per-frame application of active modifiers onto Effective Parameters.
+Folds in =Modifier_Kind= enum declaration order so composition is
+deterministic regardless of acquisition order.
+
+** Refresh Rule
+Re-acquiring an already-active modifier never creates a duplicate: a
+temporary kind resets its timer instead; a permanent kind is rejected.
+
+** modifier_add
+=modifier_add(g, kind) -> bool= in =modifiers.odin= (non-sys ops file).
+Implements the Refresh Rule and the =MAX_MODIFIERS= capacity check. Called by
+debug keybinds (v1) and later the upgrade menu. Legal across files because a
+modifier is not an entity.
+
 * Cross-system conventions
 
 ** Event queue

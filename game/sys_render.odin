@@ -126,7 +126,7 @@ sys_add_entity_to_layer :: proc(g: ^Game, id: Entity_Id, layer: Render_LayerType
 
 sys_render_draw_celestial_entity :: proc(g: ^Game, id: Entity_Id) {
 	e := &g.entities[id]
-	cp := g.params.celestials[e.celestial.type]
+	cp := g.effective_params.celestials[e.celestial.type]
 	qm := cp.quad_multiplier
 	rect := rl.Rectangle{e.pos.current.x, e.pos.current.y, e.radius * qm, e.radius * qm}
 
@@ -142,7 +142,7 @@ sys_render_entities :: proc(g: ^Game) {
 			if .Emitter in e.sig {
 				sys_add_entity_to_layer(g, id, .EmitterStations)
 			} else if .Celestial in e.sig {
-				cp := g.params.celestials[e.celestial.type]
+				cp := g.effective_params.celestials[e.celestial.type]
 				switch cp.visual_class {
 				case .Debris:
 					sys_add_entity_to_layer(g, id, .Debris)
@@ -189,7 +189,7 @@ sys_render_entities :: proc(g: ^Game) {
 		layer := &g.render.layers[.Terrestrial]
 		for id in layer.entities[:layer.count] {
 			e := &g.entities[id]
-			cp := g.params.celestials[e.celestial.type]
+			cp := g.effective_params.celestials[e.celestial.type]
 			rl.SetShaderValue(shader_terr, loc_glow_terr, &cp.glow_intensity, .FLOAT)
 
 			sys_render_draw_celestial_entity(g, id)
@@ -209,7 +209,7 @@ sys_render_entities :: proc(g: ^Game) {
 		layer := &g.render.layers[.GasGiant]
 		for id in layer.entities[:layer.count] {
 			e := &g.entities[id]
-			cp := g.params.celestials[e.celestial.type]
+			cp := g.effective_params.celestials[e.celestial.type]
 			rl.SetShaderValue(shader_gas, loc_glow_gas, &cp.glow_intensity, .FLOAT)
 			sys_render_draw_celestial_entity(g, id)
 		}
@@ -266,7 +266,7 @@ sys_render_entities :: proc(g: ^Game) {
 
 				trail_mult: f32 = 1.0
 				if .Celestial in e.sig {
-					trail_mult = g.params.celestials[e.celestial.type].trail_multiplier
+					trail_mult = g.effective_params.celestials[e.celestial.type].trail_multiplier
 				}
 				if trail_mult <= 0.0 do continue
 

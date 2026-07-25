@@ -1,0 +1,224 @@
+#+TITLE: Plan: Modifier System
+#+OPTIONS: ^:{}
+
+* Goal
+
+General-purpose modifier system that changes the game's fundamental params
+(gravity, cost coefficients, energy factors). Modifiers are temporary or
+permanent. This is the foundation for the Phase 2 upgrade tree
+(docs/overview.org) and is designed to absorb prestige multipliers later.
+
+* Decisions (from design interview)
+
+| Question            | Decision                                                    |
+|---------------------+-------------------------------------------------------------|
+| Effect encoding     | Closed enum =Modifier_Kind=; effects hardcoded in sys_modifier |
+| Target scope v1     | Flat scalars only (=physics.*=, =slingshot.*=)              |
+| Application model   | Base params immutable; =effective_params= recomputed        |
+| Duration model      | =permanent= flag + =Timer= (temp only)                      |
+| Duplicate kinds     | One active instance per kind; temp re-acquire refreshes timer; permanent re-acquire rejected |
+| Cross-kind compose  | Fold in =Modifier_Kind= enum declaration order              |
+| Acquisition path    | Direct write to =g.modifiers= (modifier is not an entity)   |
+| v1 kind set         | =Gravity_Boost= (temp) + =Energy_Magnet= (permanent)        |
+| Read-site migration | Full: all systems read =g.effective_params=                 |
+| Recompute cadence   | Every frame, unconditionally                                |
+| Expiry semantics    | Remove from list, free slot                                 |
+| Capacity            | =MAX_MODIFIERS= stays 10 (caps distinct kinds)              |
+| Persistence         | No SAVE_VERSION bump; new entry shape + kind range guard    |
+| Runtime trigger v1  | Debug keybinds (G / H)                                      |
+| UI visibility v1    | Minimal statusbar chips (name + countdown)                  |
+| Test scope          | Unit matrix; no physics scenario test                       |
+| Ops file            | NEW =game/modifiers.odin= (non-sys) holds =modifier_add=    |
+
+* Domain model
+
+#+begin_src odin
+Modifier_Kind :: enum {
+    Gravity_Boost,  // temp: physics.gravity_constant x magnitude
+    Energy_Magnet,  // permanent: physics.energy_gain_factor x magnitude
+}
+
+Modifier :: struct {
+    kind:      Modifier_Kind,
+    permanent: bool,
+    timer:     Timer, // temp only; ignored when permanent
+}
+
+// Balance coefficients live in Parameters (AGENTS.md rule).
+Parameters_Modifier :: struct {
+    magnitude: f32, // multiplier applied to the kind's target field
+    duration:  f32, // seconds; temp kinds only
+}
+#+end_src
+
+=Parameters= gains a config table (base-only, never a modifier target):
+
+#+begin_src odin
+Parameters :: struct {
+    // ... existing fields ...
+    modifiers: [Modifier_Kind]Parameters_Modifier,
+}
+#+end_src
+
+=Game= gains the derived copy:
+
+#+begin_src odin
+Game :: struct {
+    // ...
+    params:           Parameters, // BASE: written by params_init and load only
+    effective_params: Parameters, // DERIVED: rewritten by sys_modifier every frame
+    // ...
+}
+#+end_src
+
+* Effect semantics (v1)
+
+| Kind          | Target                          | Op  | Value source                        |
+|---------------+---------------------------------+-----+-------------------------------------|
+| Gravity_Boost | =physics.gravity_constant=      | Mul | =params.modifiers[.Gravity_Boost].magnitude= (1.5) |
+| Energy_Magnet | =physics.energy_gain_factor=    | Mul | =params.modifiers[.Energy_Magnet].magnitude= (1.25) |
+
+Duration: =Gravity_Boost= 30s (temp). =Energy_Magnet= permanent (duration
+unused).
+
+* Lifecycle
+
+** Add / refresh / reject — =modifiers.odin= (NEW, non-sys)
+
+#+begin_src odin
+modifier_add :: proc(g: ^Game, kind: Modifier_Kind) -> bool
+#+end_src
+
+- Find active modifier by kind.
+- Found + temp: reset its timer (=math_reset_timer= with configured duration).
+  Return true. No second entry.
+- Found + permanent: reject, return false.
+- Not found: append =Modifier{kind, permanent, timer}= if
+  =modifiers_count < MAX_MODIFIERS=; else reject + =log.warn=.
+- =permanent= and initial timer come from the kind's =Parameters_Modifier=
+  entry (duration == 0 means permanent; v1: hardcoded per kind, kept in the
+  fold code — see sys_modifier below).
+
+Rationale for a non-sys ops file: input handlers (and later the upgrade menu)
+must not call =sys_*= methods (AGENTS.md cross-system rule). Precedent:
+=entity_add_emitter= lives outside sys files. Direct state write is legal
+because a modifier is not an entity.
+
+** Frame pass — =sys_modifier.odin=
+
+Runs first in the =.Playing= loop (already wired, game.odin). Steps:
+
+1. Tick timers of active temp modifiers (=math_update_timer=, =g.dt=).
+2. Remove expired (timer.done): swap-with-last, decrement =modifiers_count=.
+3. Recompute: =g.effective_params = g.params= (struct copy), then fold each
+   active modifier in =Modifier_Kind= enum declaration order. The fold code is
+   a switch over kind; each case applies its op to its target field(s).
+
+Compose order is deterministic because the fold iterates kinds in enum order,
+not list order. v1 kinds touch disjoint targets, so order is unobservable for
+now; the rule exists for future same-target kinds.
+
+** Derived-field rule (future kinds)
+
+If a future kind targets a field with precomputed companions
+(=world_radius= → =world_radius_squared=, =cursor_distance= →
+=cursor_distance_squared=), its fold branch must update the companions too.
+v1 kinds touch neither.
+
+* Persistence
+
+No =SAVE_VERSION= bump. Rationale: the modifier system never shipped, so
+=modifiers_count == 0= in every real save; no existing save contains
+old-shape entries.
+
+Per-entry payload (replaces the old =active/started_at/duration= writes that
+currently break the build):
+
+#+begin_example
+kind      : u64   (Modifier_Kind ordinal)
+permanent : bool
+curr      : f32   (timer remaining progress)
+interval  : f32   (timer duration)
+#+end_example
+
+=timer.done= is recomputed by the frame tick; not persisted.
+
+Load guard: =kind >= len(Modifier_Kind)= → =r.ok = false= (rejects saves with
+garbage kinds, closing the no-bump risk).
+
+=effective_params= is NOT persisted — it is deterministically recomputable
+(matches the serialization doc's exclusion rule). Base =params= continues to
+roundtrip as today.
+
+* Read-site migration
+
+All runtime reads of =g.params= in =sys_*=, =input.odin=, =ui.odin= switch to
+=g.effective_params=. Exceptions that keep reading/writing base:
+
+- =params.odin= (init writes base)
+- =persistence.odin= (serializes base)
+- =sys_modifier.odin= (fold source is base; config table read from base)
+- tests' fixture construction
+
+* Runtime trigger (v1)
+
+Debug keybinds in =input.odin=, =.Playing= only:
+
+| Key | Action                             |
+|-----+------------------------------------|
+| G   | =modifier_add(g, .Gravity_Boost)=  |
+| H   | =modifier_add(g, .Energy_Magnet)=  |
+
+Free (no energy cost) — real costs land with the Upgrade menu track. Keys are
+repurposed/removed when the menu ships.
+
+* UI (v1)
+
+=ui.odin= renders one small chip per active modifier, top-right under the
+score bar: kind name + countdown bar (=timer.curr / timer.interval=) for temp,
+an infinity marker for permanent. Read-only over =g.modifiers=.
+
+* Tests (unit matrix)
+
+NEW =tests/modifier_test.odin= plus persistence fixture update:
+
+- add new kind appends one entry
+- re-add temp refreshes timer, no second entry
+- re-add permanent rejected
+- add beyond =MAX_MODIFIERS= rejected
+- temp expiry removes entry and frees slot
+- both kinds active → both targets folded in effective
+- base isolation: =g.params= unchanged after frames with active modifiers
+- after expiry, =effective_params == params=
+- persistence roundtrip with populated modifiers (fixture uses new shape)
+- load guard: garbage kind byte → deserialize fails
+
+* Modules touched
+
+- =game/types.odin= — =Modifier_Kind=, =Parameters_Modifier=,
+  =Parameters.modifiers=, =Game.effective_params= (Modifier reshape already
+  done in working tree)
+- =game/modifiers.odin= — NEW: =modifier_add= (+ file-local find helper)
+- =game/sys_modifier.odin= — tick, expire, fold (file-private helpers
+  =sys_modifier_tick=, =sys_modifier_recompute=)
+- =game/params.odin= — modifier table defaults
+- =game/input.odin= — debug keybinds G/H
+- =game/ui.odin= — statusbar chips
+- =game/persistence.odin= — new entry shape + load guard (fixes red build)
+- =tests/modifier_test.odin= — NEW
+- =tests/persistence_test.odin= — fixture to new shape
+
+* Phases
+
+1. Model + engine: types, params table, modifiers.odin, sys_modifier,
+   persistence fix → build green again.
+2. Read-site migration to =effective_params=; existing tests updated.
+3. Debug keybinds + UI chips.
+4. Test matrix green, =odinfmt . -w=, plan.org to REVIEW.
+
+* Deferred
+
+- Real acquisition + energy costs → Upgrade menu track.
+- Prestige permanent multipliers → absorbable later as new kinds; decided by
+  the Prestige track.
+- =MAX_MODIFIERS= growth → revisit when distinct kinds approach 10.

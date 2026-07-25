@@ -209,4 +209,20 @@ params_init :: proc(g: ^Game) {
 		max_count       = 8,
 		cost_multiplier = 0.6,
 	}
+
+	// ==========================================
+	// MODIFIERS
+	// ==========================================
+
+	p.modifiers[.Gravity_Boost] = {
+		magnitude = 1.5,
+		duration  = 30.0,
+	}
+
+	p.modifiers[.Energy_Magnet] = {
+		magnitude = 1.25,
+		duration  = 0.0,
+	}
+
+	g.effective_params = g.params
 }

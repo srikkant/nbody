@@ -16,14 +16,17 @@ physics_get_gravitational_acceleration :: proc(
 
 	dir := source_pos - target_pos
 	unit := rl.Vector2Normalize(dir)
-	magnitude := g.params.physics.gravity_constant * source_mass / r2
+	magnitude := g.effective_params.physics.gravity_constant * source_mass / r2
 
 	return unit * magnitude
 }
 
 
 physics_get_slingshot_release_velocity :: proc(g: ^Game) -> rl.Vector2 {
-	return (g.slingshot.start_pos - g.slingshot.end_pos) * g.params.slingshot.launch_power
+	return(
+		(g.slingshot.start_pos - g.slingshot.end_pos) *
+		g.effective_params.slingshot.launch_power \
+	)
 }
 
 physics_calculate_mass :: proc(density: f32, radius: f32) -> f32 {

@@ -11,7 +11,8 @@ sys_physics :: proc(g: ^Game) {
 
 		total_accel := rl.Vector2(0)
 		e1_is_new :=
-			g.elapsed - e1.life.created_at < g.params.physics.spawn_invincibility_duration_sec
+			g.elapsed - e1.life.created_at <
+			g.effective_params.physics.spawn_invincibility_duration_sec
 		e1_is_star := e1.celestial.type == .Star
 
 		for j in 0 ..< g.entities_count {
@@ -33,7 +34,8 @@ sys_physics :: proc(g: ^Game) {
 
 			e2_is_star := e2.celestial.type == .Star
 			e2_is_new :=
-				g.elapsed - e2.life.created_at < g.params.physics.spawn_invincibility_duration_sec
+				g.elapsed - e2.life.created_at <
+				g.effective_params.physics.spawn_invincibility_duration_sec
 
 			invincible := (e1_is_new || e2_is_new) && !(e1_is_star || e2_is_star)
 			collision := rl.CheckCollisionCircles(
@@ -84,7 +86,7 @@ sys_physics :: proc(g: ^Game) {
 		}
 
 		dist_sq := math_vec2_length_sq(e.pos.current)
-		if dist_sq > g.params.physics.world_radius_squared {
+		if dist_sq > g.effective_params.physics.world_radius_squared {
 			push_event(g, GameEvent_Object_OutOfBounds{id = Entity_Id(i)})
 		}
 	}

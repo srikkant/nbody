@@ -416,9 +416,10 @@ persist_write_payload :: proc(w: ^Persist_Buffer, g: ^Game) {
 	persist_write_u64(w, u64(g.modifiers_count))
 	for i in 0 ..< g.modifiers_count {
 		m := g.modifiers[i]
-		persist_write_bool(w, m.active)
-		persist_write_f64(w, m.started_at)
-		persist_write_f64(w, m.duration)
+		persist_write_u64(w, u64(m.kind))
+		persist_write_bool(w, m.permanent)
+		persist_write_f32(w, m.timer.curr)
+		persist_write_f32(w, m.timer.interval)
 	}
 }
 
@@ -503,9 +504,19 @@ persist_read_payload :: proc(r: ^Persist_Buffer, g: ^Game) {
 	g.modifiers_count = modifiers_count
 	for i in 0 ..< modifiers_count {
 		m := &g.modifiers[i]
-		m.active = persist_read_bool(r)
-		m.started_at = persist_read_f64(r)
-		m.duration = persist_read_f64(r)
+		kind_raw := persist_read_u64(r)
+		if kind_raw >= u64(len(Modifier_Kind)) {
+			r.ok = false
+			return
+		}
+		permanent := persist_read_bool(r)
+		curr := persist_read_f32(r)
+		interval := persist_read_f32(r)
+
+		m.kind = Modifier_Kind(kind_raw)
+		m.permanent = permanent
+		m.timer = math_make_timer(interval)
+		m.timer.curr = curr
 	}
 }
 

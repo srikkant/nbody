@@ -1,9 +1,9 @@
 #+TITLE: Planner
-#+TODO: TODO(t) PLANNED(p) WORKING(w) | DONE(d)
+#+TODO: TODO(t) PLANNED(p) WORKING(w) REVIEW(r) | DONE(d)
 #+OPTIONS: ^:{}
 
 * Tracks
-**  UI [0/8]
+** UI [0/8]
 *** TODO Pause menu
 *** TODO Progression menu
 *** TODO Upgrade menu
@@ -15,9 +15,6 @@
 + Wires available_objects (read for the first time) + makes emitter subsystem reachable.
 + Repurpose dead Render_LaunchMenu struct into Control_Menu state. Render in ui.odin, hit-test in
   input.odin. Introduces Drag_Intent enum + Parameters_Emitter_Preset table.
-*** DONE Screen-space UI cursor rendering & halo suppression
-+ Moved custom cursor pointer rendering to screen space in ui_draw (drawn last on top of all UI menus).
-+ Implemented ui_is_mouse_over_ui to suppress translucent collector halo circle whenever mouse is over active UI elements or during pause state.
 *** TODO Launch menu
 + Object + emitter selection for the slingshot. Now covered by the Control menu track above; keep
   this entry for any separate launch-confirmation UI if it emerges.
@@ -34,8 +31,13 @@
 ** Economy [0/2]
 *** TODO Scoring system
 *** TODO Launch cost
-** Progression [1/7]
-*** TODO Modifier system for upgrades
+** Progression [2/7]
+*** DONE Modifier system for upgrades
++ General purpose modifier system that changes the game's fundamental params. This includes things like various cost coeffiecients, gravity etc.
++ These can be temporary or permanent.
++ Skeleton type exists. Nothing inside it.
++ Design: [[file:modifier-system.org]], decisions: [[file:adr/0005-modifier-system.org]], vocab: [[file:glossary.org]].
++ Base + effective params model: g.params immutable, effective_params recomputed every frame by sys_modifier. Closed Modifier_Kind enum, refresh rule, no SAVE_VERSION bump (+kind guard). v1: Gravity_Boost (temp) + Energy_Magnet (perm), debug keys G/H, statusbar chips.
 *** TODO Prestige (supernova reset)
 + Phase 3 from docs/overview.org. When the star becomes too massive for orbits to escape, the system
   collapses into a black hole/supernova: soft reset that grants premium currency and permanent
@@ -92,7 +94,7 @@
 + Clicks on the control menu were not being hit-tested in input_handle_mouse, causing clicks to fall through and trigger object launch. Added ui_control_menu_handle_click invocation in input_handle_mouse.
 ** Backlog
 *** TODO Energy-dependent fragment size and spread
-+ Fragment size (ENERGY_FRAGMENTS_SIZE) and spread radius (ENERGY_FRAGMENTS_SPREAD_RADIUS) are currently fixed constants. As bigger objects (Jupiter-sized planets etc.) enter the game, these should scale with collision energy so fragments remain proportional and collectible.yy    
++ Fragment size (=ENERGY_FRAGMENTS_SIZE=) and spread radius (=ENERGY_FRAGMENTS_SPREAD_RADIUS=) are currently fixed constants. As bigger objects (Jupiter-sized planets etc.) enter the game, these should scale with collision energy so fragments remain proportional and collectible.yy    
 ** Refactoring
 *** DONE Refactor slingshot system to be a set of utilities linked to the input handler.
 + Decisions: [[file:adr/0004-slingshot-input-refactor.org]]. Slingshot is an input gesture, not
@@ -107,3 +109,5 @@
   release, drop .Released status, delete sys_slingshot.odin, rewrite sys_slingshot tests per-handler.
 + Phase 3: GameEvent_Shockwave event consumed by sys_lifecycle; removes the cross-system call to
   sys_lifecycle_spawn_shockwave (closes the Bugs entry below).
+** Polish [0/1]
+*** TODO Control menu's UI should be overhauled

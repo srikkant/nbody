@@ -26,6 +26,10 @@ math_reset_timer :: proc(t: ^Timer, interval: f32) {
 	t.done = false
 }
 
+math_make_timer :: proc(interval: f32) -> Timer {
+	return Timer{interval = interval, curr = 0, done = false}
+}
+
 math_catmull_rom :: proc(p0, p1, p2, p3: rl.Vector2, t: f32) -> rl.Vector2 {
 	t2 := t * t
 	t3 := t2 * t
