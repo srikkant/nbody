@@ -4,6 +4,7 @@ package game
 
 import "core:fmt"
 import "core:hash"
+import "core:log"
 import "core:os"
 import rl "vendor:raylib"
 
@@ -363,6 +364,7 @@ persist_write_payload :: proc(w: ^Persist_Buffer, g: ^Game) {
 	persist_write_f32(w, g.elapsed)
 
 	persist_write_f64(w, g.score.energy)
+	persist_write_f64(w, g.score.lifetime_energy_earned)
 	persist_write_i64(w, i64(g.score.energy_rate_ticker))
 	persist_write_i64(w, i64(g.score.total_objects))
 	for i in 0 ..< AVG_CALC_TICKS {
@@ -421,12 +423,18 @@ persist_write_payload :: proc(w: ^Persist_Buffer, g: ^Game) {
 		persist_write_f32(w, m.timer.curr)
 		persist_write_f32(w, m.timer.interval)
 	}
+
+	persist_write_u64(w, u64(len(Upgrade_Id)))
+	for id in Upgrade_Id {
+		persist_write_u8(w, g.upgrade_levels[id])
+	}
 }
 
 persist_read_payload :: proc(r: ^Persist_Buffer, g: ^Game) {
 	g.elapsed = persist_read_f32(r)
 
 	g.score.energy = persist_read_f64(r)
+	g.score.lifetime_energy_earned = persist_read_f64(r)
 	g.score.energy_rate_ticker = int(persist_read_i64(r))
 	g.score.total_objects = int(persist_read_i64(r))
 	for i in 0 ..< AVG_CALC_TICKS {
@@ -517,6 +525,22 @@ persist_read_payload :: proc(r: ^Persist_Buffer, g: ^Game) {
 		m.permanent = permanent
 		m.timer = math_make_timer(interval)
 		m.timer.curr = curr
+	}
+
+	upgrades_count := persist_read_u64(r)
+	if upgrades_count > u64(len(Upgrade_Id)) {
+		r.ok = false
+		return
+	}
+	for i in 0 ..< upgrades_count {
+		id := Upgrade_Id(i)
+		lvl := persist_read_u8(r)
+		max_lvl := g.params.upgrades[id].max_level
+		if lvl > max_lvl {
+			log.warn("Clamping saved upgrade level for node", id, "from", lvl, "to max", max_lvl)
+			lvl = max_lvl
+		}
+		g.upgrade_levels[id] = lvl
 	}
 }
 

@@ -41,3 +41,18 @@ math_catmull_rom :: proc(p0, p1, p2, p3: rl.Vector2, t: f32) -> rl.Vector2 {
 				(-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3) \
 	)
 }
+
+math_apply_upgrade_op :: proc(v: f32, op: Upgrade_Op, magnitude: f32, level: u8) -> f32 {
+	if level == 0 do return v
+	switch op {
+	case .Add:
+		return v + magnitude * f32(level)
+	case .Mul:
+		return v * math.pow(magnitude, f32(level))
+	}
+	return v
+}
+
+math_geometric_cost :: proc(base, growth: f64, level: u8) -> f64 {
+	return base * math.pow(growth, f64(level))
+}

@@ -1,6 +1,5 @@
 package game
 
-import "core:fmt"
 import rl "vendor:raylib"
 
 ui_init :: proc(g: ^Game) {
@@ -11,6 +10,9 @@ ui_init :: proc(g: ^Game) {
 
 ui_draw :: proc(g: ^Game) {
 	ui_top_bar_draw(g)
+	if g.status == .Paused && g.help.launch_done {
+		ui_upgrade_menu_draw(g)
+	}
 	ui_modifiers_draw(g)
 	ui_help_draw(g)
 	ui_control_menu_draw(g)
@@ -78,13 +80,13 @@ ui_modifiers_draw :: proc(g: ^Game) {
 
 ui_top_bar_draw :: proc(g: ^Game) {
 	if g.status == .Paused {
-		rl.DrawRectangle(0, 0, i32(g.screenw), i32(g.screenh), rl.Color{0, 0, 0, 150})
+		rl.DrawRectangle(0, 0, i32(g.screenw), i32(g.screenh), rl.Color{5, 8, 15, 230})
 	}
 
 	pos := rl.Vector2(g.theme.margin_top_bar)
 
 	if g.help.launch_done {
-		energy := fmt.ctprintf("%.2f", g.score.energy)
+		energy := fmt_compact(g.score.energy)
 		rl_text_draw(g, .BodyBold, energy, pos)
 	}
 

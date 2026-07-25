@@ -275,7 +275,7 @@ sys_lifecycle_handle_out_of_bounds :: proc(g: ^Game, event: ^GameEvent_Object_Ou
 	e := &g.entities[event.id]
 	if e.celestial.type != .Star && e.mass > 0 {
 		refund := f64(g.effective_params.physics.energy_refund_factor * e.mass * e.radius)
-		g.score.energy += refund
+		economy_add_energy(g, refund)
 	}
 	g.delete_entities[event.id] = true
 }
@@ -304,7 +304,7 @@ sys_lifecycle_handle_demolish :: proc(g: ^Game, event: ^GameEvent_Object_Demolis
 		e := &g.entities[closest_id]
 		if e.mass > 0 {
 			refund := f64(g.effective_params.physics.energy_refund_factor * e.mass * e.radius)
-			g.score.energy += refund
+			economy_add_energy(g, refund)
 			sys_lifecycle_spawn_shockwave(g, e.pos.current, f64(e.mass), e.renderable.color)
 		}
 		g.delete_entities[closest_id] = true
@@ -338,8 +338,17 @@ sys_lifecycle_handle_fragments :: proc(g: ^Game) {
 			ENERGY_FRAGMENTS_DRIFT_AMPLITUDE_Y *
 			f32(g.dt)
 
+		if .Fragment_Attraction in g.capabilities && dist_sq > 0 {
+			dist := math.sqrt(dist_sq)
+			dir_x := dx / dist
+			dir_y := dy / dist
+			attract_speed: f32 = 80.0
+			e.pos.current.x += dir_x * attract_speed * f32(g.dt)
+			e.pos.current.y += dir_y * attract_speed * f32(g.dt)
+		}
+
 		if dist_sq < g.effective_params.physics.cursor_distance_squared {
-			g.score.energy += e.collectible_energy.energy
+			economy_add_energy(g, e.collectible_energy.energy)
 			g.delete_entities[i] = true
 		}
 	}

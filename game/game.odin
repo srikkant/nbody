@@ -38,6 +38,7 @@ game_reset :: proc(g: ^Game) {
 	sys_camera_init(g)
 	sys_lifecycle_init(g)
 	sys_score_init(g)
+	upgrade_reset(g, .Run, all = true)
 	frame_init(g)
 }
 
@@ -70,6 +71,7 @@ game_run :: proc(g: ^Game) {
 		sys_camera(g)
 		sys_render(g)
 	case .Paused:
+		sys_modifier(g)
 		sys_render(g)
 	case .Exit:
 	// Do nothing, the main loop will exit after this.

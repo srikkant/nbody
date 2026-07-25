@@ -219,12 +219,15 @@ test_make_populated_game :: proc() -> ^game.Game {
 
 	g.elapsed = 123.5
 	g.score.energy = 987654.25
+	g.score.lifetime_energy_earned = 1234567.89
 	g.score.energy_rate_ticker = 3
 	g.score.total_objects = 42
 	for i in 0 ..< game.AVG_CALC_TICKS {
 		g.score.energy_gains[i] = f64(i) * 1.5
 		g.score.energy_losses[i] = f64(i) * 2.5
 	}
+	g.upgrade_levels[.Gravity_Tuning] = 3
+	g.upgrade_levels[.Orbital_Yield] = 2
 	g.timers[.Score] = {0.5, 1, false}
 	g.timers[.Trail] = {0.02, 0.05, true}
 	g.timers[.Autosave] = {15, game.SAVE_AUTOSAVE_INTERVAL_SEC, false}
@@ -312,7 +315,7 @@ test_persistence_roundtrip :: proc(t: ^testing.T) {
 	testing.expect(t, ok, "serialize failed")
 	testing.expect(t, n > game.SAVE_HEADER_SIZE, "serialize wrote nothing")
 
-	g2 := new(game.Game)
+	g2 := test_make_game()
 	defer free(g2)
 	g2.screenw = 1440
 	g2.screenh = 810
@@ -330,6 +333,11 @@ test_persistence_roundtrip :: proc(t: ^testing.T) {
 	// Scalar state.
 	testing.expect(t, g2.elapsed == g.elapsed, "elapsed mismatch")
 	testing.expect(t, g2.score.energy == g.score.energy, "score.energy mismatch")
+	testing.expect(
+		t,
+		g2.score.lifetime_energy_earned == g.score.lifetime_energy_earned,
+		"score.lifetime_energy_earned mismatch",
+	)
 	testing.expect(
 		t,
 		g2.score.energy_rate_ticker == g.score.energy_rate_ticker,
@@ -397,10 +405,13 @@ test_persistence_roundtrip :: proc(t: ^testing.T) {
 		testing.expect(t, g2.free_entities[i] == g.free_entities[i], "free_entities mismatch")
 	}
 
-	// Modifiers.
+	// Modifiers & Upgrades.
 	testing.expect(t, g2.modifiers_count == g.modifiers_count, "modifiers_count mismatch")
 	for i in 0 ..< g.modifiers_count {
 		testing.expect(t, g2.modifiers[i] == g.modifiers[i], "modifiers mismatch")
+	}
+	for id in game.Upgrade_Id {
+		testing.expect(t, g2.upgrade_levels[id] == g.upgrade_levels[id], "upgrade_levels mismatch")
 	}
 }
 
@@ -417,7 +428,7 @@ test_persistence_rejects_bad_magic :: proc(t: ^testing.T) {
 
 	buf[0] = 'X'
 
-	g2 := new(game.Game)
+	g2 := test_make_game()
 	defer free(g2)
 	testing.expect(t, !game.persist_deserialize(g2, buf[:n]), "bad magic accepted")
 }
@@ -435,7 +446,7 @@ test_persistence_rejects_bad_version :: proc(t: ^testing.T) {
 
 	buf[4] = 0xFF // first byte of little-endian u32 version
 
-	g2 := new(game.Game)
+	g2 := test_make_game()
 	defer free(g2)
 	testing.expect(t, !game.persist_deserialize(g2, buf[:n]), "bad version accepted")
 }
@@ -453,7 +464,7 @@ test_persistence_rejects_corrupt_payload :: proc(t: ^testing.T) {
 
 	buf[game.SAVE_HEADER_SIZE] ~= 0xFF
 
-	g2 := new(game.Game)
+	g2 := test_make_game()
 	defer free(g2)
 	testing.expect(t, !game.persist_deserialize(g2, buf[:n]), "corrupt payload accepted")
 }
@@ -469,7 +480,7 @@ test_persistence_rejects_truncated :: proc(t: ^testing.T) {
 	n, ok := game.persist_serialize(g, buf)
 	testing.expect(t, ok, "serialize failed")
 
-	g2 := new(game.Game)
+	g2 := test_make_game()
 	defer free(g2)
 	testing.expect(t, !game.persist_deserialize(g2, buf[:n - 1]), "truncated buffer accepted")
 	testing.expect(
@@ -497,4 +508,26 @@ test_persistence_autosave_interval :: proc(t: ^testing.T) {
 	// Next frame update (resets done flag)
 	game.math_update_timer(&g.timers[.Autosave], 0.016)
 	testing.expect(t, !g.timers[.Autosave].done, "done right after reset")
+}
+
+@(test)
+test_persistence_upgrade_levels_clamped :: proc(t: ^testing.T) {
+	g := test_make_populated_game()
+	defer free(g)
+
+	// Set level above max_level
+	g.upgrade_levels[.Gravity_Tuning] = 10
+
+	buf := make([]u8, game.MAX_SAVE_SIZE)
+	defer delete(buf)
+
+	n, ok := game.persist_serialize(g, buf)
+	testing.expect(t, ok, "serialize failed")
+
+	g2 := test_make_game()
+	defer free(g2)
+	testing.expect(t, game.persist_deserialize(g2, buf[:n]), "deserialize failed")
+
+	// Gravity_Tuning max_level is 5
+	testing.expect_value(t, g2.upgrade_levels[.Gravity_Tuning], u8(5))
 }

@@ -6,7 +6,7 @@
 ** UI [0/8]
 *** TODO Pause menu
 *** TODO Progression menu
-*** PLANNED Upgrade menu
+*** DONE Upgrade menu
 **** This will be a dedicated skill tree like structure. It will rendered as a full overlay over the screen. For now, this will pause the game simulation behind and be a part of the pause menu. Right now, the pause menu only renders a top status bar. This will be a part of the central real estate. 
 + Designed together with the Upgrade system track: [[file:upgrade-system.org]],
   decisions: [[file:adr/0006-upgrade-system.org]], vocab: [[file:glossary.org]].
@@ -46,7 +46,7 @@
 + Skeleton type exists. Nothing inside it.
 + Design: [[file:modifier-system.org]], decisions: [[file:adr/0005-modifier-system.org]], vocab: [[file:glossary.org]].
 + Base + effective params model: g.params immutable, effective_params recomputed every frame by sys_modifier. Closed Modifier_Kind enum, refresh rule, no SAVE_VERSION bump (+kind guard). v1: Gravity_Boost (temp) + Energy_Magnet (perm), debug keys G/H, statusbar chips.
-*** PLANNED Upgrade system
+*** DONE Upgrade system
 + The modifiers defined now need to be tied into the upgrade system. Uprades are very open ended for now. They can be of multiple types:  
   + Permanent modifiers to the game like increased rate of energy etc.
   + Special objects like Dense Iron cores (or other new celestial objects),  and entirely new mechanics like energy harnessers, gravity wells. Each of these items will have completely custom behaviour

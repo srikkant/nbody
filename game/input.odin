@@ -4,11 +4,12 @@ import "core:math"
 import rl "vendor:raylib"
 
 DEFAULT_GAME_INPUTS: [Input_Action]Input_Matcher = {
-	.None             = {},
-	.Game_Pause       = Input_Matcher_Keyboard{{.Pressed, .Playing}, .ESCAPE},
-	.Game_Resume      = Input_Matcher_Keyboard{{.Pressed, .Paused}, .ESCAPE},
-	.View_ToggleOrbit = Input_Matcher_Keyboard{{.Pressed, .Playing}, .T},
-	.Game_Reset       = Input_Matcher_Keyboard{{.Pressed, .Playing}, .R},
+	.None              = {},
+	.Game_Pause        = Input_Matcher_Keyboard{{.Pressed, .Playing}, .ESCAPE},
+	.Game_Resume       = Input_Matcher_Keyboard{{.Pressed, .Paused}, .ESCAPE},
+	.View_ToggleOrbit  = Input_Matcher_Keyboard{{.Pressed, .Playing}, .T},
+	.Game_Reset        = Input_Matcher_Keyboard{{.Pressed, .Playing}, .R},
+	.Upgrades_Recenter = Input_Matcher_Keyboard{{.Pressed, .Paused}, .HOME},
 }
 
 input_init :: proc(g: ^Game) {
@@ -93,6 +94,10 @@ input_handle_action :: proc(g: ^Game) {
 		g.render.show_orbits = !g.render.show_orbits
 	case .Game_Reset:
 		game_reset(g)
+	case .Upgrades_Recenter:
+		if g.status == .Paused {
+			g.upgrade_menu.framed = false
+		}
 	}
 
 	g.input.action = .None
@@ -219,8 +224,9 @@ input_slingshot_release :: proc(g: ^Game) {
 	if g.slingshot.can_launch {
 		g.help.launch_done = true
 
-		push_event(g, event)
-		g.score.energy -= cost
+		if economy_try_spend(g, cost) {
+			push_event(g, event)
+		}
 
 		payload_mass := event.density * (event.radius * event.radius)
 		g.camera.shake_intensity = clamp(math.sqrt(payload_mass) * 0.45, 0.0, 25.0)
@@ -245,33 +251,38 @@ input_slingshot_cancel :: proc(g: ^Game) {
 
 input_handle_mouse :: proc(g: ^Game) {
 	if g.input.ignore do return
-	if g.status != .Playing do return
 
-	if rl_is_mouse_button_pressed(g, .LEFT) {
-		if ui_control_menu_handle_click(g) do return
-		input_slingshot_activate(g)
-	} else if rl_is_mouse_button_released(g, .LEFT) {
-		if g.slingshot.status == .Active {
-			input_slingshot_release(g)
-		}
-	} else if rl_is_mouse_button_down(g, .LEFT) {
-		if g.slingshot.status == .Active {
+	switch g.status {
+	case .Playing:
+		if rl_is_mouse_button_pressed(g, .LEFT) {
+			if ui_control_menu_handle_click(g) do return
+			input_slingshot_activate(g)
+		} else if rl_is_mouse_button_released(g, .LEFT) {
+			if g.slingshot.status == .Active {
+				input_slingshot_release(g)
+			}
+		} else if rl_is_mouse_button_down(g, .LEFT) {
+			if g.slingshot.status == .Active {
+				input_slingshot_update(g)
+			}
+		} else if g.slingshot.status == .Active {
 			input_slingshot_update(g)
 		}
-	} else if g.slingshot.status == .Active {
-		input_slingshot_update(g)
-	}
 
-	if rl_is_mouse_button_pressed(g, .RIGHT) {
-		if g.slingshot.status == .Active {
-			input_slingshot_cancel(g)
-		} else if g.help.launch_done &&
-		   rl.CheckCollisionPointRec(g.input.mouse_pos_screen, g.control_menu.rect) {
-			// Clicked inside control menu; consume right click without demolishing.
-			// This is a noop.
-		} else {
-			push_event(g, GameEvent_Object_Demolish{})
+		if rl_is_mouse_button_pressed(g, .RIGHT) {
+			if g.slingshot.status == .Active {
+				input_slingshot_cancel(g)
+			} else if g.help.launch_done &&
+			   rl.CheckCollisionPointRec(g.input.mouse_pos_screen, g.control_menu.rect) {
+				// Clicked inside control menu; consume right click without demolishing.
+				// This is a noop.
+			} else {
+				push_event(g, GameEvent_Object_Demolish{})
+			}
 		}
+	case .Paused:
+		ui_upgrade_menu_handle_mouse(g)
+	case .Exit:
 	}
 }
 

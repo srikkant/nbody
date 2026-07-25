@@ -367,6 +367,7 @@ Input_Action :: enum {
 	Game_Resume,
 	View_ToggleOrbit,
 	Game_Reset,
+	Upgrades_Recenter,
 }
 
 /*
@@ -502,6 +503,118 @@ Modifier :: struct {
 Parameters_Modifier :: struct {
 	magnitude: f32, // multiplier applied to the kind's target field
 	duration:  f32, // seconds; temp kinds only (0.0 for permanent)
+}
+
+Upgrade_Id :: enum {
+	None,
+	// Tier 1 (roots)
+	Gravity_Tuning,
+	Orbital_Yield,
+	Collector_Reach,
+	Moonlet_Foundry,
+	// Tier 2
+	Launch_Efficiency,
+	Slingshot_Foresight,
+	Star_Furnace,
+	Salvage_Rights,
+	// Tier 3
+	Emitter_Logistics,
+	Emitter_Persistence,
+	Research_Grants,
+	Tractor_Field,
+	// Meta placeholder
+	Stellar_Legacy,
+}
+
+Upgrade_Category :: enum {
+	Physics,
+	Economy,
+	Automation,
+	Hardware,
+}
+
+Upgrade_Scope :: enum {
+	Run,
+	Meta,
+}
+
+Upgrade_Op :: enum {
+	Add,
+	Mul,
+}
+
+Upgrade_Effect_Param :: struct {
+	op: Upgrade_Op,
+}
+
+Upgrade_Effect_Capability :: struct {
+	capability: Capability,
+}
+
+Upgrade_Effect_Grant :: struct {
+	celestial: Celestial_Type,
+}
+
+Upgrade_Effect :: union {
+	Upgrade_Effect_Param,
+	Upgrade_Effect_Capability,
+	Upgrade_Effect_Grant,
+}
+
+Upgrade_Condition_Kind :: enum {
+	None,
+	Lifetime_Energy_Earned,
+	Celestial_Discovered,
+	Upgrades_Purchased,
+}
+
+Upgrade_Condition :: struct {
+	kind:      Upgrade_Condition_Kind,
+	celestial: Celestial_Type,
+}
+
+Upgrade_Def :: struct {
+	name:      string,
+	desc:      string,
+	category:  Upgrade_Category,
+	scope:     Upgrade_Scope,
+	effect:    Upgrade_Effect,
+	condition: Upgrade_Condition,
+	requires:  [MAX_UPGRADE_REQUIRES]Upgrade_Id,
+	pos:       rl.Vector2,
+}
+
+Parameters_Upgrade :: struct {
+	base_cost:           f64,
+	cost_growth:         f64,
+	magnitude:           f32,
+	max_level:           u8,
+	condition_threshold: f64,
+}
+
+Upgrade_State :: enum {
+	Hidden,
+	Silhouette,
+	Locked,
+	Available,
+	Owned,
+	Maxed,
+}
+
+Capability :: enum {
+	Fragment_Attraction,
+}
+
+Upgrade_Menu :: struct {
+	viewport:     rl.Rectangle,
+	pan:          rl.Vector2,
+	framed:       bool,
+	pan_drag:     bool,
+	press_pos:    rl.Vector2,
+	pan_at_press: rl.Vector2,
+	pressed_node: Upgrade_Id,
+	hover_node:   Upgrade_Id,
+	node_rects:   [Upgrade_Id]rl.Rectangle,
 }
 
 /*
@@ -673,6 +786,7 @@ Parameters :: struct {
 	physics:         Parameters_Physics,
 	slingshot:       Parameters_Slingshot,
 	modifiers:       [Modifier_Kind]Parameters_Modifier,
+	upgrades:        [Upgrade_Id]Parameters_Upgrade,
 }
 
 /*
@@ -709,4 +823,8 @@ Game :: struct {
 	mass_delta:          [MAX_ENTITIES]f32, // Scratch buffer used by sys_lifecycle
 	modifiers_count:     u64,
 	modifiers:           [MAX_MODIFIERS]Modifier,
+	upgrade_levels:      [Upgrade_Id]u8,
+	upgrade_states:      [Upgrade_Id]Upgrade_State,
+	capabilities:        bit_set[Capability],
+	upgrade_menu:        Upgrade_Menu,
 }

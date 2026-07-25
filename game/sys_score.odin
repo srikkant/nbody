@@ -1,11 +1,12 @@
 package game
 
 Score :: struct {
-	energy:             f64,
-	energy_rate_ticker: int,
-	total_objects:      int,
-	energy_gains:       [AVG_CALC_TICKS]f64,
-	energy_losses:      [AVG_CALC_TICKS]f64,
+	energy:                 f64,
+	lifetime_energy_earned: f64,
+	energy_rate_ticker:     int,
+	total_objects:          int,
+	energy_gains:           [AVG_CALC_TICKS]f64,
+	energy_losses:          [AVG_CALC_TICKS]f64,
 }
 
 sys_score_init :: proc(g: ^Game) {
@@ -31,17 +32,26 @@ sys_score :: proc(g: ^Game) {
 			vel_score := math_vec2_length_sq(e.velocity.current)
 			pos_score := 1 / (1 + math_vec2_length_sq(e.pos.current)) // prevent division by zero
 
-			g.score.energy += f64(
-				g.effective_params.physics.energy_gain_factor * mass_score * vel_score * pos_score,
+			economy_add_energy(
+				g,
+				f64(
+					g.effective_params.physics.energy_gain_factor *
+					mass_score *
+					vel_score *
+					pos_score,
+				),
 			)
 		}
 
 		if ENERGY_SOURCE_SIG <= e.sig {
 			math_update_timer(&e.energy_source.timer, dt)
 			if e.energy_source.timer.done {
-				g.score.energy += f64(
-					g.effective_params.physics.energy_source_gain_factor *
-					(e.energy_source.output + (e.radius * e.radius)),
+				economy_add_energy(
+					g,
+					f64(
+						g.effective_params.physics.energy_source_gain_factor *
+						(e.energy_source.output + (e.radius * e.radius)),
+					),
 				)
 			}
 		}

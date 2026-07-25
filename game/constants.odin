@@ -360,12 +360,18 @@ CAMERA_ZOOM_MIN :: 0.01
  * Hard cap for max zoom level
  */
 CAMERA_ZOOM_MAX :: 2.0
-/*
- * How fast camera zooms in?
- */
 CAMERA_ZOOM_IN_INTERPOLATION_DECAY :: 0.6
-/*
- * How fast camera zooms out?
- * We typically want zoom out to be way faster than zoom in
- */
 CAMERA_ZOOM_OUT_INTERPOLATION_DECAY :: 8.0
+
+// ==========================================
+// UPGRADE & FORMAT CONSTANTS
+// ==========================================
+
+MAX_UPGRADE_REQUIRES :: 4
+UPGRADE_NODE_RADIUS :: 22.0
+UPGRADE_NODE_SPACING :: 85.0
+UPGRADE_MENU_DRAG_THRESHOLD :: 10.0
+UPGRADE_MENU_MARGIN :: 80.0
+UPGRADE_MENU_REVEAL_HOPS :: 2
+UPGRADE_TOOLTIP_W :: 280.0
+UTILS_FORMAT_SLOTS :: 8

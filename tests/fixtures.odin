@@ -108,7 +108,100 @@ test_params :: proc() -> game.Parameters {
 		duration  = 0.0,
 	}
 
+	p.upgrades[.Gravity_Tuning] = {
+		base_cost           = 250,
+		cost_growth         = 2.0,
+		magnitude           = 1.08,
+		max_level           = 5,
+		condition_threshold = 0,
+	}
+	p.upgrades[.Orbital_Yield] = {
+		base_cost           = 200,
+		cost_growth         = 2.2,
+		magnitude           = 1.12,
+		max_level           = 5,
+		condition_threshold = 0,
+	}
+	p.upgrades[.Collector_Reach] = {
+		base_cost           = 300,
+		cost_growth         = 1.9,
+		magnitude           = 8.0,
+		max_level           = 4,
+		condition_threshold = 0,
+	}
+	p.upgrades[.Moonlet_Foundry] = {
+		base_cost           = 750,
+		cost_growth         = 1.0,
+		magnitude           = 0.0,
+		max_level           = 1,
+		condition_threshold = 0,
+	}
+	p.upgrades[.Launch_Efficiency] = {
+		base_cost           = 2000,
+		cost_growth         = 2.3,
+		magnitude           = 0.92,
+		max_level           = 4,
+		condition_threshold = 0,
+	}
+	p.upgrades[.Slingshot_Foresight] = {
+		base_cost           = 800,
+		cost_growth         = 2.0,
+		magnitude           = 0.5,
+		max_level           = 2,
+		condition_threshold = 0,
+	}
+	p.upgrades[.Star_Furnace] = {
+		base_cost           = 1500,
+		cost_growth         = 2.4,
+		magnitude           = 1.15,
+		max_level           = 3,
+		condition_threshold = 0,
+	}
+	p.upgrades[.Salvage_Rights] = {
+		base_cost           = 1200,
+		cost_growth         = 2.0,
+		magnitude           = 0.05,
+		max_level           = 3,
+		condition_threshold = 25000,
+	}
+	p.upgrades[.Emitter_Logistics] = {
+		base_cost           = 6000,
+		cost_growth         = 2.5,
+		magnitude           = 0.9,
+		max_level           = 3,
+		condition_threshold = 0,
+	}
+	p.upgrades[.Emitter_Persistence] = {
+		base_cost           = 5000,
+		cost_growth         = 2.4,
+		magnitude           = 1.2,
+		max_level           = 3,
+		condition_threshold = 0,
+	}
+	p.upgrades[.Research_Grants] = {
+		base_cost           = 10000,
+		cost_growth         = 3.0,
+		magnitude           = 0.95,
+		max_level           = 3,
+		condition_threshold = 6,
+	}
+	p.upgrades[.Tractor_Field] = {
+		base_cost           = 15000,
+		cost_growth         = 1.0,
+		magnitude           = 0.0,
+		max_level           = 1,
+		condition_threshold = 100000,
+	}
+	p.upgrades[.Stellar_Legacy] = {
+		base_cost           = 0,
+		cost_growth         = 1.0,
+		magnitude           = 0.0,
+		max_level           = 1,
+		condition_threshold = 0,
+	}
+
 	return p
+
 }
 
 test_make_game :: proc() -> ^game.Game {
