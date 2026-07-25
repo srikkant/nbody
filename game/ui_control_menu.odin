@@ -42,6 +42,10 @@ ui_control_menu_init :: proc(g: ^Game) {
 	ui_control_menu_update_output(g)
 }
 
+/*
+ * Function called to handle a user click.
+ * Returns true if the click is consumed  
+ */
 ui_control_menu_handle_click :: proc(g: ^Game) -> bool {
 	if g.status != .Playing || !g.help.launch_done do return false
 
@@ -50,9 +54,9 @@ ui_control_menu_handle_click :: proc(g: ^Game) -> bool {
 	// If click is not inside the menu bounding box, return false (not consumed)
 	if !rl.CheckCollisionPointRec(mouse_screen, g.control_menu.rect) do return false
 
-	// Check Tier 1 tabs
 	for tab in Control_Menu_Tab {
-		if tab == .Hardware do continue // Hardware is disabled, cannot select it
+		// TODO: For now, hardware is disabled, cannot select it. Needs to be enabled later.
+		if tab == .Hardware do continue
 
 		if rl.CheckCollisionPointRec(mouse_screen, g.control_menu.tab_rects[tab]) {
 			g.control_menu.active_tab = tab

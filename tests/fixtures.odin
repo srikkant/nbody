@@ -296,3 +296,93 @@ test_find_celestial :: proc(g: ^game.Game, type: game.Celestial_Type) -> (game.E
 	}
 	return 0, false
 }
+
+/*
+ * Builds a game populated across every persisted field group:
+ * score ring buffers, timers, help, camera, slingshot (emitter output),
+ * entities incl. trail/orbit arrays, a populated free list and modifiers.
+ */
+test_make_populated_game :: proc() -> ^game.Game {
+	g := test_make_game()
+
+	g.elapsed = 123.5
+	g.score.energy = 987654.25
+	g.score.lifetime_energy_earned = 1234567.89
+	g.score.energy_rate_ticker = 3
+	g.score.total_objects = 42
+	for i in 0 ..< game.AVG_CALC_TICKS {
+		g.score.energy_gains[i] = f64(i) * 1.5
+		g.score.energy_losses[i] = f64(i) * 2.5
+	}
+	g.upgrade_levels[.Gravity_Tuning] = 3
+	g.upgrade_levels[.Orbital_Yield] = 2
+	g.timers[.Score] = {0.5, 1, false}
+	g.timers[.Trail] = {0.02, 0.05, true}
+	g.timers[.Autosave] = {15, game.SAVE_AUTOSAVE_INTERVAL_SEC, false}
+	g.help.launch_done = true
+	g.camera.rl_cam.zoom = 0.75
+	g.camera.rl_cam.target = {100, -50}
+	g.slingshot.available_objects = {.DwarfPlanet, .SubEarth}
+	g.slingshot.launch_power = 2.5
+	g.slingshot.output = game.Slingshot_Output_Emitter {
+		emitter = {
+			emit_density = 3.5,
+			emit_radius = 7,
+			emit_vel = {1, -2},
+			emit_celestial = {type = .Moonlet},
+			emit_color = rl.Color{10, 20, 30, 40},
+			max_count = 11,
+			current_count = 4,
+			timer = {curr = 0.25, interval = 2, done = false},
+			destroy_timer = {curr = 1, interval = 9, done = true},
+			base_cost = 1234.5,
+		},
+	}
+	g.params.physics.gravity_constant = 7.5
+	g.effective_params = g.params
+
+	_ = test_add_celestial(g, .Star, {0, 0})
+
+	id2 := test_add_celestial(g, .DwarfPlanet, {100, 50}, {1, 2})
+	game.entity_add_orbit(g, id2, {})
+	for i in 0 ..< game.POSITION_TRAIL_LENGTH {
+		g.entities[id2].pos.trail[i] = {f32(i) + 0.5, f32(-i) - 0.5}
+	}
+	g.entities[id2].pos.trail_head = 3
+	for i in 0 ..< game.MAX_ORBIT_LENGTH {
+		g.entities[id2].orbit.points[i] = {f32(i) * 2, f32(i) * -3}
+	}
+	g.entities[id2].orbit.head = 7
+	g.entities[id2].orbit.angle = 1.5
+	g.entities[id2].orbit.count = 50
+	g.entities[id2].orbit.max_distance_sq = 900
+
+	id3 := test_add_emitter(
+		g,
+		{-50, 25},
+		{
+			emit_density = 2,
+			emit_radius = 5,
+			emit_vel = {3, 4},
+			emit_celestial = {type = .Asteroid},
+			emit_color = rl.Color{200, 100, 50, 255},
+			max_count = 10,
+			current_count = 3,
+			timer = {curr = 1, interval = 2, done = false},
+			destroy_timer = {curr = 0.5, interval = 5, done = true},
+			base_cost = 500,
+		},
+	)
+
+	// Populate the free list.
+	game.entity_free(g, id3)
+
+	g.modifiers[0] = {
+		kind = .Gravity_Boost,
+		permanent = false,
+		timer = {curr = 10, interval = 30, done = false},
+	}
+	g.modifiers_count = 1
+
+	return g
+}

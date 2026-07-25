@@ -1,6 +1,5 @@
 #+TITLE: Ideas
 
-
 * Unique launch objects
 ** Gravity wells
 *** This can be used to potentially pull the action to a specific spot on the screen.
