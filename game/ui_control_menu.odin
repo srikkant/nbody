@@ -127,14 +127,14 @@ ui_control_menu_draw :: proc(g: ^Game) {
 
 	// Draw Tier 1 Tabs
 	curr_x := f32(24.0) * g.scale
-	tabs := [Control_Menu_Tab]string {
-		.Direct   = "DIRECT LAUNCHES",
-		.Emitter  = "AUTOMATED EMITTERS",
-		.Hardware = "SPECIAL HARDWARE (COMING SOON)",
+	tabs := [Control_Menu_Tab]Messages {
+		.Direct   = .ControlMenu_TabDirect,
+		.Emitter  = .ControlMenu_TabEmitter,
+		.Hardware = .ControlMenu_TabHardware,
 	}
 
 	for tab in Control_Menu_Tab {
-		cstr := cstring(raw_data(tabs[tab]))
+		cstr := t(g, tabs[tab])
 		text_w := rl_text_measure(g, .BodyBold, cstr).x
 		tab_w := text_w + 32.0 * g.scale
 
@@ -196,7 +196,7 @@ ui_control_menu_draw :: proc(g: ^Game) {
 		}
 
 		for type in celestials {
-			cstr := get_celestial_display_name(type)
+			cstr := get_celestial_display_name(g, type)
 			is_unlocked := type in g.slingshot.available_objects
 
 			text_size := rl_text_measure(g, .Body, cstr)
@@ -299,13 +299,14 @@ ui_control_menu_draw :: proc(g: ^Game) {
 	case .Emitter:
 		// Draw Emitter section with split columns
 		// Left: Payload Picker
+		payload_lbl := t(g, .ControlMenu_Payload)
 		rl_text_draw(
 			g,
 			.BodyBold,
-			"PAYLOAD:",
+			payload_lbl,
 			{
 				24.0 * g.scale,
-				deck_y + (deck_h - rl_text_measure(g, .BodyBold, "PAYLOAD:").y) / 2.0,
+				deck_y + (deck_h - rl_text_measure(g, .BodyBold, payload_lbl).y) / 2.0,
 			},
 			rl.Color{130, 130, 150, 255},
 		)
@@ -327,7 +328,7 @@ ui_control_menu_draw :: proc(g: ^Game) {
 		}
 
 		for type in celestials {
-			cstr := get_celestial_display_name(type)
+			cstr := get_celestial_display_name(g, type)
 			is_unlocked := type in g.slingshot.available_objects
 
 			text_size := rl_text_measure(g, .Body, cstr)
@@ -436,23 +437,29 @@ ui_control_menu_draw :: proc(g: ^Game) {
 		)
 
 		// Right: Cadence Preset Picker
+		cadence_lbl := t(g, .ControlMenu_Cadence)
 		rl_text_draw(
 			g,
 			.BodyBold,
-			"CADENCE:",
+			cadence_lbl,
 			{
 				sep_x + 16.0 * g.scale,
-				deck_y + (deck_h - rl_text_measure(g, .BodyBold, "CADENCE:").y) / 2.0,
+				deck_y + (deck_h - rl_text_measure(g, .BodyBold, cadence_lbl).y) / 2.0,
 			},
 			rl.Color{130, 130, 150, 255},
 		)
 
 		curr_x = sep_x + 100.0 * g.scale
 		presets := [4]Emitter_Preset{.Burst, .Steady, .Sustained, .Trickle}
-		preset_names := [4]string{"BURST", "STEADY", "SUSTAINED", "TRICKLE"}
+		preset_msgs := [4]Messages {
+			.ControlMenu_PresetBurst,
+			.ControlMenu_PresetSteady,
+			.ControlMenu_PresetSustained,
+			.ControlMenu_PresetTrickle,
+		}
 
 		for preset, idx in presets {
-			cstr := cstring(raw_data(preset_names[idx]))
+			cstr := t(g, preset_msgs[idx])
 			text_size := rl_text_measure(g, .Body, cstr)
 
 			button_w := text_size.x + 24.0 * g.scale
@@ -512,7 +519,7 @@ ui_control_menu_draw :: proc(g: ^Game) {
 			curr_x += button_w + 6.0 * g.scale
 		}
 	case .Hardware:
-		cstr := cstring("SPECIAL HARDWARE COMING SOON")
+		cstr := t(g, .ControlMenu_HardwareComingSoon)
 		text_size := rl_text_measure(g, .BodyBold, cstr)
 		rl_text_draw(
 			g,

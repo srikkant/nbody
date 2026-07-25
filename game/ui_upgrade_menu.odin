@@ -97,7 +97,7 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 		center := viewport_center + def.pos * UPGRADE_NODE_SPACING * g.scale + g.upgrade_menu.pan
 		node_centers[id] = center
 
-		title_cstr := fmt.ctprintf("%s", def.name)
+		title_cstr := t(g, def.name_msg)
 		title_size := rl.MeasureTextEx(font_body, title_cstr, 11 * g.scale, 1)
 		box_w := max(2.0 * node_r + 12.0 * g.scale, title_size.x + 8.0 * g.scale)
 		box_h := 2.0 * node_r + 34.0 * g.scale
@@ -184,7 +184,7 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 				rl.Color{140, 145, 160, 180},
 			)
 
-			title_cstr := fmt.ctprintf("%s", def.name)
+			title_cstr := t(g, def.name_msg)
 			title_sz := rl.MeasureTextEx(font_body, title_cstr, 11 * g.scale, 1)
 			rl.DrawTextEx(
 				font_body,
@@ -213,7 +213,7 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 
 			rl.DrawCircleV(center, 4 * g.scale, ring_color)
 
-			title_cstr := fmt.ctprintf("%s", def.name)
+			title_cstr := t(g, def.name_msg)
 			title_sz := rl.MeasureTextEx(font_body, title_cstr, 11 * g.scale, 1)
 			rl.DrawTextEx(
 				font_body,
@@ -251,7 +251,7 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 				rl.BLACK,
 			)
 
-			title_cstr := fmt.ctprintf("%s", def.name)
+			title_cstr := t(g, def.name_msg)
 			title_sz := rl.MeasureTextEx(font_body, title_cstr, 11 * g.scale, 1)
 			rl.DrawTextEx(
 				font_body,
@@ -286,17 +286,18 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 			rl.DrawCircleV(center, node_r, cat_color)
 			rl.DrawCircleLinesV(center, node_r, rl.WHITE)
 
-			max_sz := rl.MeasureTextEx(font_bold, "MAX", 11 * g.scale, 1)
+			max_cstr := t(g, .UpgradeMenu_Max)
+			max_sz := rl.MeasureTextEx(font_bold, max_cstr, 11 * g.scale, 1)
 			rl.DrawTextEx(
 				font_bold,
-				"MAX",
+				max_cstr,
 				center - {max_sz.x * 0.5, max_sz.y * 0.5},
 				11 * g.scale,
 				1,
 				rl.BLACK,
 			)
 
-			title_cstr := fmt.ctprintf("%s", def.name)
+			title_cstr := t(g, def.name_msg)
 			title_sz := rl.MeasureTextEx(font_body, title_cstr, 11 * g.scale, 1)
 			rl.DrawTextEx(
 				font_body,
@@ -313,9 +314,13 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 
 	// 4. Header Overlay Bar
 	header_text := fmt.ctprintf(
-		"UPGRADES  ·  Owned: %d  ·  Energy: %s  (Drag to pan · HOME to recenter)",
+		"%s  ·  %s: %d  ·  %s: %s  (%s)",
+		t(g, .UpgradeMenu_Header),
+		t(g, .UpgradeMenu_Owned),
 		upgrade_purchased_count(g),
+		t(g, .UpgradeMenu_Energy),
 		fmt_compact(g.score.energy),
+		t(g, .UpgradeMenu_Hint),
 	)
 	rl.DrawTextEx(
 		font_bold,
@@ -359,18 +364,23 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 			ty := tt_y + 10.0 * g.scale
 
 			// Title & Category tag
-			rl.DrawTextEx(
-				font_bold,
-				fmt.ctprintf("%s", def.name),
-				{tx, ty},
-				16 * g.scale,
-				1,
-				rl.WHITE,
-			)
+			rl.DrawTextEx(font_bold, t(g, def.name_msg), {tx, ty}, 16 * g.scale, 1, rl.WHITE)
 			ty += 20 * g.scale
+
+			cat_msg: Messages
+			switch def.category {
+			case .Physics:
+				cat_msg = .UpgradeCategory_Physics
+			case .Economy:
+				cat_msg = .UpgradeCategory_Economy
+			case .Automation:
+				cat_msg = .UpgradeCategory_Automation
+			case .Hardware:
+				cat_msg = .UpgradeCategory_Hardware
+			}
 			rl.DrawTextEx(
 				font_body,
-				fmt.ctprintf("[%v]", def.category),
+				fmt.ctprintf("[%s]", t(g, cat_msg)),
 				{tx, ty},
 				12 * g.scale,
 				1,
@@ -381,7 +391,7 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 			// Description
 			rl.DrawTextEx(
 				font_body,
-				fmt.ctprintf("%s", def.desc),
+				t(g, def.desc_msg),
 				{tx, ty},
 				12 * g.scale,
 				1,
@@ -390,6 +400,9 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 			ty += 22 * g.scale
 
 			// Level & Effect
+			lbl_lvl := t(g, .UpgradeMenu_Level)
+			lbl_eff := t(g, .UpgradeMenu_Effect)
+
 			#partial switch e in def.effect {
 			case Upgrade_Effect_Param:
 				eff_curr := fmt_multiplier(e.op, p.magnitude, lvl)
@@ -397,7 +410,14 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 				if lvl >= p.max_level {
 					rl.DrawTextEx(
 						font_body,
-						fmt.ctprintf("Level: %d/%d (Effect: %s)", lvl, p.max_level, eff_curr),
+						fmt.ctprintf(
+							"%s %d/%d (%s %s)",
+							lbl_lvl,
+							lvl,
+							p.max_level,
+							lbl_eff,
+							eff_curr,
+						),
 						{tx, ty},
 						12 * g.scale,
 						1,
@@ -407,9 +427,11 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 					rl.DrawTextEx(
 						font_body,
 						fmt.ctprintf(
-							"Level: %d/%d (Effect: %s -> %s)",
+							"%s %d/%d (%s %s -> %s)",
+							lbl_lvl,
 							lvl,
 							p.max_level,
+							lbl_eff,
 							eff_curr,
 							eff_next,
 						),
@@ -420,18 +442,20 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 					)
 				}
 			case Upgrade_Effect_Capability:
+				lbl_cap := t(g, .UpgradeMenu_Capability)
 				rl.DrawTextEx(
 					font_body,
-					fmt.ctprintf("Capability: %v", e.capability),
+					fmt.ctprintf("%s %v", lbl_cap, e.capability),
 					{tx, ty},
 					12 * g.scale,
 					1,
 					rl.GOLD,
 				)
 			case Upgrade_Effect_Grant:
+				lbl_unc := t(g, .UpgradeMenu_Unlocks)
 				rl.DrawTextEx(
 					font_body,
-					fmt.ctprintf("Unlocks: %v", e.celestial),
+					fmt.ctprintf("%s %s", lbl_unc, get_celestial_display_name(g, e.celestial)),
 					{tx, ty},
 					12 * g.scale,
 					1,
@@ -441,8 +465,19 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 			ty += 22 * g.scale
 
 			// Cost & Status line
+			lbl_status := t(g, .UpgradeMenu_Status)
+			lbl_cost := t(g, .UpgradeMenu_Cost)
+			lbl_energy := t(g, .UpgradeMenu_Energy)
+
 			if state == .Maxed {
-				rl.DrawTextEx(font_bold, "Status: MAXED", {tx, ty}, 13 * g.scale, 1, cat_color)
+				rl.DrawTextEx(
+					font_bold,
+					fmt.ctprintf("%s %s", lbl_status, t(g, .UpgradeMenu_StatusMaxed)),
+					{tx, ty},
+					13 * g.scale,
+					1,
+					cat_color,
+				)
 			} else {
 				cost := upgrade_cost(g, id)
 				can_afford := upgrade_can_afford(g, id)
@@ -451,7 +486,7 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 				if !upgrade_requires_met(g, id) {
 					rl.DrawTextEx(
 						font_bold,
-						"Status: Locked (Prerequisites unmet)",
+						fmt.ctprintf("%s %s", lbl_status, t(g, .UpgradeMenu_StatusPrereqLocked)),
 						{tx, ty},
 						13 * g.scale,
 						1,
@@ -464,7 +499,7 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 						rl.DrawTextEx(
 							font_bold,
 							fmt.ctprintf(
-								"Status: Locked (Need %s Lifetime Energy)",
+								t_str(g, .UpgradeMenu_StatusNeedLifetimeEnergy),
 								fmt_compact(p.condition_threshold),
 							),
 							{tx, ty},
@@ -476,8 +511,8 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 						rl.DrawTextEx(
 							font_bold,
 							fmt.ctprintf(
-								"Status: Locked (Discover %v first)",
-								def.condition.celestial,
+								t_str(g, .UpgradeMenu_StatusNeedCelestial),
+								get_celestial_display_name(g, def.condition.celestial),
 							),
 							{tx, ty},
 							13 * g.scale,
@@ -488,8 +523,8 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 						rl.DrawTextEx(
 							font_bold,
 							fmt.ctprintf(
-								"Status: Locked (Need %.0f upgrades)",
-								p.condition_threshold,
+								t_str(g, .UpgradeMenu_StatusNeedUpgrades),
+								fmt.ctprintf("%.0f", p.condition_threshold),
 							),
 							{tx, ty},
 							13 * g.scale,
@@ -500,7 +535,13 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 				} else if can_afford {
 					rl.DrawTextEx(
 						font_bold,
-						fmt.ctprintf("Cost: %s Energy (Click to Buy)", cost_str),
+						fmt.ctprintf(
+							"%s %s %s (%s)",
+							lbl_cost,
+							cost_str,
+							lbl_energy,
+							t(g, .UpgradeMenu_ClickToBuy),
+						),
 						{tx, ty},
 						13 * g.scale,
 						1,
@@ -509,7 +550,13 @@ ui_upgrade_menu_draw :: proc(g: ^Game) {
 				} else {
 					rl.DrawTextEx(
 						font_bold,
-						fmt.ctprintf("Cost: %s Energy (Insufficient Energy)", cost_str),
+						fmt.ctprintf(
+							"%s %s %s (%s)",
+							lbl_cost,
+							cost_str,
+							lbl_energy,
+							t(g, .UpgradeMenu_InsufficientEnergy),
+						),
 						{tx, ty},
 						13 * g.scale,
 						1,

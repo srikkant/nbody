@@ -574,8 +574,8 @@ Upgrade_Condition :: struct {
 }
 
 Upgrade_Def :: struct {
-	name:      string,
-	desc:      string,
+	name_msg:  Messages,
+	desc_msg:  Messages,
 	category:  Upgrade_Category,
 	scope:     Upgrade_Scope,
 	effect:    Upgrade_Effect,

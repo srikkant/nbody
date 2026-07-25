@@ -60,15 +60,21 @@ ui_modifiers_draw :: proc(g: ^Game) {
 		name_str: cstring
 		switch m.kind {
 		case .Gravity_Boost:
-			name_str = "Gravity Boost"
+			name_str = t(g, .Modifier_GravityBoost)
 		case .Energy_Magnet:
-			name_str = "Energy Magnet"
+			name_str = t(g, .Modifier_EnergyMagnet)
 		}
 
 		rl.DrawText(name_str, i32(start_x + 8), i32(chip_y + 4), 12, rl.WHITE)
 
 		if m.permanent {
-			rl.DrawText("INF", i32(start_x + chip_w - 28), i32(chip_y + 4), 12, rl.GOLD)
+			rl.DrawText(
+				t(g, .Modifier_Inf),
+				i32(start_x + chip_w - 28),
+				i32(chip_y + 4),
+				12,
+				rl.GOLD,
+			)
 		} else if m.timer.interval > 0 {
 			remaining := max(f32(0), m.timer.interval - m.timer.curr)
 			ratio := clamp(remaining / m.timer.interval, 0.0, 1.0)

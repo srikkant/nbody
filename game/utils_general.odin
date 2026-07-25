@@ -10,36 +10,36 @@ get_celestial_params :: proc(g: ^Game, ctype: Celestial_Type) -> Parameters_Cele
 	return g.params.celestials[ctype]
 }
 
-get_celestial_display_name :: proc(ctype: Celestial_Type) -> cstring {
+get_celestial_display_name :: proc(g: ^Game, ctype: Celestial_Type) -> cstring {
 	switch ctype {
 	case .None:
-		return "none"
+		return t(g, .Celestial_None)
 	case .Asteroid:
-		return "asteroid"
+		return t(g, .Celestial_Asteroid)
 	case .Moonlet:
-		return "moonlet"
+		return t(g, .Celestial_Moonlet)
 	case .DwarfPlanet:
-		return "dwarf planet"
+		return t(g, .Celestial_DwarfPlanet)
 	case .SubEarth:
-		return "sub-earth"
+		return t(g, .Celestial_SubEarth)
 	case .SuperEarth:
-		return "super earth"
+		return t(g, .Celestial_SuperEarth)
 	case .MegaEarth:
-		return "mega earth"
+		return t(g, .Celestial_MegaEarth)
 	case .MiniNeptune:
-		return "mini neptune"
+		return t(g, .Celestial_MiniNeptune)
 	case .SubNeptune:
-		return "sub-neptune"
+		return t(g, .Celestial_SubNeptune)
 	case .SuperNeptune:
-		return "super neptune"
+		return t(g, .Celestial_SuperNeptune)
 	case .GiantPlanet:
-		return "giant planet"
+		return t(g, .Celestial_GiantPlanet)
 	case .SuperJupiter:
-		return "super jupiter"
+		return t(g, .Celestial_SuperJupiter)
 	case .Star:
-		return "star"
+		return t(g, .Celestial_Star)
 	}
-	return "Unknown"
+	return t(g, .Celestial_Unknown)
 }
 
 get_inspected_entity :: proc(g: ^Game) -> (Entity_Id, bool) {
