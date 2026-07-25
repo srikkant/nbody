@@ -138,3 +138,61 @@ test_control_menu_click_intercept_blank :: proc(t: ^testing.T) {
 
 	testing.expect(t, consumed, "click in menu container should still be consumed")
 }
+
+@(test)
+test_control_menu_click_when_hidden :: proc(t: ^testing.T) {
+	g := test_make_game()
+	defer free(g)
+
+	g.control_menu.rect = rl.Rectangle{0, 500, 800, 100}
+	g.help.launch_done = false // Menu is hidden
+
+	g.input.mouse_pos_screen = rl.Vector2{400, 550}
+	consumed := game.ui_control_menu_handle_click(g)
+
+	testing.expect(t, !consumed, "click should not be consumed when menu is hidden")
+}
+
+@(test)
+test_control_menu_click_outside_menu_not_consumed :: proc(t: ^testing.T) {
+	g := test_make_game()
+	defer free(g)
+
+	g.control_menu.rect = rl.Rectangle{0, 500, 800, 100}
+
+	// Click in world above the menu (e.g. y = 300)
+	g.input.mouse_pos_screen = rl.Vector2{400, 300}
+	consumed := game.ui_control_menu_handle_click(g)
+
+	testing.expect(t, !consumed, "click outside menu bounds must not be consumed by control menu")
+}
+
+@(test)
+test_ui_is_mouse_over_ui :: proc(t: ^testing.T) {
+	g := test_make_game()
+	defer free(g)
+
+	g.control_menu.rect = rl.Rectangle{0, 500, 800, 100}
+	g.help.launch_done = true
+
+	g.input.mouse_pos_screen = rl.Vector2{400, 550}
+	testing.expect(
+		t,
+		game.ui_is_mouse_over_ui(g),
+		"mouse inside menu rect must be detected as over UI",
+	)
+
+	g.input.mouse_pos_screen = rl.Vector2{400, 300}
+	testing.expect(
+		t,
+		!game.ui_is_mouse_over_ui(g),
+		"mouse outside UI rects must not be detected as over UI",
+	)
+
+	g.status = .Paused
+	testing.expect(
+		t,
+		game.ui_is_mouse_over_ui(g),
+		"mouse in paused state must be detected as over UI",
+	)
+}

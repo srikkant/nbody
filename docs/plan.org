@@ -15,6 +15,9 @@
 + Wires available_objects (read for the first time) + makes emitter subsystem reachable.
 + Repurpose dead Render_LaunchMenu struct into Control_Menu state. Render in ui.odin, hit-test in
   input.odin. Introduces Drag_Intent enum + Parameters_Emitter_Preset table.
+*** DONE Screen-space UI cursor rendering & halo suppression
++ Moved custom cursor pointer rendering to screen space in ui_draw (drawn last on top of all UI menus).
++ Implemented ui_is_mouse_over_ui to suppress translucent collector halo circle whenever mouse is over active UI elements or during pause state.
 *** TODO Launch menu
 + Object + emitter selection for the slingshot. Now covered by the Control menu track above; keep
   this entry for any separate launch-confirmation UI if it emerges.
@@ -60,7 +63,7 @@
 + Change runtime log filter to .Warning or .Error in production release. Currently set to .Debug for dev.
 ** Physics [0/1]
 *** TODO Decouple visual and simulation parameters
-** Testing [2/3]
+** Testing [2/4]
 *** DONE Decouple logic from render/globals for testability
 + Moved delete_entities/mass_delta globals into Game struct.
 + Extracted sys_slingshot_compute_preview from sys_render; render is draw-only.
@@ -70,6 +73,9 @@
   ecs/utils/system matrix + scenario tests.
 *** TODO CI for test suite
 + GitHub Action: setup Odin + make test. Red suite should block merges.
+*** TODO Full end-to-end input & UI integration test suite
++ Current test suite tests UI functions (ui_control_menu_handle_click) and input functions (input_slingshot_release) in isolation.
++ Build a complete integration test suite that simulates full mouse/keyboard event sequences through input_process / input_handle_mouse and asserts world vs UI event consumption, menu selection transitions, and gesture cancellations.
 ** Bugs [2/5]
 *** TODO Fix build for WASM
 *** DONE Shockwave scale is broken
@@ -82,6 +88,8 @@
 + Covered by Phase 3 of the slingshot input refactor ([[file:adr/0004-slingshot-input-refactor.org]]):
   GameEvent_Shockwave pushed by input_slingshot_release, consumed in sys_lifecycle.
 *** DONE Fragment energy was not conserved on shatter
+*** DONE Control menu clicks fall through to slingshot
++ Clicks on the control menu were not being hit-tested in input_handle_mouse, causing clicks to fall through and trigger object launch. Added ui_control_menu_handle_click invocation in input_handle_mouse.
 ** Backlog
 *** TODO Energy-dependent fragment size and spread
 + Fragment size (ENERGY_FRAGMENTS_SIZE) and spread radius (ENERGY_FRAGMENTS_SPREAD_RADIUS) are currently fixed constants. As bigger objects (Jupiter-sized planets etc.) enter the game, these should scale with collision energy so fragments remain proportional and collectible.yy    

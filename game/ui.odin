@@ -13,6 +13,28 @@ ui_draw :: proc(g: ^Game) {
 	ui_top_bar_draw(g)
 	ui_help_draw(g)
 	ui_control_menu_draw(g)
+	ui_cursor_draw(g)
+}
+
+ui_is_mouse_over_ui :: proc(g: ^Game) -> bool {
+	if g.status == .Paused do return true
+	if g.help.launch_done {
+		if rl.CheckCollisionPointRec(g.input.mouse_pos_screen, g.control_menu.rect) do return true
+	}
+	return false
+}
+
+ui_cursor_draw :: proc(g: ^Game) {
+	mouse_screen := g.input.mouse_pos_screen
+	is_over_ui := ui_is_mouse_over_ui(g)
+
+	if !is_over_ui && g.slingshot.status != .Active {
+		halo_radius := g.params.physics.cursor_distance * g.camera.rl_cam.zoom
+		rl.DrawCircleV(mouse_screen, halo_radius, g.theme.color_cursor_collector)
+	}
+
+	scale := max(g.scale, 1.0)
+	rl.DrawCircleV(mouse_screen, CURSOR_POINTER_SIZE * scale, rl.WHITE)
 }
 
 ui_top_bar_draw :: proc(g: ^Game) {

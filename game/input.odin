@@ -16,6 +16,9 @@ input_init :: proc(g: ^Game) {
 	g.slingshot.preview = 1
 	g.slingshot.status = .Inactive
 	g.slingshot.snap.active = false
+	g.slingshot.output = Slingshot_Output_Celestial {
+		celestial = {type = .Asteroid},
+	}
 }
 
 input_mouse_pos :: proc(g: ^Game) -> rl.Vector2 {
@@ -243,6 +246,7 @@ input_handle_mouse :: proc(g: ^Game) {
 	if g.status != .Playing do return
 
 	if rl_is_mouse_button_pressed(g, .LEFT) {
+		if ui_control_menu_handle_click(g) do return
 		input_slingshot_activate(g)
 	} else if rl_is_mouse_button_released(g, .LEFT) {
 		if g.slingshot.status == .Active {
@@ -259,6 +263,10 @@ input_handle_mouse :: proc(g: ^Game) {
 	if rl_is_mouse_button_pressed(g, .RIGHT) {
 		if g.slingshot.status == .Active {
 			input_slingshot_cancel(g)
+		} else if g.help.launch_done &&
+		   rl.CheckCollisionPointRec(g.input.mouse_pos_screen, g.control_menu.rect) {
+			// Clicked inside control menu; consume right click without demolishing.
+			// This is a noop.
 		} else {
 			push_event(g, GameEvent_Object_Demolish{})
 		}

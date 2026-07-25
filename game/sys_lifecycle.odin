@@ -15,7 +15,7 @@ sys_lifecycle_init :: proc(g: ^Game) {
 	g.free_entities_count = 0
 	g.events_count = 0
 
-	g.slingshot.available_objects = {.DwarfPlanet}
+	g.slingshot.available_objects = {.Asteroid}
 
 	for i in 0 ..< MAX_ENTITIES {
 		g.entities[i].sig = {}

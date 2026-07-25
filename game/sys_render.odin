@@ -15,7 +15,6 @@ sys_render :: proc(g: ^Game) {
 
 	sys_render_slingshot(g)
 	sys_render_entities(g)
-	sys_render_cursor(g)
 
 	rl.EndMode2D()
 }
@@ -118,19 +117,6 @@ sys_render_slingshot :: proc(g: ^Game) {
 
 	sys_render_slingshot_trigger(g)
 	sys_render_slingshot_preview(g)
-}
-
-sys_render_cursor :: proc(g: ^Game) {
-	rl.DrawCircleV(g.input.mouse_pos, CURSOR_POINTER_SIZE, rl.WHITE)
-
-	if g.slingshot.status == .Active do return
-
-	rl.DrawCircle(
-		i32(g.input.mouse_pos.x),
-		i32(g.input.mouse_pos.y),
-		g.params.physics.cursor_distance,
-		g.theme.color_cursor_collector,
-	)
 }
 
 sys_add_entity_to_layer :: proc(g: ^Game, id: Entity_Id, layer: Render_LayerType) {

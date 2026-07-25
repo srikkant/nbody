@@ -43,6 +43,8 @@ ui_control_menu_init :: proc(g: ^Game) {
 }
 
 ui_control_menu_handle_click :: proc(g: ^Game) -> bool {
+	if g.status != .Playing || !g.help.launch_done do return false
+
 	mouse_screen := g.input.mouse_pos_screen
 
 	// If click is not inside the menu bounding box, return false (not consumed)

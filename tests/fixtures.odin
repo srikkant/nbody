@@ -110,6 +110,9 @@ test_make_game :: proc() -> ^game.Game {
 	g.timers[.Trail] = game.Timer{0, 0.05, false}
 	g.timers[.Autosave] = game.Timer{0, game.SAVE_AUTOSAVE_INTERVAL_SEC, false}
 
+	g.status = .Playing
+	g.help.launch_done = true
+
 	g.slingshot.available_objects = {.DwarfPlanet}
 	game.ui_control_menu_init(g)
 
