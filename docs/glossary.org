@@ -154,8 +154,102 @@ temporary kind resets its timer instead; a permanent kind is rejected.
 ** modifier_add
 =modifier_add(g, kind) -> bool= in =modifiers.odin= (non-sys ops file).
 Implements the Refresh Rule and the =MAX_MODIFIERS= capacity check. Called by
-debug keybinds (v1) and later the upgrade menu. Legal across files because a
-modifier is not an entity.
+debug keybinds (v1). Legal across files because a modifier is not an entity.
+Upgrades never call it — see Upgrade.
+
+** Upgrade
+A purchasable progression node. Identified by the closed enum =Upgrade_Id=;
+owned amount is =Game.upgrade_levels[id]: u8= (the *source of truth*, persisted).
+Structure comes from the compile-time =UPGRADE_DEFS= table, balance from
+=Parameters.upgrades=. See ADR 0006 and [[file:upgrade-system.org]].
+
+** Upgrade Level
+Times a node has been bought, capped by =Parameters_Upgrade.max_level=.
+=max_level == 1= expresses a one-shot unlock; there is no separate one-shot
+concept.
+
+** Upgrade_Scope
+=enum { Run, Meta }= on each node. =Run= levels are cleared by the prestige
+reset; =Meta= levels survive it. Only =Run= is implemented in v1; Meta nodes are
+forced Hidden.
+
+** Upgrade Effect classes
+Three, expressed as the =Upgrade_Effect= union:
+- *Param* (=Upgrade_Effect_Param=) — folded into Effective Parameters from the
+  level; the target field(s) are a hardcoded branch keyed by =Upgrade_Id=.
+- *Capability* (=Upgrade_Effect_Capability=) — contributes a bit to
+  =Game.capabilities=, re-derived every frame.
+- *Grant* (=Upgrade_Effect_Grant=) — a monotonic one-way write at purchase time
+  into existing persisted state (=slingshot.available_objects=). Re-applied
+  after a reset by =upgrade_reapply_grants=.
+
+** Capability
+=Game.capabilities: bit_set[Capability]=. Derived every frame from upgrade
+levels, never persisted. Read by UI/systems to gate behavior without knowing
+node ids. v1 member: =.Fragment_Attraction=.
+
+** Upgrade_Op
+=enum { Add, Mul }= declared per node. =Add=: =field + magnitude*level=. =Mul=:
+=field * magnitude^level= (compounding; magnitude < 1 = reduction). Applied by
+=math_apply_upgrade_op=, which both the fold and the tooltip preview call so
+shown and applied values cannot diverge.
+
+** Requires slots
+=requires: [MAX_UPGRADE_REQUIRES]Upgrade_Id= (4 slots, =.None= = empty) on each
+node. Prereq satisfaction = every non-=.None= slot has level > 0. Arrays are used
+instead of =bit_set[Upgrade_Id]= because Odin caps =bit_set= at 128 elements,
+which would cap the tree; the tree is uncapped.
+
+** Unlock Condition
+=Upgrade_Condition{kind, celestial}= per node with a threshold in
+=Parameters_Upgrade.condition_threshold=. Kinds: =None=,
+=Lifetime_Energy_Earned=, =Celestial_Discovered=, =Upgrades_Purchased=.
+*Invariant*: conditions read only monotonic metrics, so node visibility is purely
+derived and never needs a stored =revealed= latch.
+
+** Cost curve
+=upgrade_cost = base_cost * cost_growth^level=, read from
+=effective_params.upgrades= so cost-reduction nodes are possible. *Invariant*: a
+cost-affecting fold branch never writes its own table entry (no self-discount).
+
+** Upgrade_State / Two-hop reveal
+=enum { Hidden, Silhouette, Locked, Available, Owned, Maxed }=, derived each
+frame. Reveal rule: a node is =Silhouette= (shape only) at two prereq hops from
+an owned node, =Locked= (full text + unmet reason) at one hop, and =Hidden=
+beyond. Affordability is deliberately NOT a state, so nodes never flicker as
+energy fluctuates.
+
+** Derive Pass
+=sys_modifier='s= per-frame job, widened by ADR 0006: tick/expire temp modifiers
+(=.Playing= only), copy Base → Effective Parameters, fold upgrade levels, fold
+modifiers, recompute derived companions in one step, derive =capabilities=,
+derive =upgrade_states=. Runs in both =.Playing= and =.Paused=.
+
+** Upgrade Menu
+The skill-tree canvas rendered in the previously empty central area of the
+=.Paused= screen (no new =Status=, no tabs). State: =Upgrade_Menu= (pan, gesture,
+hover, node rects). Drawn in =ui_upgrade_menu.odin=, hit-tested from
+=input.odin=.
+
+** Pan/buy gesture
+LEFT press records origin + node; movement past
+=UPGRADE_MENU_DRAG_THRESHOLD= promotes the gesture to a canvas pan and cancels
+the pending buy; release buys only if it never became a pan and the cursor is
+still over the pressed node. Same shape as the Slingshot Gesture.
+
+** Frontier framing
+On each menu open the canvas centres on the bounding box of Owned + Available
+nodes so the player lands on actionable content. =HOME= re-frames.
+
+** economy_add_energy / economy_try_spend
+=game/economy.odin= (non-sys ops file). The only sanctioned mutators of
+=Score.energy=. =economy_add_energy= also raises the monotonic
+=Score.lifetime_energy_earned= that unlock conditions read.
+
+** fmt_compact
+=game/utils_format.odin=. Static-buffer compact number formatter
+(=12.4K/3.28M/1.05B=, scientific past the suffix table) used by the upgrade menu
+and the top bar. No heap, no temp allocator.
 
 * Cross-system conventions
 

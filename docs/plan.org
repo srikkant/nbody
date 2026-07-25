@@ -6,7 +6,16 @@
 ** UI [0/8]
 *** TODO Pause menu
 *** TODO Progression menu
-*** TODO Upgrade menu
+*** PLANNED Upgrade menu
+**** This will be a dedicated skill tree like structure. It will rendered as a full overlay over the screen. For now, this will pause the game simulation behind and be a part of the pause menu. Right now, the pause menu only renders a top status bar. This will be a part of the central real estate. 
++ Designed together with the Upgrade system track: [[file:upgrade-system.org]],
+  decisions: [[file:adr/0006-upgrade-system.org]], vocab: [[file:glossary.org]].
++ Single pan-able canvas (no tabs, no zoom) drawn in the central area of the
+  existing =.Paused= screen. No new =Status= member, no pause-menu tab strip.
++ LEFT drag pans / buy on release below a drag threshold; hover tooltip carries
+  all decision info; two-hop reveal (Silhouette) for undiscovered nodes.
++ Frontier framing on open + HOME recenter. New =ui_upgrade_menu.odin=; input
+  gains a =.Paused= mouse branch.
 *** DONE Control menu
 + Two-tier statusbar for slingshot payload selection. Design: [[file:ui-control-menu.org]],
   decisions: [[file:adr/0003-control-menu.org]], vocab: [[file:glossary.org]].
@@ -16,8 +25,7 @@
 + Repurpose dead Render_LaunchMenu struct into Control_Menu state. Render in ui.odin, hit-test in
   input.odin. Introduces Drag_Intent enum + Parameters_Emitter_Preset table.
 *** TODO Launch menu
-+ Object + emitter selection for the slingshot. Now covered by the Control menu track above; keep
-  this entry for any separate launch-confirmation UI if it emerges.
++ Object + emitter selection for the slingshot. Now covered by the Control menu track above; keep this entry for any separate launch-confirmation UI if it emerges.
 *** TODO Special Hardware entities + radius drag
 + Deferred from Control menu (ADR 0003). Implement Collector Drone / Gravity Satellite components,
   the Radius Drag_Intent path in sys_slingshot + preview render, and placement. Enable the Hardware
@@ -38,6 +46,26 @@
 + Skeleton type exists. Nothing inside it.
 + Design: [[file:modifier-system.org]], decisions: [[file:adr/0005-modifier-system.org]], vocab: [[file:glossary.org]].
 + Base + effective params model: g.params immutable, effective_params recomputed every frame by sys_modifier. Closed Modifier_Kind enum, refresh rule, no SAVE_VERSION bump (+kind guard). v1: Gravity_Boost (temp) + Energy_Magnet (perm), debug keys G/H, statusbar chips.
+*** PLANNED Upgrade system
++ The modifiers defined now need to be tied into the upgrade system. Uprades are very open ended for now. They can be of multiple types:  
+  + Permanent modifiers to the game like increased rate of energy etc.
+  + Special objects like Dense Iron cores (or other new celestial objects),  and entirely new mechanics like energy harnessers, gravity wells. Each of these items will have completely custom behaviour
++ We need to think of more interesting upgrade paths and mechanics. For now, we want to make sure our architecture is scalable.
++ The system needs to support unlock conditions and have a gradual tiered unlock system.
++ Design: [[file:upgrade-system.org]], decisions: [[file:adr/0006-upgrade-system.org]],
+  vocab: [[file:glossary.org]]. Amends [[file:adr/0005-modifier-system.org]].
++ Upgrade *levels* are the source of truth (=upgrade_levels[Upgrade_Id]u8=);
+  upgrades never create Modifiers. Multi-level nodes with per-node =max_level=.
++ Three effect classes: Param (folded into effective_params), Capability
+  (derived =bit_set=), Grant (monotonic write at purchase). DAG prereqs via
+  4 =requires= slots (arrays, not =bit_set=, so node count is uncapped).
++ Monotonic-only unlock conditions (no stored =revealed= latch): lifetime energy
+  earned, celestial discovered, upgrades purchased.
++ =sys_modifier= absorbs upgrades and becomes the single derive pass (also runs
+  while =.Paused=); ops in NEW =upgrades.odin= + =economy.odin=. Structure in
+  compile-time =UPGRADE_DEFS=, balance in =Parameters.upgrades= (unpersisted).
++ v1: 12 Run nodes + 1 Meta placeholder. 4 phases: engine → menu → wiring →
+  balance/persistence. Save payload changes without a version bump (pre-release).
 *** TODO Prestige (supernova reset)
 + Phase 3 from docs/overview.org. When the star becomes too massive for orbits to escape, the system
   collapses into a black hole/supernova: soft reset that grants premium currency and permanent
@@ -93,6 +121,41 @@
 *** DONE Control menu clicks fall through to slingshot
 + Clicks on the control menu were not being hit-tested in input_handle_mouse, causing clicks to fall through and trigger object launch. Added ui_control_menu_handle_click invocation in input_handle_mouse.
 ** Backlog
+*** TODO Paused-screen bottom action statusbar
++ Deferred from ADR 0006. The paused screen gets the upgrade tree in the central
+  area; a bottom statusbar for common actions (resume, reset, save, quit) is
+  separate work. Until then the paused screen keeps only the top bar + tree.
+*** TODO Upgrade canvas zoom
++ Deferred from ADR 0006. v1 ships pan-only with a fixed scale. Add clamped wheel
+  zoom behind the same pan-offset math.
+*** TODO Activatable / cooldown upgrade nodes
++ Deferred from ADR 0006. Nodes that grant a temporary Modifier on click, with
+  persisted cooldown state and a HUD affordance outside the paused menu. This is
+  the eventual owner of the temp-modifier path; debug keys G/H are retired then.
+*** TODO Keyboard controls for upgrade menu
++ Deferred from ADR 0006 (mirrors the Control menu deferral). Mouse-only in v1.
+*** TODO Upgrade balance pass
++ Deferred from ADR 0006. Tune =Parameters.upgrades= (base_cost, cost_growth,
+  magnitude, max_level, condition thresholds) once the Scoring system and Launch
+  cost tracks land and the real energy curve exists.
+*** TODO Upgrade_Set bitmask escape hatch
++ Deferred from ADR 0006. If a node ever needs more than =MAX_UPGRADE_REQUIRES=
+  (4) prereqs, replace the slots with a word-array set
+  (=Upgrade_Set :: [(len(Upgrade_Id)+63)/64]u64=) plus add/has/is_subset utils.
+  Raising the constant is the cheaper first step.
+*** TODO Hardware tab capability gate
++ Deferred from ADR 0006. Gate the Control menu's Hardware tab on a
+  =Capability= bit once Special Hardware entities exist; a purchasable node that
+  only opens an empty tab is not shipped in v1.
+*** TODO Trailing-unread-bytes check in persist_deserialize
++ Surfaced while grilling ADR 0006. The reader accepts a payload it did not fully
+  consume, so an older binary can silently load a newer save and then overwrite
+  it on autosave. Requiring the reader to consume the whole payload closes this
+  for every future field addition.
+*** TODO Save version bumping + migration policy (post-release)
++ Pre-release, payload changes may invalidate local saves (see AGENTS.md). Once
+  the game ships, =SAVE_VERSION= bumps + a migration path become mandatory.
+  Related: "Save format migration system" and "Prestige fields in save format".
 *** TODO Energy-dependent fragment size and spread
 + Fragment size (=ENERGY_FRAGMENTS_SIZE=) and spread radius (=ENERGY_FRAGMENTS_SPREAD_RADIUS=) are currently fixed constants. As bigger objects (Jupiter-sized planets etc.) enter the game, these should scale with collision energy so fragments remain proportional and collectible.yy    
 ** Refactoring

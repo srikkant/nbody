@@ -1,0 +1,345 @@
+#+TITLE: ADR 0006: Upgrade System + Upgrade Menu (Skill Tree)
+#+OPTIONS: ^:{}
+
+* Status
+
+Proposed (planning phase). Amends ADR 0005 (see [[#amendment-to-adr-0005]]).
+
+* Context
+
+Phase 2 of docs/overview.org calls for an upgrade tree: players spend energy to
+modify fundamental params (gravity, star properties, emitter/slingshot
+properties, per-object properties), unlock new content, and eventually unlock
+entirely new mechanics (energy harnessers, gravity wells, dense iron cores).
+plan.org additionally requires *unlock conditions* and a *gradual tiered
+unlock*, and specifies the menu as a full-screen overlay that pauses the
+simulation behind it.
+
+What already exists:
+
+- *Modifier system* (ADR 0005, shipped): =g.params= is BASE, =g.effective_params=
+  is DERIVED and recomputed every frame by =sys_modifier=. Closed
+  =Modifier_Kind= enum with a hardcoded fold. Modifiers are temp or permanent,
+  *one instance per kind*, permanent re-acquire *rejected*, acquired via
+  =modifier_add= in the non-sys =modifiers.odin=. Trigger today: debug keys G/H.
+- *Control menu* (ADR 0003, shipped): two-tier statusbar; a =Hardware= tab exists
+  as a disabled stub; =Slingshot.available_objects= gates the celestial pickers
+  and grows via merge-unlocks in =sys_lifecycle=.
+- *Persistence* (ADR 0001, shipped): single-slot binary save, whole-file reject on
+  any mismatch. =persist_write_params= deliberately serializes only
+  =celestials/physics/slingshot= — =emitter_presets= and the modifier table are
+  *not* persisted, so rebalancing those reaches existing saves.
+- *Paused state*: =.Paused= runs only =sys_render=; the central screen is empty
+  (top bar + title only). Mouse input is dropped entirely when
+  =g.status != .Playing=.
+
+The hard problem: the modifier system cannot express multi-level upgrades (one
+instance per kind, permanent re-acquire rejected), and upgrades are not limited
+to flat param scalars — they also unlock content and capabilities. This ADR
+records the model and the decisions.
+
+Detailed plan: [[file:../upgrade-system.org]]. Vocabulary: [[file:../glossary.org]].
+
+* Decisions
+
+** Upgrade levels are the single source of truth; upgrades never create Modifiers
+
+=g.upgrade_levels: [Upgrade_Id]u8= is the persisted progression state. The
+per-frame derive pass folds *upgrade levels first*, then the temporary
+=Modifier= list. Purchasing never calls =modifier_add=.
+
+Rejected: adding =stacks: int= to =Modifier= (duplicate persisted state, two
+representations of the same progression) and writing a computed magnitude into
+a permanent =Modifier= at purchase time (freezes balance into old saves).
+
+Consequence: =Modifier= is now exclusively the *temporary/granted buff*
+mechanism. Its =permanent= flag survives for prestige-style grants but has no v1
+consumer other than the debug =Energy_Magnet= key.
+
+** Multi-level nodes with a per-node =max_level=
+
+Levels are =u8=, capped by =max_level= in the balance table. =max_level == 1=
+expresses one-shot unlocks, so there is exactly one node concept, not two.
+Unbounded levels were rejected (runaway effective params / float blowups);
+one-shot-only was rejected (forces fake "Gravity I/II/III" chains).
+
+** =Upgrade_Scope= (Run | Meta) is modelled now, only =Run= implemented
+
+Every node declares a scope. =upgrade_reset(g, scope)= is the single reset seam:
+=game_reset= clears all scopes (true fresh start), and the future prestige flow
+clears =.Run= only. v1 authors one unrendered =.Meta= placeholder row so the
+prestige track adds rows + a premium currency, not structure.
+
+** Three effect classes: Param (derived), Capability (derived), Grant (written)
+
+#+begin_src odin
+Upgrade_Effect_Param      :: struct { op: Upgrade_Op } // target field hardcoded in the fold branch
+Upgrade_Effect_Capability :: struct { capability: Capability }
+Upgrade_Effect_Grant      :: struct { celestial: Celestial_Type }
+Upgrade_Effect :: union {
+    Upgrade_Effect_Param,
+    Upgrade_Effect_Capability,
+    Upgrade_Effect_Grant,
+}
+#+end_src
+
+- *Param* — folded into =effective_params= from the level; the target field(s)
+  are a hardcoded branch keyed by =Upgrade_Id= (ADR 0005's closed-enum
+  philosophy). Branches *may* touch table entries
+  (=celestials[*].launch_cost=, =emitter_presets[*].duration=), which extends
+  ADR 0005's "flat scalars only" scope.
+- *Capability* — contributes a bit to =g.capabilities: bit_set[Capability]=,
+  re-derived every frame from levels, never persisted. Read by UI/systems to
+  gate behavior.
+- *Grant* — a *monotonic one-way write at purchase time* into existing persisted
+  state (=slingshot.available_objects += {celestial}=). Idempotent by set-union
+  and consistent with the merge-unlock path that already writes that field.
+  After any =upgrade_reset=, grants of surviving nodes are re-applied
+  (=upgrade_reapply_grants=).
+
+Rejected: mapping every param effect onto a =Modifier_Kind= (doubles enums) and
+generic ={target, op, value}= records (rejected in ADR 0005, loses type safety).
+
+** Prerequisites: fixed requires slots, no node-count cap
+
+#+begin_src odin
+MAX_UPGRADE_REQUIRES :: 4
+requires: [MAX_UPGRADE_REQUIRES]Upgrade_Id // .None = empty slot
+#+end_src
+
+=bit_set[Upgrade_Id]= was rejected because Odin caps =bit_set= at 128 elements,
+which would cap the tree. Enum-indexed *arrays* have no such limit, so levels
+and all derived per-node state are arrays. Prereq satisfaction is a 4-slot loop
+(=upgrade_levels[req] > 0=) — cheaper than a subset test and unbounded in node
+count. A node needing more than four parents raises the constant; a documented
+escape hatch (word-array =Upgrade_Set=) stays in the deferred list.
+
+The tree is therefore a DAG: convergent nodes ("needs A and B") are expressible.
+
+** Unlock conditions: closed enum, monotonic metrics only
+
+#+begin_src odin
+Upgrade_Condition_Kind :: enum {
+    None,
+    Lifetime_Energy_Earned,
+    Celestial_Discovered,
+    Upgrades_Purchased,
+}
+#+end_src
+
+Conditions may only read *non-decreasing* metrics. This is a hard invariant: it
+makes node visibility purely derived, so no =revealed= latch bit is stored, and
+spending energy can never re-hide a node. Consequence: =Score= gains a persisted
+=lifetime_energy_earned: f64=; =Celestial_Discovered= reuses
+=slingshot.available_objects=; =Upgrades_Purchased= counts nodes with level > 0.
+
+Condition *thresholds* are balance numbers and live in =Parameters=; the
+condition *kind* (and its celestial argument) is structural and lives in the
+compile-time table.
+
+** Cost: geometric curve, read from =effective_params=, self-exclusion rule
+
+=cost(level) = base_cost * cost_growth^level=, both coefficients in
+=Parameters.upgrades=. Costs are read from =effective_params.upgrades= so
+cost-reduction nodes ("Research Grants") are possible.
+
+Invariant: *a cost-affecting fold branch must never write its own table entry.*
+Otherwise a discount node discounts itself. Enforced by a test asserting the
+node's own cost is unchanged by owning it.
+
+** Effect math: per-node =Upgrade_Op= applied =level= times
+
+#+begin_src odin
+Upgrade_Op :: enum { Add, Mul }
+// Add: field  = field + magnitude * level
+// Mul: field  = field * magnitude^level   (compounding; magnitude < 1 = reduction)
+#+end_src
+
+One shared util does the math so tooltips and the fold cannot disagree. Fold
+order: upgrades in =Upgrade_Id= declaration order, then modifiers in
+=Modifier_Kind= order — i.e. temporary buffs multiply on top of owned
+progression.
+
+** =sys_modifier= absorbs upgrades and becomes the single derive pass
+
+No new system enters the loop. =sys_modifier= now: ticks/expires temp modifiers,
+copies base → effective, folds upgrade levels, folds modifiers, recomputes
+derived companions, derives =capabilities=, derives =upgrade_states=.
+
+Purchase/query logic lives in a NEW non-sys =game/upgrades.odin=
+(=upgrade_purchase=, =upgrade_cost=, =upgrade_can_purchase=, =upgrade_reset=,
+=upgrade_reapply_grants=), callable from UI/input without violating the
+no-cross-sys-call rule. Precedent: =modifier_add= in =modifiers.odin=.
+
+Rejected: a separate =sys_upgrade= (two systems writing derived state with an
+implicit ordering contract) and a =sys_progression= mega-system (premature).
+
+** The derive pass also runs while =.Paused=; timers do not
+
+The menu pauses the sim, so without this, purchases would not reach
+=effective_params= and the UI would read stale values. =game_run= calls
+=sys_modifier= in both =.Playing= and =.Paused=.
+
+Guard: temp-modifier timer ticking + expiry happen *only* when
+=g.status == .Playing=. Pausing must not burn buff duration.
+
+** Single derived-companion recompute step (amends ADR 0005)
+
+ADR 0005 required each fold branch to update precomputed companions
+(=cursor_distance_squared=, =world_radius_squared=). With upgrade branches now
+touching =cursor_distance=, that per-branch rule is a silent-bug factory. It is
+replaced by *one recompute step at the end of the derive pass* that recomputes
+every companion from its source. New branches cannot forget it.
+
+** No refunds, no respec
+
+Purchases are one-way. Prestige is the only reset. Keeps the economy monotonic
+and the fold trivially correct.
+
+** Menu lives in the empty =.Paused= central area; no new Status, no tabs
+
+The upgrade tree *is* the paused screen's central content, drawn under the
+existing dim overlay and top bar. No =Status= member is added and no pause-menu
+tab strip is introduced; a bottom action statusbar (resume/reset/save/quit) for
+the paused screen is a separate backlog item.
+
+Reachability: =ESC= (existing pause binding, already gated on
+=help.launch_done=). Input handling for =.Paused= mouse events is new —
+=input_handle_mouse= currently drops all mouse input outside =.Playing=.
+
+** Single pan-able canvas, no tabs, no zoom in v1
+
+Category tabs were rejected as cognitive load that silos the player into one
+branch. The tree is one canvas with authored per-node coordinates
+(=pos= in abstract canvas units, grid-multiple by convention), panned by mouse
+drag, clamped so the tree bounding box always intersects the viewport. Zoom is
+deferred.
+
+Coordinates: manual pan offset composed at layout time into *screen-space*
+rects (=node_screen = viewport_center + pos * spacing * g.scale + pan=). No
+second =rl.Camera2D=, no nested =BeginMode2D=.
+
+=Upgrade_Category= survives as a per-node *visual attribute* (border tint +
+tooltip label) only — it is explicitly NOT a spatial grouping, since adjacent
+nodes may belong to different categories.
+
+** LEFT is overloaded: drag pans, buy fires on release below a drag threshold
+
+Press records origin + node under cursor; movement beyond
+=UPGRADE_MENU_DRAG_THRESHOLD= promotes the gesture to a pan and cancels the
+pending buy; release buys only if the gesture never became a pan and the cursor
+is still over the pressed node. Same gesture shape as the slingshot, trackpad-
+and WASM-friendly, and dragging away is a free misclick escape.
+
+Buying is immediate (no confirm dialog); a hover tooltip carries all decision
+info: name, category, level x/max, effect at current and next level (computed
+with the same util the fold uses), cost, and unmet requirements/conditions.
+
+** Framing: open on the frontier, HOME recenters
+
+On each open, the canvas centers on the bounding box of owned + available nodes
+so the player lands on actionable content. A =HOME= binding (=.Paused= only)
+re-frames.
+
+** Five-state node model with a two-hop reveal
+
+#+begin_src odin
+Upgrade_State :: enum { Hidden, Silhouette, Locked, Available, Owned, Maxed }
+#+end_src
+
+- =Hidden= — more than two prereq hops from any owned node: not drawn at all.
+- =Silhouette= — exactly two hops away: shape only, no name/cost (teases tree
+  shape and lets players plan one tier ahead).
+- =Locked= — at least one direct prereq owned, but requires-set incomplete or
+  condition unmet: drawn with full text and the unmet reason.
+- =Available= — level 0, purchasable. =Owned= — 0 < level < max. =Maxed= —
+  level == max.
+
+Affordability is *not* a state: it is evaluated at render/click time so a node
+does not flicker between states as energy fluctuates.
+
+** Data placement: structure compile-time, balance in =Parameters= (unpersisted)
+
+- =UPGRADE_DEFS: [Upgrade_Id]Upgrade_Def= in a NEW =game/upgrades_table.odin= —
+  category, scope, effect union, requires slots, condition kind, canvas pos,
+  name, description.
+- =Parameters.upgrades: [Upgrade_Id]Parameters_Upgrade= — =base_cost=,
+  =cost_growth=, =magnitude=, =max_level=, =condition_threshold=. Excluded from
+  =persist_write_params= (the =emitter_presets= precedent), so rebalancing
+  reaches existing saves.
+
+This satisfies the AGENTS.md rule that balancing coefficients live in
+=Parameters= while keeping topology and canvas coordinates out of a persisted
+struct.
+
+** Persistence: no =SAVE_VERSION= bump (pre-release policy)
+
+Nothing has shipped, so invalidating local saves is acceptable. The payload
+gains =lifetime_energy_earned= (score block) and a count-prefixed levels array;
+old saves fail validation and the game starts fresh. Version bumping and a
+migration system become mandatory only after release (backlog).
+
+Load guards: count > =len(Upgrade_Id)= rejects the save; count < len fills the
+remainder with 0 (adding nodes stays save-compatible); a level above the
+current =max_level= is clamped with a warning (balance may legitimately shrink).
+=capabilities=, =upgrade_states= and =effective_params= are not persisted
+(deterministically recomputable, per ADR 0001's exclusion rule).
+
+** Economy ops file: =economy_add_energy= / =economy_try_spend=
+
+=lifetime_energy_earned= must increase at *every* energy gain site (score tick,
+energy source, fragment collect, refunds). A NEW non-sys =game/economy.odin=
+owns the two mutators and all existing =g.score.energy +== sites migrate to it.
+This also gives the pending Economy track (scoring, launch cost) a home.
+
+** Compact number formatting
+
+NEW =game/utils_format.odin= with a static-buffer compact formatter
+(=12.4K/3.28M/1.05B=, scientific past the suffix table), adopted by the upgrade
+menu *and* the top bar. Uses rotating static buffers — no heap, unlike the
+=fmt.ctprintf= temp-allocator calls in =ui.odin=.
+
+** Activatable/timed upgrades deferred
+
+v1 nodes are passive (Param/Capability/Grant). Nodes that grant a temporary
+modifier on click (with cooldown) need persisted cooldown state and a HUD
+affordance outside the paused menu; deferred. Debug keys G/H stay until that
+lands, keeping the temp-modifier path reachable.
+
+* Consequences
+
+- The modifier system's "one instance per kind / no permanent re-acquire" rule
+  stops being a problem: upgrades never enter that list.
+- ADR 0005's per-branch companion rule is superseded; ADR 0005's "flat scalars
+  only" target scope is widened to table entries.
+- =sys_modifier= becomes the project's single derived-state pass (params +
+  capabilities + node states) and now runs in =.Paused= too.
+- =input_handle_mouse= gains a =.Paused= branch — the first non-=.Playing=
+  mouse handling in the project.
+- Save format changes without a version bump; local saves reset. A post-release
+  versioning/migration policy is now an explicit backlog item, and AGENTS.md
+  records the pre-release exemption.
+- Every energy mutation site moves behind =economy.odin=; future launch-cost and
+  scoring work inherits that seam.
+- Node count is unbounded; the tree can grow past 128 nodes without redesign.
+- =Slingshot.available_objects= gains a second writer (Grant effects) — still
+  monotonic, still a set union.
+- Prestige only needs =.Meta= rows, a premium currency, and a
+  =upgrade_reset(g, .Run)= call; no structural rework.
+- The Hardware tab stays disabled: gating it on a capability waits for the
+  Special Hardware track, so v1's capability class is exercised by a fragment-
+  attraction node instead.
+
+* Amendment to ADR 0005
+:PROPERTIES:
+:CUSTOM_ID: amendment-to-adr-0005
+:END:
+
+1. *Derived-field rule* — per-branch companion updates are replaced by a single
+   recompute step at the end of the derive pass.
+2. *Target scope* — "flat scalars only" is widened: fold branches may write
+   table entries (=celestials[*]=, =emitter_presets[*]=, =upgrades[*]=).
+3. *Permanent modifiers* — no longer the mechanism for owned upgrades. The flag
+   remains for future prestige/event grants.
+4. *Recompute cadence* — "every frame, unconditionally" now means every frame in
+   =.Playing= *and* =.Paused=; modifier timer ticking remains =.Playing= only.

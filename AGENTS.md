@@ -73,6 +73,7 @@ Executed sequentially in `game_run` in `game.odin`:
 - Always run tests before you start any task to ensure tests are not failing because of your changes. If they are failing beforehand, get explicit approval before proceeding.
 - All runtime system calculations, physics, input handlers, and UI must read from `g.effective_params` instead of `g.params`. `g.params` holds immutable base parameters set at init/load; `g.effective_params` is derived and recomputed frame-by-frame by `sys_modifier`.
 - Never run `make` tasks directly. You will not be given permission for those. Use the direct odin commmands listed above.
+- The save format is pre-release. `SAVE_VERSION` bumps and migrations are NOT required yet: any change to the persisted payload may invalidate existing local saves (load rejects the file and the game starts fresh). Once the game ships, version bumping plus a migration path become mandatory (tracked in docs/plan.org).
 
 ---
 

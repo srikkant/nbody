@@ -1,0 +1,579 @@
+#+TITLE: Plan: Upgrade System + Upgrade Menu
+#+OPTIONS: ^:{}
+
+* Goal
+
+Turn the shipped modifier machinery into a real progression system: a pan-able
+skill tree, rendered in the empty central area of the paused screen, where energy
+buys multi-level nodes that scale params, unlock capabilities, and grant content.
+Architecture must absorb prestige (Meta scope) and entirely custom mechanics
+(gravity wells, energy harnessers) without restructuring.
+
+Decisions are recorded in [[file:adr/0006-upgrade-system.org]]. Vocabulary:
+[[file:glossary.org]]. Depends on / amends [[file:adr/0005-modifier-system.org]].
+
+* Decisions (from design interview)
+
+| Question               | Decision                                                                 |
+|------------------------+--------------------------------------------------------------------------|
+| Ownership of permanent effects | Upgrade *levels* are truth; fold reads them. Upgrades never create Modifiers |
+| Level model            | Multi-level, per-node =max_level= (=1 expresses one-shots)                |
+| Scope                  | =Upgrade_Scope{Run, Meta}= modelled now; only Run implemented             |
+| Effect encoding        | Closed =Upgrade_Id= + effect union: Param (fold) / Capability (bit_set) / Grant (write) |
+| Prereqs                | DAG via fixed =requires[MAX_UPGRADE_REQUIRES]= slots with =.None= sentinel |
+| Node count             | Unbounded (arrays, not =bit_set=); =bit_set= would cap at 128             |
+| Unlock conditions      | Closed =Upgrade_Condition_Kind=; *monotonic metrics only*, no latch state |
+| v1 condition kinds     | None, Lifetime_Energy_Earned, Celestial_Discovered, Upgrades_Purchased    |
+| Cost curve             | =base_cost * cost_growth^level=, coefficients in =Parameters=             |
+| Cost source            | =effective_params.upgrades= (moddable); cost branches exclude their own id |
+| Effect math            | Per-node =Upgrade_Op{Add, Mul}= applied =level= times, shared util        |
+| Fold order             | Upgrades (enum order) → Modifiers (enum order) → companions recompute     |
+| System layout          | =sys_modifier= absorbs upgrades (single derive pass); ops in NEW =upgrades.odin= |
+| Paused correctness     | Derive pass runs in =.Paused= too; modifier timers tick only in =.Playing= |
+| Capabilities           | =bit_set[Capability]= derived every frame from levels, never persisted    |
+| Derived companions     | One recompute step at end of derive pass (supersedes ADR 0005 per-branch) |
+| Refunds                | None. Prestige is the only reset                                          |
+| Reset seam             | =upgrade_reset(g, scope)=; =game_reset= = all scopes, prestige = Run only |
+| Grants after reset     | =upgrade_reapply_grants= re-applies grants of surviving nodes             |
+| Menu placement         | Central area of the existing =.Paused= screen. No new Status, no tabs     |
+| Navigation             | Single canvas, mouse pan, clamped; zoom deferred                          |
+| Coordinates            | Authored canvas =pos= per node; composed into screen-space rects at layout |
+| Category               | Per-node visual attribute only (tint + label), never a spatial grouping   |
+| Pan vs buy             | LEFT drag pans; buy on release if drag < threshold and cursor still on node |
+| Purchase UX            | Immediate click-buy + hover tooltip (no confirm dialog)                   |
+| Node states            | Hidden / Silhouette / Locked / Available / Owned / Maxed; two-hop reveal  |
+| Affordability          | Not a state; evaluated at render/click time                              |
+| Data placement         | Structure in compile-time =UPGRADE_DEFS=; balance in =Parameters.upgrades= (unpersisted) |
+| Persistence            | No =SAVE_VERSION= bump (pre-release); count-prefixed levels + lifetime energy |
+| Energy mutations       | NEW =economy.odin= (=economy_add_energy= / =economy_try_spend=)           |
+| Number formatting      | NEW =utils_format.odin= compact formatter, adopted by menu + top bar      |
+| Activatables           | Deferred; debug keys G/H keep the temp-modifier path alive                |
+| Layout/hit-test pattern| Control Menu pattern: rects filled during draw, hit-tested in input      |
+| Phasing                | 4 phases: engine → menu → wiring → balance/persistence                   |
+
+* Domain model
+
+** Identity, structure, balance
+
+#+begin_src odin
+// game/types.odin
+Upgrade_Id :: enum {
+    None, // sentinel: empty requires slot / "no node"
+    // Tier 1 (roots)
+    Gravity_Tuning,
+    Orbital_Yield,
+    Collector_Reach,
+    Moonlet_Foundry,
+    // Tier 2
+    Launch_Efficiency,
+    Slingshot_Foresight,
+    Star_Furnace,
+    Salvage_Rights,
+    // Tier 3
+    Emitter_Logistics,
+    Emitter_Persistence,
+    Research_Grants,
+    Tractor_Field,
+    // Meta placeholder (not rendered in v1; owned by the prestige track)
+    Stellar_Legacy,
+}
+
+Upgrade_Category :: enum { Physics, Economy, Automation, Hardware }
+Upgrade_Scope    :: enum { Run, Meta }
+Upgrade_Op       :: enum { Add, Mul }
+
+Upgrade_Effect_Param      :: struct { op: Upgrade_Op }
+Upgrade_Effect_Capability :: struct { capability: Capability }
+Upgrade_Effect_Grant      :: struct { celestial: Celestial_Type }
+
+Upgrade_Effect :: union {
+    Upgrade_Effect_Param,
+    Upgrade_Effect_Capability,
+    Upgrade_Effect_Grant,
+}
+
+Upgrade_Condition_Kind :: enum {
+    None,
+    Lifetime_Energy_Earned, // threshold from Parameters_Upgrade
+    Celestial_Discovered,   // celestial from Upgrade_Def
+    Upgrades_Purchased,     // threshold from Parameters_Upgrade
+}
+
+Upgrade_Condition :: struct {
+    kind:      Upgrade_Condition_Kind,
+    celestial: Celestial_Type, // Celestial_Discovered only
+}
+
+// Structural: compile-time, never persisted, never modified at runtime.
+Upgrade_Def :: struct {
+    name:      string,
+    desc:      string,
+    category:  Upgrade_Category,
+    scope:     Upgrade_Scope,
+    effect:    Upgrade_Effect,
+    condition: Upgrade_Condition,
+    requires:  [MAX_UPGRADE_REQUIRES]Upgrade_Id,
+    pos:       rl.Vector2, // canvas units (grid multiples by convention)
+}
+
+// Balance: lives in Parameters, excluded from persist_write_params.
+Parameters_Upgrade :: struct {
+    base_cost:           f64,
+    cost_growth:         f64,
+    magnitude:           f32, // Add: per-level addend. Mul: per-level factor
+    max_level:           u8,
+    condition_threshold: f64,
+}
+
+Upgrade_State :: enum { Hidden, Silhouette, Locked, Available, Owned, Maxed }
+
+Capability :: enum { Fragment_Attraction }
+#+end_src
+
+** State additions
+
+#+begin_src odin
+Parameters :: struct {
+    // ... existing ...
+    upgrades: [Upgrade_Id]Parameters_Upgrade,
+}
+
+Game :: struct {
+    // ... existing ...
+    upgrade_levels: [Upgrade_Id]u8,            // PERSISTED: source of truth
+    upgrade_states: [Upgrade_Id]Upgrade_State, // DERIVED each derive pass
+    capabilities:   bit_set[Capability],       // DERIVED each derive pass
+    upgrade_menu:   Upgrade_Menu,              // TRANSIENT ui state
+}
+
+Score :: struct {
+    // ... existing ...
+    lifetime_energy_earned: f64, // PERSISTED, monotonic
+}
+#+end_src
+
+Note =[Upgrade_Id]T= arrays include the =.None= slot. It is always level 0, state
+=Hidden=, and skipped by every loop — same shape as =Celestial_Type.None=.
+
+** Constants (constants.odin)
+
+| Constant                       | Purpose                                              |
+|--------------------------------+------------------------------------------------------|
+| =MAX_UPGRADE_REQUIRES=         | 4 — prereq slots per node                            |
+| =UPGRADE_NODE_RADIUS=          | node circle radius at scale 1                        |
+| =UPGRADE_NODE_SPACING=         | canvas unit → pixels at scale 1                      |
+| =UPGRADE_MENU_DRAG_THRESHOLD=  | px of movement that promotes a press into a pan      |
+| =UPGRADE_MENU_MARGIN=          | pan clamp margin so the tree never fully exits view  |
+| =UPGRADE_MENU_REVEAL_HOPS=     | 2 — silhouette reveal distance                       |
+| =UPGRADE_TOOLTIP_W=            | tooltip card width at scale 1                        |
+| =UTILS_FORMAT_SLOTS=           | rotating static format buffers                       |
+
+* v1 node table
+
+Structure (compile-time). =Requires= lists non-empty slots only.
+
+| Node                | Cat        | Effect                                      | Requires                        | Condition                        | pos (x,y) |
+|---------------------+------------+---------------------------------------------+---------------------------------+----------------------------------+-----------|
+| Gravity_Tuning      | Physics    | Param Mul =physics.gravity_constant=        | —                               | None                             | (0,-1)    |
+| Orbital_Yield       | Economy    | Param Mul =physics.energy_gain_factor=      | —                               | None                             | (0,1)     |
+| Collector_Reach     | Economy    | Param Add =physics.cursor_distance=         | —                               | None                             | (0,3)     |
+| Moonlet_Foundry     | Physics    | Grant celestial =.Moonlet=                  | Gravity_Tuning                  | None                             | (2,-6)    |
+| Launch_Efficiency   | Economy    | Param Mul =celestials[*].launch_cost=       | Gravity_Tuning                  | None                             | (2,-2)    |
+| Slingshot_Foresight | Physics    | Param Add =slingshot.preview_duration=      | Gravity_Tuning                  | None                             | (2,-4)    |
+| Star_Furnace        | Economy    | Param Mul =physics.energy_source_gain_factor= | Orbital_Yield                 | None                             | (2,0)     |
+| Salvage_Rights      | Economy    | Param Add =physics.energy_refund_factor=    | Orbital_Yield                   | Lifetime_Energy_Earned           | (2,2)     |
+| Emitter_Logistics   | Automation | Param Mul =emitter_presets[*].cost_multiplier= | Launch_Efficiency, Star_Furnace | Celestial_Discovered(.DwarfPlanet) | (4,-1)  |
+| Emitter_Persistence | Automation | Param Mul =emitter_presets[*].duration=     | Emitter_Logistics               | None                             | (6,-1)    |
+| Research_Grants     | Economy    | Param Mul =upgrades[*].base_cost= (excl. self) | Salvage_Rights, Star_Furnace  | Upgrades_Purchased               | (4,2)     |
+| Tractor_Field       | Hardware   | Capability =.Fragment_Attraction=           | Collector_Reach, Salvage_Rights | Lifetime_Energy_Earned           | (4,4)     |
+| Stellar_Legacy      | Economy    | (Meta placeholder — unrendered in v1)       | —                               | None                             | (0,8)     |
+
+Balance (=Parameters.upgrades=, starting values, subject to a balance pass):
+
+| Node                | base_cost | growth | magnitude | max_level | cond. threshold |
+|---------------------+-----------+--------+-----------+-----------+-----------------|
+| Gravity_Tuning      |       250 |    2.0 |      1.08 |         5 |               0 |
+| Orbital_Yield       |       200 |    2.2 |      1.12 |         5 |               0 |
+| Collector_Reach     |       300 |    1.9 |       8.0 |         4 |               0 |
+| Moonlet_Foundry     |       750 |    1.0 |         — |         1 |               0 |
+| Launch_Efficiency   |      2000 |    2.3 |      0.92 |         4 |               0 |
+| Slingshot_Foresight |       800 |    2.0 |       0.5 |         2 |               0 |
+| Star_Furnace        |      1500 |    2.4 |      1.15 |         3 |               0 |
+| Salvage_Rights      |      1200 |    2.0 |      0.05 |         3 |          25 000 |
+| Emitter_Logistics   |      6000 |    2.5 |       0.9 |         3 |               0 |
+| Emitter_Persistence |      5000 |    2.4 |       1.2 |         3 |               0 |
+| Research_Grants     |     10000 |    3.0 |      0.95 |         3 |               6 |
+| Tractor_Field       |     15000 |    1.0 |         — |         1 |         100 000 |
+
+Coverage check: Add (3 nodes, one with a derived companion), Mul (5), table
+targets (3), cost-affecting with self-exclusion (1), Capability (1), Grant (1),
+all three v1 condition kinds, multi-parent DAG nodes (3), Meta placeholder (1).
+
+=Tractor_Field= gives the capability class a real payoff in v1: with
+=.Fragment_Attraction= owned, =sys_lifecycle_handle_fragments= biases fragment
+drift toward the cursor instead of pure sinusoidal float. Gating the Control
+Menu's Hardware tab on a capability waits for the Special Hardware track.
+
+* Engine
+
+** Ops file — =game/upgrades.odin= (NEW, non-sys)
+
+#+begin_src odin
+upgrade_cost            :: proc(g: ^Game, id: Upgrade_Id) -> f64
+upgrade_effect_value    :: proc(g: ^Game, id: Upgrade_Id, level: u8) -> f32 // tooltip preview
+upgrade_requires_met    :: proc(g: ^Game, id: Upgrade_Id) -> bool
+upgrade_condition_met   :: proc(g: ^Game, id: Upgrade_Id) -> bool
+upgrade_can_afford      :: proc(g: ^Game, id: Upgrade_Id) -> bool
+upgrade_can_purchase    :: proc(g: ^Game, id: Upgrade_Id) -> bool
+upgrade_purchase        :: proc(g: ^Game, id: Upgrade_Id) -> bool
+upgrade_purchased_count :: proc(g: ^Game) -> int
+upgrade_reset           :: proc(g: ^Game, scope: Upgrade_Scope, all: bool = false)
+upgrade_reapply_grants  :: proc(g: ^Game)
+#+end_src
+
+=upgrade_cost= uses =effective_params.upgrades[id]= and the current level:
+=base_cost * cost_growth^level=. Math helper in =utils_math.odin=
+(=math_geometric_cost(base, growth, level) -> f64=).
+
+=upgrade_purchase= order of checks (all must pass, no partial mutation):
+
+1. =id != .None=, =UPGRADE_DEFS[id].scope= is implemented (v1: =.Run=).
+2. =upgrade_levels[id] < params.upgrades[id].max_level=.
+3. =upgrade_requires_met= (all non-=.None= slots have level > 0).
+4. =upgrade_condition_met=.
+5. =economy_try_spend(g, upgrade_cost(g, id))=.
+6. =upgrade_levels[id] += 1=.
+7. If effect is =Upgrade_Effect_Grant=: =slingshot.available_objects += {celestial}=.
+
+Failure returns false and logs at debug/warn. Param and Capability effects need
+no purchase-time work — the next derive pass picks them up.
+
+=upgrade_reset(g, scope, all)= zeroes matching levels, then calls
+=upgrade_reapply_grants= so surviving nodes' grants are restored (relevant once
+Meta grants exist). =game_reset= calls it with =all = true= and also zeroes
+=lifetime_energy_earned=.
+
+** Derive pass — =game/sys_modifier.odin=
+
+Ordered steps (single procedure, file-private helpers):
+
+1. *Tick + expire temp modifiers* — only when =g.status == .Playing=. Pausing
+   must not consume buff duration.
+2. =g.effective_params = g.params= (struct copy).
+3. *Fold upgrades* — for =id in Upgrade_Id=, skip =.None= and level 0, then a
+   switch on =id= applies the node's Param effect via the shared math util.
+   Iteration is in enum declaration order, so composition is deterministic.
+4. *Fold modifiers* — existing per-kind switch, unchanged (ADR 0005 order).
+5. *Recompute derived companions* — =cursor_distance_squared=,
+   =world_radius_squared= recomputed from their sources. Single site; new fold
+   branches cannot forget it. (Supersedes ADR 0005's per-branch rule.)
+6. *Derive capabilities* — clear, then for each node with level > 0 whose effect
+   is =Upgrade_Effect_Capability=, add its bit.
+7. *Derive node states* — see below.
+
+Cost: one struct copy + a bounded loop over =len(Upgrade_Id)= with a 4-slot
+prereq check and a two-hop reveal check. Negligible per frame.
+
+** Shared effect math — =game/utils_math.odin=
+
+#+begin_src odin
+math_apply_upgrade_op :: proc(v: f32, op: Upgrade_Op, magnitude: f32, level: u8) -> f32
+// Add: v + magnitude * f32(level)
+// Mul: v * pow(magnitude, f32(level))
+math_geometric_cost   :: proc(base, growth: f64, level: u8) -> f64
+#+end_src
+
+Both the fold and the tooltip preview call these, so displayed and applied
+values cannot diverge.
+
+** Node state derivation
+
+Per node, with =owned(x) := upgrade_levels[x] > 0=:
+
+#+begin_example
+level == max_level                          -> Maxed
+level > 0                                   -> Owned
+requires_met && condition_met                -> Available
+hop_distance == 1                            -> Locked
+hop_distance == 2                            -> Silhouette
+otherwise                                    -> Hidden
+#+end_example
+
+=hop_distance= is 1 if the node has no requires (root) or any direct prereq is
+owned; 2 if any prereq-of-prereq is owned; else 3+ (=UPGRADE_MENU_REVEAL_HOPS=
+= 2 governs the cutoff). Meta-scope nodes are forced =Hidden= in v1.
+
+Because every input (levels, monotonic metrics) is non-decreasing, a node never
+regresses to a less-visible state. Affordability is deliberately excluded so
+nodes do not flicker as energy rises and falls.
+
+** Cost-effect self-exclusion
+
+=Research_Grants='s fold branch loops =Upgrade_Id= and multiplies
+=effective_params.upgrades[id].base_cost=, *skipping =.Research_Grants= itself*
+(and =.None=). Invariant documented in the branch and asserted by a test.
+
+* Economy plumbing
+
+NEW =game/economy.odin= (non-sys ops file):
+
+#+begin_src odin
+economy_add_energy :: proc(g: ^Game, amount: f64) // energy += ; lifetime += (amount > 0 only)
+economy_try_spend  :: proc(g: ^Game, amount: f64) -> bool // checks, then deducts
+#+end_src
+
+Migration sites (all current =g.score.energy +== / =-== writes):
+
+- =sys_score= — KE score tick, energy-source tick.
+- =sys_lifecycle= — out-of-bounds refund, demolish refund, fragment collect.
+- =input.odin= — slingshot launch spend (becomes =economy_try_spend=).
+- =sys_automation= — emitter =base_cost= affordability check (read only; the
+  emitter path does not currently deduct, which is a separate economy question
+  for the Launch cost track).
+
+Calling =economy_*= from =sys_*= files is legal: it is a non-sys ops file, same
+as =modifier_add=.
+
+* Number formatting
+
+NEW =game/utils_format.odin=:
+
+#+begin_src odin
+UTILS_FORMAT_SLOTS :: 8
+fmt_compact  :: proc(v: f64) -> cstring // 940, 12.4K, 3.28M, 1.05B, 7.7T, 1.2e18
+fmt_multiplier :: proc(v: f32) -> cstring // x1.08, -8%, +0.05 style effect strings
+#+end_src
+
+Backed by rotating static buffers (=[UTILS_FORMAT_SLOTS][32]u8=) with explicit
+NUL termination — no heap and no temp allocator, unlike the existing
+=fmt.ctprintf= calls. Adopted by the upgrade menu and the top-bar energy readout.
+
+* Upgrade menu
+
+** State — =game/types.odin=
+
+#+begin_src odin
+Upgrade_Menu :: struct {
+    viewport:     rl.Rectangle,               // central area of the paused screen
+    pan:          rl.Vector2,                 // screen-px offset of the canvas
+    framed:       bool,                       // frontier framing applied for this open
+    pan_drag:     bool,                       // gesture promoted to a pan
+    press_pos:    rl.Vector2,                 // gesture origin (screen)
+    pan_at_press: rl.Vector2,
+    pressed_node: Upgrade_Id,
+    hover_node:   Upgrade_Id,
+    node_rects:   [Upgrade_Id]rl.Rectangle,   // screen-space, filled during draw
+}
+#+end_src
+
+Nothing here is persisted; =pan/framed= reset on each open.
+
+** Layout
+
+=viewport= = full screen minus top-bar band and a bottom band reserved for the
+future paused-screen action statusbar.
+
+#+begin_example
+node_center = viewport_center + def.pos * UPGRADE_NODE_SPACING * g.scale + pan
+node_rect   = square of side 2 * UPGRADE_NODE_RADIUS * g.scale centred there
+#+end_example
+
+Rects are written into =node_rects= during the draw pass and hit-tested in input
+next frame (Control Menu pattern, ADR 0003). Pan is clamped so the tree's
+bounding box always overlaps the viewport by at least =UPGRADE_MENU_MARGIN=.
+
+Frontier framing: when =!framed=, compute the bounding box of Owned + Available
+nodes (fallback: all non-Hidden nodes), set =pan= to centre it, set
+=framed = true=. A =HOME= key press (=.Paused= only) sets =framed = false=;
+leaving =.Paused= also clears it so the next open re-frames.
+
+** Rendering — =game/ui_upgrade_menu.odin= (NEW)
+
+Draw order inside the paused overlay (existing dim rectangle stays):
+
+1. Edges: for every visible node, one line per non-=.None= prereq. Edge color by
+   state — owned→owned bright, owned→available accent, otherwise dim. Edges to
+   =Hidden= nodes are not drawn; edges to =Silhouette= nodes use the dim color.
+2. Nodes: circle + category-tinted ring.
+   - =Silhouette=: ring only, no text, no cost.
+   - =Locked=: greyed fill, name + unmet reason.
+   - =Available=: accent ring; cost in compact format; dimmed cost when
+     unaffordable.
+   - =Owned=: filled, =level/max= pip row.
+   - =Maxed=: filled + "MAX", no cost.
+3. Hover tooltip card near the cursor (clamped inside the viewport): name,
+   category, level =x/max=, current effect value, next-level effect value, cost,
+   affordability hint, unmet requirement names, unmet condition text
+   (e.g. "Reveal: 25.0K lifetime energy").
+4. Header line: total nodes owned, energy on hand (compact), hint text
+   ("drag to pan · HOME to recentre").
+
+The existing =ui_top_bar_draw= paused branch (dim + title + PAUSED) is untouched;
+=ui_draw= calls =ui_upgrade_menu_draw= when =g.status == .Paused &&
+g.help.launch_done=.
+
+** Input
+
+=input_handle_mouse= is restructured to switch on status instead of
+early-returning:
+
+#+begin_src odin
+switch g.status {
+case .Playing: /* existing world/control-menu body */
+case .Paused:  ui_upgrade_menu_handle_mouse(g)
+case .Exit:
+}
+#+end_src
+
+Gesture (=ui_upgrade_menu_handle_mouse=, screen-space only):
+
+| Event                       | Behavior                                                                  |
+|-----------------------------+---------------------------------------------------------------------------|
+| LEFT pressed inside viewport| =press_pos= = mouse, =pan_at_press= = pan, =pressed_node= = node under cursor, =pan_drag= = false |
+| LEFT down                   | if =dist(mouse, press_pos) > UPGRADE_MENU_DRAG_THRESHOLD * g.scale= → =pan_drag = true=, =pressed_node = .None=; when panning, =pan = clamp(pan_at_press + (mouse - press_pos))= |
+| LEFT released               | if =!pan_drag= and =pressed_node != .None= and cursor still inside that node's rect → =upgrade_purchase=; then clear gesture state |
+| mouse move (no button)      | =hover_node= = node under cursor (Hidden/Silhouette nodes are not hoverable) |
+| RIGHT pressed               | consumed, no-op (world demolish must not fire while paused)                |
+
+New input action: =.Upgrades_Recenter= = keyboard =HOME=, status =.Paused=,
+handled in =input_handle_action= by clearing =framed=.
+
+Clicks on =Silhouette=, =Locked= and =Maxed= nodes are no-ops (tooltip still
+explains why). Unaffordable clicks are no-ops.
+
+** Paused-frame ordering
+
+=game_run= =.Paused= branch becomes: =sys_modifier(g)= then =sys_render(g)=.
+Purchases made during frame N are visible in =effective_params= from frame N+1;
+tooltips read levels directly through =upgrade_effect_value=, so displayed
+previews have no lag.
+
+* Persistence
+
+No =SAVE_VERSION= bump (pre-release policy — see AGENTS.md). Local saves from
+before this change fail validation and the game starts fresh.
+
+Payload additions:
+
+#+begin_example
+score block  : ... existing ..., lifetime_energy_earned f64
+tail         : upgrades_count u64 (= len(Upgrade_Id)), then upgrades_count x u8 level
+#+end_example
+
+Load rules:
+
+- =upgrades_count > len(Upgrade_Id)= → =r.ok = false= (reject save).
+- =upgrades_count < len(Upgrade_Id)= → remaining nodes read as level 0, so
+  appending nodes to the enum keeps saves loadable.
+- =level > params.upgrades[id].max_level= → clamp to =max_level= + =log.warn=
+  (balance may legitimately shrink a cap).
+- =Upgrade_Id= ordering is *append-only* by convention: reordering invalidates
+  existing saves silently.
+
+Not persisted (derived / transient): =upgrade_states=, =capabilities=,
+=effective_params=, =upgrade_menu=. =Parameters.upgrades= stays out of
+=persist_write_params= (=emitter_presets= precedent) so balance changes reach
+old saves.
+
+* Read-site rules
+
+- Costs, effects and every runtime param read: =g.effective_params=.
+- =g.params= remains BASE: written only by =params_init= and load; read by the
+  fold, persistence and tests.
+- Capability checks read =g.capabilities= (never =upgrade_levels= inline), so
+  gate sites do not learn node ids.
+- Menu queries go through =upgrades.odin= helpers, never re-deriving cost or
+  effect math inline.
+
+* Modules touched
+
+| File                          | Change                                                                 |
+|-------------------------------+------------------------------------------------------------------------|
+| =game/types.odin=             | Upgrade_* types, Capability, Upgrade_Menu, Parameters.upgrades, Game/Score fields |
+| =game/constants.odin=         | =MAX_UPGRADE_REQUIRES=, node/menu/tooltip constants                    |
+| =game/upgrades_table.odin=    | NEW: compile-time =UPGRADE_DEFS=                                       |
+| =game/upgrades.odin=          | NEW: cost/eligibility/purchase/reset/grant ops                         |
+| =game/economy.odin=           | NEW: =economy_add_energy=, =economy_try_spend=                          |
+| =game/utils_format.odin=      | NEW: compact number + effect formatters                                |
+| =game/utils_math.odin=        | =math_apply_upgrade_op=, =math_geometric_cost=                          |
+| =game/params.odin=            | =p.upgrades= balance table defaults                                    |
+| =game/sys_modifier.odin=      | upgrade fold, companion recompute, capability + state derivation, paused guard |
+| =game/game.odin=              | =sys_modifier= in the =.Paused= branch; =game_reset= → =upgrade_reset(all)= |
+| =game/ui_upgrade_menu.odin=   | NEW: layout, canvas, nodes, edges, tooltip                             |
+| =game/ui.odin=                | call the menu when paused; top bar adopts =fmt_compact=                |
+| =game/input.odin=             | status switch in =input_handle_mouse=, =.Upgrades_Recenter= action      |
+| =game/sys_score.odin=         | energy writes → =economy_add_energy=                                   |
+| =game/sys_lifecycle.odin=     | energy writes → =economy_add_energy=; =.Fragment_Attraction= drift bias |
+| =game/persistence.odin=       | lifetime energy + levels block, guards                                 |
+| =tests/upgrade_test.odin=     | NEW: engine matrix                                                     |
+| =tests/economy_test.odin=     | NEW: energy/lifetime invariants                                        |
+| =tests/fixtures.odin=         | pinned =upgrades= balance table + helpers                              |
+| =tests/persistence_test.odin= | new payload fields + guards                                            |
+
+* Phases
+
+1. *Engine* — types, constants, defs table, params defaults, =upgrades.odin=,
+   =economy.odin=, derive-pass rewrite (fold + companions + capabilities +
+   states), =sys_modifier= in =.Paused=. Full unit matrix green. No UI.
+2. *Menu* — =ui_upgrade_menu.odin= layout/draw, =Upgrade_Menu= state, input
+   status switch + pan/buy gesture, frontier framing, =HOME= recenter, tooltip,
+   =utils_format=.
+3. *Wiring* — capability consumption (=.Fragment_Attraction= in
+   =sys_lifecycle=), Grant node effect on =available_objects= visible in the
+   Control Menu, conditions fed by =lifetime_energy_earned= /
+   =available_objects= / purchased count, top bar adopts compact format.
+4. *Balance + persistence* — payload additions and guards, persistence tests,
+   first balance pass against the (still pending) scoring/launch-cost economy,
+   =odinfmt . -w=, plan.org to REVIEW.
+
+* Tests (unit matrix)
+
+=tests/upgrade_test.odin=:
+
+- cost curve: level 0/1/2 equal =base * growth^level=; discount node changes it.
+- purchase happy path: energy deducted exactly, level +1.
+- purchase rejected: insufficient energy / requires unmet / condition unmet /
+  at =max_level= / =.None= / =.Meta= scope. No partial mutation in any case.
+- Add fold: field == base + magnitude * level (multi-level).
+- Mul fold: compounding == base * magnitude^level.
+- table target: every =celestials[*].launch_cost= scaled by Launch_Efficiency.
+- derived companion: after Collector_Reach, =cursor_distance_squared ==
+  cursor_distance^2=.
+- capability derive: purchase → bit present; =upgrade_reset= → bit absent.
+- grant: purchase adds the celestial to =available_objects=; reset + reapply
+  restores grants of surviving scopes only.
+- states: two-hop Silhouette, one-hop Locked, Available, Owned, Maxed, Hidden
+  beyond two hops; Meta forced Hidden.
+- monotonicity: spending all energy never lowers a node's state.
+- self-exclusion: owning Research_Grants leaves its own cost unchanged and
+  lowers another node's cost.
+- base isolation: =g.params= unchanged after frames with levels set.
+- reset scopes: =.Run= clears run levels and keeps meta levels; =all= clears
+  everything including =lifetime_energy_earned=.
+- paused guard: temp modifier timer does not advance while =.Paused=; upgrade
+  fold still applies.
+
+=tests/economy_test.odin=: =economy_add_energy= raises energy and lifetime;
+negative/zero amounts do not lower lifetime; =economy_try_spend= fails without
+mutating when short.
+
+=tests/persistence_test.odin=: roundtrip with levels + lifetime energy; shorter
+count tolerated (remaining zero); oversized count rejected; level above
+=max_level= clamped.
+
+* Deferred / backlog
+
+- Paused-screen bottom action statusbar (resume/reset/save/quit).
+- Canvas zoom (wheel, clamped) — pan-only in v1.
+- Activatable/cooldown upgrade nodes; retires debug keys G/H.
+- Keyboard navigation for the upgrade menu (mirrors the Control Menu deferral).
+- Meta-scope nodes + premium currency (prestige track).
+- Hardware tab capability gate (Special Hardware track).
+- =Upgrade_Set= word-array bitmask if a node ever needs more than
+  =MAX_UPGRADE_REQUIRES= prereqs.
+- Trailing-unread-bytes check in =persist_deserialize= (cheap robustness win for
+  every future field addition).
+- Post-release =SAVE_VERSION= bumping + migration policy.
+- Upgrade balance pass once the Scoring system and Launch cost tracks land.
+- Custom-mechanic nodes (gravity wells, energy harnessers, dense iron cores):
+  new components + systems gated by new =Capability= members.

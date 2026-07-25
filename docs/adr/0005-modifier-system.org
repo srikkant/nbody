@@ -3,7 +3,12 @@
 
 * Status
 
-Proposed (planning phase).
+Proposed (planning phase). *Amended by ADR 0006* (upgrade system): the
+per-branch derived-field rule is replaced by a single recompute step at the end
+of the derive pass; the "flat scalars only" target scope is widened to table
+entries; permanent modifiers are no longer the mechanism for owned upgrades; the
+recompute now also runs while =.Paused= (timer ticking stays =.Playing= only).
+See [[file:0006-upgrade-system.org]].
 
 * Context
 
